@@ -1,0 +1,62 @@
+export const EVENT_DAYS = ['thursday', 'friday', 'saturday', 'sunday'] as const
+export type EventDay = typeof EVENT_DAYS[number]
+
+export const EVENT_DAY_LABELS: Record<EventDay, string> = {
+  thursday: 'Donnerstag',
+  friday: 'Freitag',
+  saturday: 'Samstag',
+  sunday: 'Sonntag',
+}
+
+export const EVENT_DAY_EVENTS: Record<EventDay, string> = {
+  thursday: 'Watt-Turnier',
+  friday: 'Disco-Party',
+  saturday: '(noch offen)',
+  sunday: '(noch offen)',
+}
+
+export const PRODUCT_CATEGORIES = [
+  'Bier & Radler',
+  'Softdrinks',
+  'Wein & Sekt',
+  'Schnaps & Shots',
+  'Warme Speisen',
+  'Snacks',
+] as const
+
+export const TASK_STATUSES = ['open', 'in_progress', 'done'] as const
+export type TaskStatus = typeof TASK_STATUSES[number]
+
+export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
+  open: 'Offen',
+  in_progress: 'In Bearbeitung',
+  done: 'Erledigt',
+}
+
+export const USER_ROLES = ['admin', 'orga', 'shiftleader', 'helper'] as const
+export type UserRole = typeof USER_ROLES[number]
+
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  admin: 'Administrator',
+  orga: 'Orga-Team',
+  shiftleader: 'Schichtleiter',
+  helper: 'Helfer',
+}
+
+export const INVENTORY_TYPES = ['start', 'end', 'delivery'] as const
+export type InventoryType = typeof INVENTORY_TYPES[number]
+
+export const INVENTORY_TYPE_LABELS: Record<InventoryType, string> = {
+  start: 'Anfangsbestand',
+  end: 'Endbestand',
+  delivery: 'Lieferung',
+}
+
+export const PRIORITY_LEVELS = ['low', 'medium', 'high'] as const
+export type Priority = typeof PRIORITY_LEVELS[number]
+
+export const PRIORITY_LABELS: Record<Priority, string> = {
+  low: 'Niedrig',
+  medium: 'Mittel',
+  high: 'Hoch',
+}

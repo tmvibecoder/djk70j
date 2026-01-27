@@ -1,0 +1,167 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Benutzer & Rollen
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?  @unique
+  role      String   @default("helper") // admin, orga, shiftleader, helper
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasks            Task[]
+  shiftAssignments ShiftAssignment[]
+  salesEntries     SalesEntry[]
+}
+
+// Produkte (Getränke & Speisen)
+model Product {
+  id            String   @id @default(cuid())
+  name          String
+  purchasePrice Float    // Einkaufspreis
+  salePrice     Float    // Verkaufspreis
+  unit          String   // z.B. "Flasche", "Kiste", "Stück"
+  category      String   // z.B. "Bier", "Softdrinks", "Wein", "Speisen"
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  inventories    Inventory[]
+  salesEstimates SalesEstimate[]
+  salesEntries   SalesEntry[]
+}
+
+// Verkaufs-Eintragungen (protokolliert mit Zeitstempel und Benutzer)
+model SalesEntry {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      // Verkaufte Menge in dieser Eintragung
+  eventDay  String   // "thursday", "friday", "saturday", "sunday"
+  enteredBy String?  // User ID oder Name des Erfassers
+  user      User?    @relation(fields: [enteredBy], references: [id], onDelete: SetNull)
+  notes     String?  // Optionale Notiz
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@index([eventDay])
+}
+
+// Inventur-Einträge
+model Inventory {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Float
+  date      DateTime @default(now())
+  eventDay  String   // "thursday", "friday", "saturday", "sunday"
+  type      String   // "start", "end", "delivery"
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([eventDay])
+}
+
+// Verkaufsschätzungen
+model SalesEstimate {
+  id                String  @id @default(cuid())
+  productId         String
+  product           Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  eventDay          String
+  estimatedQuantity Float
+
+  @@unique([productId, eventDay])
+}
+
+// Stationen (Bar, Kasse, etc.)
+model Station {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  shifts Shift[]
+}
+
+// Schichten
+model Shift {
+  id              String  @id @default(cuid())
+  stationId       String
+  station         Station @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  eventDay        String
+  startTime       String  // z.B. "18:00"
+  endTime         String  // z.B. "22:00"
+  requiredHelpers Int     @default(1)
+
+  assignments ShiftAssignment[]
+
+  @@index([stationId])
+  @@index([eventDay])
+}
+
+// Schicht-Zuweisungen
+model ShiftAssignment {
+  id      String @id @default(cuid())
+  shiftId String
+  shift   Shift  @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([shiftId, userId])
+}
+
+// Teams (für Watt-Turnier)
+model Team {
+  id       String @id @default(cuid())
+  name     String
+  eventDay String @default("thursday")
+
+  participants Participant[]
+}
+
+// Teilnehmer
+model Participant {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  eventDay  String   @default("thursday")
+  paid      Boolean  @default(false)
+  teamId    String?
+  team      Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([teamId])
+  @@index([eventDay])
+}
+
+// Aufgaben
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  assigneeId  String?
+  assignee    User?     @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+  deadline    DateTime?
+  status      String    @default("open") // "open", "in_progress", "done"
+  eventDay    String?
+  category    String?
+  priority    String    @default("medium") // "low", "medium", "high"
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([assigneeId])
+  @@index([status])
+  @@index([eventDay])
+}
