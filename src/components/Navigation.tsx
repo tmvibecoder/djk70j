@@ -10,6 +10,7 @@ const navItems = [
   { href: '/helfer', label: 'Helfer', icon: '👥' },
   { href: '/teilnehmer', label: 'Teilnehmer', icon: '🎯' },
   { href: '/aufgaben', label: 'Aufgaben', icon: '✅' },
+  { href: '/planer', label: 'Planer', icon: '📈' },
 ]
 
 export function Navigation() {

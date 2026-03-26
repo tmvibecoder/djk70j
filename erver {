@@ -1,0 +1,11 @@
+[0;1;32m●[0m djk-fest.service - DJK Fest Next.js App
+     Loaded: loaded (]8;;file://web01/etc/systemd/system/djk-fest.service/etc/systemd/system/djk-fest.service]8;;; [0;1;32menabled[0m; preset: [0;1;32menabled[0m)
+     Active: [0;1;32mactive (running)[0m since Thu 2026-03-26 10:24:05 UTC; 22ms ago
+   Main PID: 1701 (node)
+      Tasks: 1 (limit: 4538)
+     Memory: 1.2M (peak: 1.2M)
+        CPU: 11ms
+     CGroup: /system.slice/djk-fest.service
+             └─[0;38;5;245m1701 /usr/bin/node node_modules/.bin/next start -p 3000[0m
+
+Mar 26 10:24:05 web01 systemd[1]: Started djk-fest.service - DJK Fest Next.js App.

@@ -29,26 +29,27 @@ export async function GET() {
   // Task-Statistiken
   const taskStats = {
     total: tasks.length,
-    open: tasks.filter((t) => t.status === 'open').length,
-    inProgress: tasks.filter((t) => t.status === 'in_progress').length,
-    done: tasks.filter((t) => t.status === 'done').length,
-    highPriority: tasks.filter((t) => t.priority === 'high' && t.status !== 'done').length,
+    open: tasks.filter((t: { status: string; priority: string }) => t.status === 'open').length,
+    inProgress: tasks.filter((t: { status: string; priority: string }) => t.status === 'in_progress').length,
+    done: tasks.filter((t: { status: string; priority: string }) => t.status === 'done').length,
+    highPriority: tasks.filter((t: { status: string; priority: string }) => t.priority === 'high' && t.status !== 'done').length,
   }
 
   // Teilnehmer-Statistiken (Watt-Turnier)
   const participantStats = {
-    total: participants.filter((p) => p.eventDay === 'thursday').length,
-    paid: participants.filter((p) => p.eventDay === 'thursday' && p.paid).length,
-    unpaid: participants.filter((p) => p.eventDay === 'thursday' && !p.paid).length,
+    total: participants.filter((p: { eventDay: string; paid: boolean }) => p.eventDay === 'thursday').length,
+    paid: participants.filter((p: { eventDay: string; paid: boolean }) => p.eventDay === 'thursday' && p.paid).length,
+    unpaid: participants.filter((p: { eventDay: string; paid: boolean }) => p.eventDay === 'thursday' && !p.paid).length,
   }
 
   // Schicht-Statistiken
+  type ShiftType = { eventDay: string; requiredHelpers: number; assignments: unknown[]; station: unknown }
   const shiftStats = {
     total: shifts.length,
-    filled: shifts.filter((s) => s.assignments.length >= s.requiredHelpers).length,
-    understaffed: shifts.filter((s) => s.assignments.length < s.requiredHelpers).length,
-    totalAssignments: shifts.reduce((sum, s) => sum + s.assignments.length, 0),
-    totalRequired: shifts.reduce((sum, s) => sum + s.requiredHelpers, 0),
+    filled: shifts.filter((s: ShiftType) => s.assignments.length >= s.requiredHelpers).length,
+    understaffed: shifts.filter((s: ShiftType) => s.assignments.length < s.requiredHelpers).length,
+    totalAssignments: shifts.reduce((sum: number, s: ShiftType) => sum + s.assignments.length, 0),
+    totalRequired: shifts.reduce((sum: number, s: ShiftType) => sum + s.requiredHelpers, 0),
   }
 
   // Warnungen generieren
@@ -80,20 +81,22 @@ export async function GET() {
 
   // Tagesübersicht
   const eventDays = ['thursday', 'friday', 'saturday', 'sunday']
+  type TaskType = { status: string; priority: string; eventDay: string | null }
+  type ParticipantType = { eventDay: string; paid: boolean }
   const dayOverview = eventDays.map((day) => {
-    const dayShifts = shifts.filter((s) => s.eventDay === day)
-    const dayTasks = tasks.filter((t) => t.eventDay === day)
-    const dayParticipants = participants.filter((p) => p.eventDay === day)
+    const dayShifts = shifts.filter((s: ShiftType) => s.eventDay === day)
+    const dayTasks = tasks.filter((t: TaskType) => t.eventDay === day)
+    const dayParticipants = participants.filter((p: ParticipantType) => p.eventDay === day)
 
     return {
       day,
       shifts: {
         total: dayShifts.length,
-        filled: dayShifts.filter((s) => s.assignments.length >= s.requiredHelpers).length,
+        filled: dayShifts.filter((s: ShiftType) => s.assignments.length >= s.requiredHelpers).length,
       },
       tasks: {
         total: dayTasks.length,
-        done: dayTasks.filter((t) => t.status === 'done').length,
+        done: dayTasks.filter((t: TaskType) => t.status === 'done').length,
       },
       participants: dayParticipants.length,
     }
