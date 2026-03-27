@@ -1,5 +1,20 @@
+export const ALL_DAYS = ['monday', 'tuesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
+export type AllDay = typeof ALL_DAYS[number]
+
 export const EVENT_DAYS = ['thursday', 'friday', 'saturday', 'sunday'] as const
 export type EventDay = typeof EVENT_DAYS[number]
+
+export const SETUP_DAYS = ['monday', 'tuesday'] as const
+export type SetupDay = typeof SETUP_DAYS[number]
+
+export const ALL_DAY_LABELS: Record<AllDay, string> = {
+  monday: 'Montag (6. Juli)',
+  tuesday: 'Dienstag (7. Juli)',
+  thursday: 'Donnerstag (9. Juli)',
+  friday: 'Freitag (10. Juli)',
+  saturday: 'Samstag (11. Juli)',
+  sunday: 'Sonntag (12. Juli)',
+}
 
 export const EVENT_DAY_LABELS: Record<EventDay, string> = {
   thursday: 'Donnerstag',
@@ -8,11 +23,13 @@ export const EVENT_DAY_LABELS: Record<EventDay, string> = {
   sunday: 'Sonntag',
 }
 
-export const EVENT_DAY_EVENTS: Record<EventDay, string> = {
+export const EVENT_DAY_EVENTS: Record<string, string> = {
+  monday: 'Aufbau Innenzelt',
+  tuesday: 'Aufbau Zelt',
   thursday: 'Watt-Turnier',
-  friday: 'Disco-Party',
-  saturday: '(noch offen)',
-  sunday: '(noch offen)',
+  friday: 'Disco-Party mit DJ Josch',
+  saturday: 'Festzeltparty mit Drunter & Drüber',
+  sunday: 'Bayrischer Festsonntag',
 }
 
 export const PRODUCT_CATEGORIES = [
