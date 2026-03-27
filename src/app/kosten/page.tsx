@@ -174,24 +174,24 @@ export default function KostenPage() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-xl font-bold text-gray-900">💸 Kostenplanung</h2>
-          <p className="text-sm text-gray-500">Prognostizierte und tatsächliche Kosten</p>
+          <p className="text-sm text-gray-600">Prognostizierte und tatsächliche Kosten</p>
         </div>
         <button onClick={addCost} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">+ Position</button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg shadow border p-4 text-center"><div className="text-xs text-gray-500 font-medium">Prognostiziert</div><div className="text-2xl font-bold text-red-600">{fmtEur(totalProjected)}</div></div>
-        <div className="bg-white rounded-lg shadow border p-4 text-center"><div className="text-xs text-gray-500 font-medium">Tatsächlich</div><div className="text-2xl font-bold">{hasActuals ? fmtEur(totalActual) : "–"}</div></div>
-        {hasActuals && <div className={`rounded-lg shadow border p-4 text-center ${totalActual <= totalProjected ? "bg-green-50" : "bg-red-50"}`}><div className="text-xs text-gray-500 font-medium">Differenz</div><div className={`text-2xl font-bold ${totalActual <= totalProjected ? "text-green-600" : "text-red-600"}`}>{(totalProjected - totalActual >= 0 ? "+" : "")}{fmtEur(totalProjected - totalActual)}</div></div>}
+        <div className="bg-white rounded-lg shadow border p-4 text-center"><div className="text-xs text-gray-700 font-medium">Prognostiziert</div><div className="text-2xl font-bold text-red-600">{fmtEur(totalProjected)}</div></div>
+        <div className="bg-white rounded-lg shadow border p-4 text-center"><div className="text-xs text-gray-700 font-medium">Tatsächlich</div><div className="text-2xl font-bold text-gray-900">{hasActuals ? fmtEur(totalActual) : "–"}</div></div>
+        {hasActuals && <div className={`rounded-lg shadow border p-4 text-center ${totalActual <= totalProjected ? "bg-green-50" : "bg-red-50"}`}><div className="text-xs text-gray-700 font-medium">Differenz</div><div className={`text-2xl font-bold ${totalActual <= totalProjected ? "text-green-600" : "text-red-600"}`}>{(totalProjected - totalActual >= 0 ? "+" : "")}{fmtEur(totalProjected - totalActual)}</div></div>}
       </div>
 
       <div className="bg-white rounded-lg shadow border overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b"><tr>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Position</th>
-            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Prognose (€)</th>
-            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Tatsächlich (€)</th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Position</th>
+            <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Prognose (€)</th>
+            <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Tatsächlich (€)</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
             <th className="px-4 py-3 w-10"></th>
           </tr></thead>
           <tbody className="divide-y">
@@ -214,9 +214,9 @@ export default function KostenPage() {
           const total = items.reduce((s, c) => s + (c.projected || 0), 0)
           return (
             <div key={ps.id} className="bg-white rounded-lg shadow border p-3" style={{ borderLeftWidth: 4, borderLeftColor: ps.color }}>
-              <div className="text-xs font-semibold text-gray-600">{ps.icon} {ps.label}</div>
+              <div className="text-xs font-semibold text-gray-800">{ps.icon} {ps.label}</div>
               <div className="text-lg font-bold" style={{ color: ps.color }}>{fmtEur(total)}</div>
-              <div className="text-xs text-gray-400">{items.length} Position{items.length !== 1 ? "en" : ""}</div>
+              <div className="text-xs text-gray-600">{items.length} Position{items.length !== 1 ? "en" : ""}</div>
             </div>
           )
         })}

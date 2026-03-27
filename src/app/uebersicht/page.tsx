@@ -146,7 +146,7 @@ export default function UebersichtPage() {
         </div>
       </div>
 
-      <div><h2 className="text-xl font-bold text-gray-900">📊 Gesamtübersicht</h2><p className="text-sm text-gray-500">DJK Ottenhofen – 70-Jahr-Jubiläumsfest · 09.–12. Juli 2026</p></div>
+      <div><h2 className="text-xl font-bold text-gray-900">📊 Gesamtübersicht</h2><p className="text-sm text-gray-600">DJK Ottenhofen – 70-Jahr-Jubiläumsfest · 09.–12. Juli 2026</p></div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {scenarioTotals.map(st => {
@@ -155,9 +155,9 @@ export default function UebersichtPage() {
             <div key={st.scenario} className="bg-white rounded-lg shadow border p-4" style={{ borderTopWidth: 4, borderTopColor: meta.color }}>
               <div className="text-xs font-semibold mb-3" style={{ color: meta.color }}>{meta.label}</div>
               <div className="space-y-1 text-sm">
-                <div className="flex justify-between"><span className="text-gray-500">Einnahmen:</span><span className="font-bold">{fmtEur(st.revenue)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">+ Sponsoring:</span><span className="font-bold">{fmtEur(totalSponsoring)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">− Kosten:</span><span className="font-bold text-red-600">−{fmtEur(totalCosts)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-700">Einnahmen:</span><span className="font-bold">{fmtEur(st.revenue)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-700">+ Sponsoring:</span><span className="font-bold">{fmtEur(totalSponsoring)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-700">− Kosten:</span><span className="font-bold text-red-600">−{fmtEur(totalCosts)}</span></div>
                 <div className="border-t pt-1 flex justify-between font-bold" style={{ borderColor: meta.color + "30" }}>
                   <span style={{ color: meta.color }}>Gewinn/Verlust:</span>
                   <span className={`text-lg ${st.profit >= 0 ? "text-green-600" : "text-red-600"}`}>{st.profit >= 0 ? "+" : ""}{fmtEur(st.profit)}</span>
@@ -198,7 +198,7 @@ export default function UebersichtPage() {
       <div className="bg-white rounded-lg shadow border p-5">
         <h3 className="font-bold text-gray-900 mb-4">Detail nach Tag (Realistisch)</h3>
         <table className="w-full text-sm">
-          <thead><tr className="border-b-2 border-gray-200 text-xs text-gray-500"><th className="text-left py-2 px-2">Tag</th><th className="text-right py-2 px-2">Besucher</th><th className="text-right py-2 px-2">Getränke</th><th className="text-right py-2 px-2">Umsatz</th></tr></thead>
+          <thead><tr className="border-b-2 border-gray-200 text-xs text-gray-700 font-medium"><th className="text-left py-2 px-2">Tag</th><th className="text-right py-2 px-2">Besucher</th><th className="text-right py-2 px-2">Getränke</th><th className="text-right py-2 px-2">Umsatz</th></tr></thead>
           <tbody>
             {state.days.map(d => { const rev = calcDayRevenue(d.id, "realistic"); return (
               <tr key={d.id} className="border-b"><td className="py-2 px-2 font-semibold">{d.name.substring(0, 2)}. {d.date.substring(0, 5)}</td><td className="py-2 px-2 text-right">{fmtNum(rev.visitors)}</td><td className="py-2 px-2 text-right">{fmtNum(rev.drinks)}</td><td className="py-2 px-2 text-right font-bold">{fmtEur(rev.total)}</td></tr>
