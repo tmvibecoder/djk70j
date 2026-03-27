@@ -32,7 +32,8 @@ const navGroups: NavGroup[] = [
   {
     title: 'GETRÄNKE & LAGER',
     items: [
-      { href: '/getraenke', label: 'Produkte & Preise', icon: '🍺' },
+      { href: '/getraenke/katalog', label: 'Getränkeliste', icon: '🍺' },
+      { href: '/getraenke', label: 'Produkte & Preise', icon: '📊' },
       { href: '/bestand', label: 'Bestand & Inventur', icon: '📦' },
     ],
   },

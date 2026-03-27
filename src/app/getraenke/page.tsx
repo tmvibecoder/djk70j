@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, Button, Input, Select, Modal } from '@/components/ui'
 import { PRODUCT_CATEGORIES, EVENT_DAYS, EVENT_DAY_LABELS } from '@/types'
 
@@ -37,6 +38,16 @@ interface SalesEntry {
   updatedAt: string
 }
 
+const CATEGORY_ICONS: Record<string, string> = {
+  'Bier & Radler': '🍺',
+  'Softdrinks': '🥤',
+  'Schnaps & Shots': '🥃',
+  'Longdrinks': '🍹',
+  'Wein & Sekt': '🍷',
+  'Warme Speisen': '🌭',
+  'Snacks': '🥨',
+}
+
 export default function GetraenkePage() {
   const [products, setProducts] = useState<Product[]>([])
   const [estimates, setEstimates] = useState<Record<string, number>>({})
@@ -44,8 +55,6 @@ export default function GetraenkePage() {
   const [salesEntries, setSalesEntries] = useState<SalesEntry[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [filterCategory, setFilterCategory] = useState('')
   const [selectedDay, setSelectedDay] = useState<string>('thursday')
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null)
@@ -59,15 +68,6 @@ export default function GetraenkePage() {
     notes: '',
   })
   const [editingSalesEntry, setEditingSalesEntry] = useState<SalesEntry | null>(null)
-
-  const [form, setForm] = useState({
-    name: '',
-    purchasePrice: '',
-    salePrice: '',
-    unit: 'Flasche',
-    category: PRODUCT_CATEGORIES[0] as string,
-    isActive: true,
-  })
 
   const loadData = useCallback(async () => {
     const params = new URLSearchParams()
@@ -88,14 +88,12 @@ export default function GetraenkePage() {
     setProducts(productsData)
     setUsers(usersData)
 
-    // Estimates Map
     const estimatesMap: Record<string, number> = {}
     for (const est of estimatesData) {
       estimatesMap[est.productId] = est.estimatedQuantity
     }
     setEstimates(estimatesMap)
 
-    // Sales
     setSalesEntries(salesData.entries)
     setSalesTotals(salesData.totals)
 
@@ -178,53 +176,6 @@ export default function GetraenkePage() {
     loadData()
   }
 
-  // Product Functions
-  const openModal = (product?: Product) => {
-    if (product) {
-      setEditingProduct(product)
-      setForm({
-        name: product.name,
-        purchasePrice: product.purchasePrice.toString(),
-        salePrice: product.salePrice.toString(),
-        unit: product.unit,
-        category: product.category,
-        isActive: product.isActive,
-      })
-    } else {
-      setEditingProduct(null)
-      setForm({
-        name: '',
-        purchasePrice: '',
-        salePrice: '',
-        unit: 'Flasche',
-        category: PRODUCT_CATEGORIES[0],
-        isActive: true,
-      })
-    }
-    setIsModalOpen(true)
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const url = editingProduct ? `/api/products/${editingProduct.id}` : '/api/products'
-    const method = editingProduct ? 'PUT' : 'POST'
-
-    await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    })
-
-    setIsModalOpen(false)
-    loadData()
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Produkt wirklich löschen?')) return
-    await fetch(`/api/products/${id}`, { method: 'DELETE' })
-    loadData()
-  }
-
   // Calculations
   const calculateForecast = () => {
     let totalRevenue = 0
@@ -243,16 +194,8 @@ export default function GetraenkePage() {
     }
 
     return {
-      estimated: {
-        revenue: totalRevenue,
-        cost: totalCost,
-        profit: totalRevenue - totalCost,
-      },
-      actual: {
-        revenue: actualRevenue,
-        cost: actualCost,
-        profit: actualRevenue - actualCost,
-      },
+      estimated: { revenue: totalRevenue, cost: totalCost, profit: totalRevenue - totalCost },
+      actual: { revenue: actualRevenue, cost: actualCost, profit: actualRevenue - actualCost },
     }
   }
 
@@ -263,6 +206,9 @@ export default function GetraenkePage() {
     acc[product.category].push(product)
     return acc
   }, {} as Record<string, Product[]>)
+
+  const sortedCategories = [...PRODUCT_CATEGORIES].filter(cat => groupedProducts[cat]?.length > 0)
+  const extraCategories = Object.keys(groupedProducts).filter(cat => !(PRODUCT_CATEGORIES as readonly string[]).includes(cat))
 
   const categoryTotals = Object.entries(groupedProducts).reduce((acc, [category, prods]) => {
     let estRevenue = 0
@@ -298,17 +244,23 @@ export default function GetraenkePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      {/* Header */}
+      <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Getränke & Speisen</h1>
-          <p className="text-gray-600">Produktkatalog, Prognose und Verkaufsprotokoll</p>
+          <h1 className="text-2xl font-bold text-gray-900">Produkte & Preise</h1>
+          <p className="text-gray-600">Verkaufsplanung und Live-Tracking pro Tag</p>
         </div>
-        <Button onClick={() => openModal()}>+ Neues Produkt</Button>
+        <Link
+          href="/getraenke/katalog"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm shadow-sm"
+        >
+          <span className="text-lg">🍺</span>
+          Getränkeliste verwalten
+        </Link>
       </div>
 
-      {/* Zusammenfassung */}
+      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Prognose */}
         <Card className="bg-blue-50 border-blue-200">
           <CardHeader className="pb-2">
             <h3 className="font-semibold text-blue-800">Prognose (geplant)</h3>
@@ -316,22 +268,21 @@ export default function GetraenkePage() {
           <CardContent>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-xs text-blue-600">Umsatz</p>
-                <p className="text-xl font-bold text-blue-700">{forecast.estimated.revenue.toFixed(2)} €</p>
+                <p className="text-xs text-blue-700 font-medium">Umsatz</p>
+                <p className="text-xl font-bold text-blue-800">{forecast.estimated.revenue.toFixed(2)} €</p>
               </div>
               <div>
-                <p className="text-xs text-blue-600">Kosten</p>
-                <p className="text-xl font-bold text-blue-700">{forecast.estimated.cost.toFixed(2)} €</p>
+                <p className="text-xs text-blue-700 font-medium">Kosten</p>
+                <p className="text-xl font-bold text-blue-800">{forecast.estimated.cost.toFixed(2)} €</p>
               </div>
               <div>
-                <p className="text-xs text-blue-600">Gewinn</p>
-                <p className="text-xl font-bold text-blue-700">{forecast.estimated.profit.toFixed(2)} €</p>
+                <p className="text-xs text-blue-700 font-medium">Gewinn</p>
+                <p className="text-xl font-bold text-blue-800">{forecast.estimated.profit.toFixed(2)} €</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Tatsächlich verkauft */}
         <Card className="bg-green-50 border-green-200">
           <CardHeader className="pb-2">
             <h3 className="font-semibold text-green-800">Tatsächlich verkauft</h3>
@@ -339,27 +290,27 @@ export default function GetraenkePage() {
           <CardContent>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-xs text-green-600">Umsatz</p>
-                <p className="text-xl font-bold text-green-700">{forecast.actual.revenue.toFixed(2)} €</p>
+                <p className="text-xs text-green-700 font-medium">Umsatz</p>
+                <p className="text-xl font-bold text-green-800">{forecast.actual.revenue.toFixed(2)} €</p>
               </div>
               <div>
-                <p className="text-xs text-green-600">Kosten</p>
-                <p className="text-xl font-bold text-green-700">{forecast.actual.cost.toFixed(2)} €</p>
+                <p className="text-xs text-green-700 font-medium">Kosten</p>
+                <p className="text-xl font-bold text-green-800">{forecast.actual.cost.toFixed(2)} €</p>
               </div>
               <div>
-                <p className="text-xs text-green-600">Gewinn</p>
-                <p className="text-xl font-bold text-green-700">{forecast.actual.profit.toFixed(2)} €</p>
+                <p className="text-xs text-green-700 font-medium">Gewinn</p>
+                <p className="text-xl font-bold text-green-800">{forecast.actual.profit.toFixed(2)} €</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filter & Tag-Auswahl */}
+      {/* Day & Category Filter */}
       <Card>
         <CardContent className="py-4">
           <div className="flex gap-4 items-center flex-wrap">
-            <span className="text-sm font-medium text-gray-700">Tag:</span>
+            <span className="text-sm font-semibold text-gray-800">Tag:</span>
             <div className="flex gap-1">
               {EVENT_DAYS.map((day) => (
                 <Button
@@ -372,7 +323,7 @@ export default function GetraenkePage() {
                 </Button>
               ))}
             </div>
-            <span className="text-sm font-medium text-gray-700 ml-4">Kategorie:</span>
+            <span className="text-sm font-semibold text-gray-800 ml-4">Kategorie:</span>
             <Select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
@@ -386,245 +337,183 @@ export default function GetraenkePage() {
         </CardContent>
       </Card>
 
-      {/* Produktliste */}
-      {Object.entries(groupedProducts).map(([category, categoryProducts]) => (
-        <Card key={category}>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-900">{category}</h2>
-              {categoryTotals[category] && (
-                <div className="text-sm">
-                  <span className="text-blue-600">Prognose: {categoryTotals[category].estRevenue.toFixed(2)} €</span>
-                  <span className="mx-2">|</span>
-                  <span className="text-green-600">Verkauft: {categoryTotals[category].actRevenue.toFixed(2)} €</span>
-                </div>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase w-8"></th>
-                  <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                  <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">VK</th>
-                  <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Marge</th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase w-24">Erw. Verkauf</th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase w-24 bg-green-50">Verkauft</th>
-                  <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Erw. Umsatz</th>
-                  <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase bg-green-50">Ist-Umsatz</th>
-                  <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aktionen</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {categoryProducts.map((product) => {
-                  const margin = product.salePrice - product.purchasePrice
-                  const estQty = estimates[product.id] || 0
-                  const soldQty = salesTotals[product.id] || 0
-                  const expectedRevenue = estQty * product.salePrice
-                  const actualRevenue = soldQty * product.salePrice
-                  const isExpanded = expandedProduct === product.id
-                  const productEntries = salesEntries.filter((e) => e.productId === product.id)
+      {/* Product Table per Category */}
+      {[...sortedCategories, ...extraCategories].map((category) => {
+        const categoryProducts = groupedProducts[category] || []
+        if (categoryProducts.length === 0) return null
+        const icon = CATEGORY_ICONS[category] || '📦'
 
-                  return (
-                    <>
-                      <tr key={product.id} className={!product.isActive ? 'bg-gray-50 opacity-60' : ''}>
-                        <td className="px-3 py-3">
-                          <button
-                            onClick={() => setExpandedProduct(isExpanded ? null : product.id)}
-                            className="text-gray-400 hover:text-gray-600"
-                          >
-                            {isExpanded ? '▼' : '▶'}
-                          </button>
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap">
-                          <span className="font-medium text-gray-900">{product.name}</span>
-                          <span className="text-gray-400 text-sm ml-1">({product.unit})</span>
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-right font-medium text-gray-900">
-                          {product.salePrice.toFixed(2)} €
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-right text-green-600 text-sm">
-                          +{margin.toFixed(2)} €
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-center">
-                          <input
-                            type="number"
-                            min="0"
-                            value={estQty || ''}
-                            onChange={(e) => updateEstimate(product.id, parseInt(e.target.value) || 0)}
-                            className="w-16 px-2 py-1 text-center border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
-                            placeholder="0"
-                          />
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-center bg-green-50">
-                          <div className="flex items-center justify-center gap-1">
-                            <span className="font-bold text-green-700">{soldQty}</span>
+        return (
+          <Card key={category}>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{icon}</span>
+                  <h2 className="text-lg font-semibold text-gray-900">{category}</h2>
+                </div>
+                {categoryTotals[category] && (
+                  <div className="text-sm font-medium">
+                    <span className="text-blue-700">Prognose: {categoryTotals[category].estRevenue.toFixed(2)} €</span>
+                    <span className="mx-2 text-gray-400">|</span>
+                    <span className="text-green-700">Verkauft: {categoryTotals[category].actRevenue.toFixed(2)} €</span>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase w-8"></th>
+                    <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Name</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-gray-700 uppercase">VK-Preis</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Marge</th>
+                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase w-24">Erw. Menge</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Erw. Umsatz</th>
+                    <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase w-24 bg-green-50">Verkauft</th>
+                    <th className="px-3 py-3 text-right text-xs font-semibold text-gray-700 uppercase bg-green-50">Ist-Umsatz</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {categoryProducts.map((product) => {
+                    const margin = product.salePrice - product.purchasePrice
+                    const estQty = estimates[product.id] || 0
+                    const soldQty = salesTotals[product.id] || 0
+                    const expectedRevenue = estQty * product.salePrice
+                    const actualRevenue = soldQty * product.salePrice
+                    const isExpanded = expandedProduct === product.id
+                    const productEntries = salesEntries.filter((e) => e.productId === product.id)
+
+                    return (
+                      <>
+                        <tr key={product.id} className={!product.isActive ? 'bg-gray-50 opacity-60' : ''}>
+                          <td className="px-3 py-3">
                             <button
-                              onClick={() => openSalesModal(product.id)}
-                              className="text-green-600 hover:text-green-800 text-lg font-bold"
-                              title="Verkauf eintragen"
+                              onClick={() => setExpandedProduct(isExpanded ? null : product.id)}
+                              className="text-gray-400 hover:text-gray-600"
                             >
-                              +
+                              {isExpanded ? '▼' : '▶'}
                             </button>
-                          </div>
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-right text-blue-600">
-                          {expectedRevenue > 0 ? `${expectedRevenue.toFixed(2)} €` : '-'}
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-right text-green-600 font-medium bg-green-50">
-                          {actualRevenue > 0 ? `${actualRevenue.toFixed(2)} €` : '-'}
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-right">
-                          <Button variant="ghost" size="sm" onClick={() => openModal(product)}>
-                            Bearbeiten
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDelete(product.id)} className="text-red-600">
-                            ×
-                          </Button>
-                        </td>
-                      </tr>
-                      {/* Expandierte Zeile mit Verkaufsprotokoll */}
-                      {isExpanded && (
-                        <tr key={`${product.id}-expanded`}>
-                          <td colSpan={9} className="bg-gray-50 px-6 py-4">
-                            <div className="space-y-3">
-                              <div className="flex justify-between items-center">
-                                <h4 className="font-medium text-gray-700">Verkaufsprotokoll</h4>
-                                <Button size="sm" onClick={() => openSalesModal(product.id)}>
-                                  + Eintrag hinzufügen
-                                </Button>
-                              </div>
-                              {productEntries.length === 0 ? (
-                                <p className="text-gray-500 text-sm italic">Noch keine Einträge vorhanden</p>
-                              ) : (
-                                <table className="w-full text-sm">
-                                  <thead>
-                                    <tr className="text-left text-gray-500">
-                                      <th className="pb-2">Zeitpunkt</th>
-                                      <th className="pb-2">Menge</th>
-                                      <th className="pb-2">Erfasst von</th>
-                                      <th className="pb-2">Notiz</th>
-                                      <th className="pb-2 text-right">Aktionen</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-gray-200">
-                                    {productEntries.map((entry) => (
-                                      <tr key={entry.id}>
-                                        <td className="py-2 text-gray-600">{formatDateTime(entry.createdAt)}</td>
-                                        <td className="py-2 font-medium">{entry.quantity} {product.unit}</td>
-                                        <td className="py-2 text-gray-600">{entry.user?.name || '-'}</td>
-                                        <td className="py-2 text-gray-500">{entry.notes || '-'}</td>
-                                        <td className="py-2 text-right">
-                                          <button
-                                            onClick={() => openSalesModal(product.id, entry)}
-                                            className="text-blue-600 hover:text-blue-800 mr-2"
-                                          >
-                                            Bearbeiten
-                                          </button>
-                                          <button
-                                            onClick={() => deleteSalesEntry(entry.id)}
-                                            className="text-red-600 hover:text-red-800"
-                                          >
-                                            Löschen
-                                          </button>
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              )}
+                          </td>
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <span className="font-medium text-gray-900">{product.name}</span>
+                            <span className="text-gray-500 text-sm ml-1">({product.unit})</span>
+                          </td>
+                          <td className="px-3 py-3 whitespace-nowrap text-right font-semibold text-gray-900">
+                            {product.salePrice.toFixed(2)} €
+                          </td>
+                          <td className="px-3 py-3 whitespace-nowrap text-right text-green-600 text-sm font-medium">
+                            +{margin.toFixed(2)} €
+                          </td>
+                          <td className="px-3 py-3 whitespace-nowrap text-center">
+                            <input
+                              type="number"
+                              min="0"
+                              value={estQty || ''}
+                              onChange={(e) => updateEstimate(product.id, parseInt(e.target.value) || 0)}
+                              className="w-16 px-2 py-1 text-center border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                              placeholder="0"
+                            />
+                          </td>
+                          <td className="px-3 py-3 whitespace-nowrap text-right text-blue-700 font-medium">
+                            {expectedRevenue > 0 ? `${expectedRevenue.toFixed(2)} €` : '–'}
+                          </td>
+                          <td className="px-3 py-3 whitespace-nowrap text-center bg-green-50">
+                            <div className="flex items-center justify-center gap-1">
+                              <span className="font-bold text-green-700">{soldQty}</span>
+                              <button
+                                onClick={() => openSalesModal(product.id)}
+                                className="text-green-600 hover:text-green-800 text-lg font-bold"
+                                title="Verkauf eintragen"
+                              >
+                                +
+                              </button>
                             </div>
                           </td>
+                          <td className="px-3 py-3 whitespace-nowrap text-right text-green-700 font-semibold bg-green-50">
+                            {actualRevenue > 0 ? `${actualRevenue.toFixed(2)} €` : '–'}
+                          </td>
                         </tr>
-                      )}
-                    </>
-                  )
-                })}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
-      ))}
+                        {/* Expanded sales log */}
+                        {isExpanded && (
+                          <tr key={`${product.id}-expanded`}>
+                            <td colSpan={8} className="bg-gray-50 px-6 py-4">
+                              <div className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                  <h4 className="font-medium text-gray-800">Verkaufsprotokoll</h4>
+                                  <Button size="sm" onClick={() => openSalesModal(product.id)}>
+                                    + Eintrag hinzufügen
+                                  </Button>
+                                </div>
+                                {productEntries.length === 0 ? (
+                                  <p className="text-gray-500 text-sm italic">Noch keine Einträge vorhanden</p>
+                                ) : (
+                                  <table className="w-full text-sm">
+                                    <thead>
+                                      <tr className="text-left text-gray-700 font-medium">
+                                        <th className="pb-2">Zeitpunkt</th>
+                                        <th className="pb-2">Menge</th>
+                                        <th className="pb-2">Erfasst von</th>
+                                        <th className="pb-2">Notiz</th>
+                                        <th className="pb-2 text-right">Aktionen</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                      {productEntries.map((entry) => (
+                                        <tr key={entry.id}>
+                                          <td className="py-2 text-gray-700">{formatDateTime(entry.createdAt)}</td>
+                                          <td className="py-2 font-medium text-gray-900">{entry.quantity} {product.unit}</td>
+                                          <td className="py-2 text-gray-700">{entry.user?.name || '–'}</td>
+                                          <td className="py-2 text-gray-600">{entry.notes || '–'}</td>
+                                          <td className="py-2 text-right">
+                                            <button
+                                              onClick={() => openSalesModal(product.id, entry)}
+                                              className="text-blue-600 hover:text-blue-800 mr-2"
+                                            >
+                                              Bearbeiten
+                                            </button>
+                                            <button
+                                              onClick={() => deleteSalesEntry(entry.id)}
+                                              className="text-red-600 hover:text-red-800"
+                                            >
+                                              Löschen
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        )
+      })}
 
       {products.length === 0 && (
         <Card>
-          <CardContent className="py-12 text-center text-gray-500">
-            Noch keine Produkte vorhanden. Füge das erste Produkt hinzu!
+          <CardContent className="py-12 text-center">
+            <p className="text-gray-700 mb-2">Noch keine Produkte vorhanden.</p>
+            <p className="text-gray-500 text-sm mb-4">Lege zuerst Getränke in der Getränkeliste an.</p>
+            <Link
+              href="/getraenke/katalog"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm"
+            >
+              Zur Getränkeliste
+            </Link>
           </CardContent>
         </Card>
       )}
 
-      {/* Produkt Modal */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={editingProduct ? 'Produkt bearbeiten' : 'Neues Produkt'}
-      >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Name"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            required
-          />
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="EK-Preis (€)"
-              type="number"
-              step="0.01"
-              min="0"
-              value={form.purchasePrice}
-              onChange={(e) => setForm({ ...form, purchasePrice: e.target.value })}
-              required
-            />
-            <Input
-              label="VK-Preis (€)"
-              type="number"
-              step="0.01"
-              min="0"
-              value={form.salePrice}
-              onChange={(e) => setForm({ ...form, salePrice: e.target.value })}
-              required
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Einheit"
-              value={form.unit}
-              onChange={(e) => setForm({ ...form, unit: e.target.value })}
-              placeholder="z.B. Flasche, Kiste, Stück"
-              required
-            />
-            <Select
-              label="Kategorie"
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-              options={PRODUCT_CATEGORIES.map((cat) => ({ value: cat, label: cat }))}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="isActive"
-              checked={form.isActive}
-              onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
-              className="rounded border-gray-300"
-            />
-            <label htmlFor="isActive" className="text-sm text-gray-700">Produkt ist aktiv</label>
-          </div>
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
-              Abbrechen
-            </Button>
-            <Button type="submit">
-              {editingProduct ? 'Speichern' : 'Erstellen'}
-            </Button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Verkaufs-Eintrag Modal */}
+      {/* Sales Entry Modal */}
       <Modal
         isOpen={isSalesModalOpen}
         onClose={() => setIsSalesModalOpen(false)}
@@ -632,12 +521,12 @@ export default function GetraenkePage() {
       >
         <form onSubmit={handleSalesSubmit} className="space-y-4">
           <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-700">
               Produkt: <span className="font-medium text-gray-900">
                 {products.find((p) => p.id === salesForm.productId)?.name}
               </span>
             </p>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-700">
               Tag: <span className="font-medium text-gray-900">{EVENT_DAY_LABELS[selectedDay as keyof typeof EVENT_DAY_LABELS]}</span>
             </p>
           </div>
