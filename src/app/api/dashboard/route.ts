@@ -79,8 +79,8 @@ export async function GET() {
     })
   }
 
-  // Tagesübersicht
-  const eventDays = ['thursday', 'friday', 'saturday', 'sunday']
+  // Tagesübersicht (inkl. Aufbautage)
+  const eventDays = ['monday', 'tuesday', 'thursday', 'friday', 'saturday', 'sunday']
   type TaskType = { status: string; priority: string; eventDay: string | null }
   type ParticipantType = { eventDay: string; paid: boolean }
   const dayOverview = eventDays.map((day) => {
