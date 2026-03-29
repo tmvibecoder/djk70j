@@ -97,12 +97,12 @@ type AppState = ReturnType<typeof getInitialState>
 function NumInput({ value, onChange, placeholder, min = 0, step = 1, prefix, suffix }: { value: number|null|undefined; onChange: (v: number|null) => void; placeholder?: string; min?: number; step?: number; prefix?: string; suffix?: string }) {
   return (
     <div className="relative">
-      {prefix && <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">{prefix}</span>}
+      {prefix && <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-600 text-sm pointer-events-none">{prefix}</span>}
       <input type="number" value={value === null || value === undefined ? "" : value}
         onChange={e => onChange(e.target.value === "" ? null : Number(e.target.value))}
         placeholder={placeholder} min={min} step={step}
         className={`w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${prefix ? "pl-7" : ""} ${suffix ? "pr-7" : ""}`} />
-      {suffix && <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">{suffix}</span>}
+      {suffix && <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-600 text-sm pointer-events-none">{suffix}</span>}
     </div>
   )
 }
@@ -166,12 +166,11 @@ export default function KostenPage() {
         <div className="flex justify-between items-start mb-2">
           <div>
             <p className="text-yellow-500 text-xs font-semibold tracking-widest uppercase">DJK Ottenhofen e.V.</p>
-            <h1 className="text-2xl font-bold text-white">💸 Kostenplanung</h1>
-            <p className="text-gray-400 text-sm">Prognostizierte und tatsächliche Kosten</p>
+            <h1 className="text-2xl font-bold text-white">Kostenplanung</h1>
           </div>
           <div className="flex gap-2">
-            <button onClick={saveState} className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${saving ? "bg-yellow-500 text-black border-yellow-500" : "border-yellow-500 text-yellow-500 hover:bg-yellow-500 hover:text-black"}`}>
-              {saving ? "✓ Gespeichert" : "💾 Speichern"}
+            <button onClick={saveState} className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${saving ? "bg-green-500 text-white border-green-500" : "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"}`}>
+              {saving ? "✓ Gespeichert" : "Speichern"}
             </button>
             <button onClick={resetAll} className="px-3 py-1.5 rounded-lg border border-gray-600 text-gray-400 text-sm hover:bg-gray-800">↺</button>
           </div>
@@ -179,10 +178,7 @@ export default function KostenPage() {
       </div>
 
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">💸 Kostenplanung</h2>
-          <p className="text-sm text-gray-600">Prognostizierte und tatsächliche Kosten</p>
-        </div>
+        <h2 className="text-xl font-bold text-gray-900">Kostenplanung</h2>
         <button onClick={addCost} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shrink-0 self-start sm:self-auto">+ Position</button>
       </div>
 
@@ -195,24 +191,27 @@ export default function KostenPage() {
       <div className="bg-white rounded-lg shadow border overflow-x-auto">
         <table className="w-full text-sm min-w-[640px]">
           <thead className="bg-gray-50 border-b"><tr>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Position</th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Kostenart</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase w-[35%]">Position</th>
             <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Prognose (€)</th>
             <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Tatsächlich (€)</th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Zahlung</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-indigo-600 uppercase">Fälligkeit</th>
+            <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase w-14">Art</th>
             <th className="px-4 py-3 w-10"></th>
           </tr></thead>
           <tbody className="divide-y">
-            {state.costs.map(c => (
-              <tr key={c.id} className="hover:bg-gray-50">
-                <td className="px-4 py-2"><input value={c.name} onChange={e => setState(s => ({ ...s, costs: s.costs.map(cc => cc.id === c.id ? { ...cc, name: e.target.value } : cc) }))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" placeholder="Kostenposition" /></td>
-                <td className="px-4 py-2"><select value={(c as any).costType || "fix"} onChange={e => setState(s => ({ ...s, costs: s.costs.map(cc => cc.id === c.id ? { ...cc, costType: e.target.value } : cc) }))} className="border border-gray-300 rounded px-2 py-1 text-sm">{COST_TYPES.map(ct => <option key={ct.id} value={ct.id}>{ct.icon} {ct.label}</option>)}</select></td>
-                <td className="px-4 py-2"><NumInput value={c.projected} onChange={v => setState(s => ({ ...s, costs: s.costs.map(cc => cc.id === c.id ? { ...cc, projected: v ?? 0 } : cc) }))} prefix="€" step={10} /></td>
-                <td className="px-4 py-2"><NumInput value={c.actual} onChange={v => setState(s => ({ ...s, costs: s.costs.map(cc => cc.id === c.id ? { ...cc, actual: v } : cc) }))} prefix="€" step={10} placeholder="–" /></td>
-                <td className="px-4 py-2"><select value={c.status} onChange={e => setState(s => ({ ...s, costs: s.costs.map(cc => cc.id === c.id ? { ...cc, status: e.target.value } : cc) }))} className="border border-gray-300 rounded px-2 py-1 text-sm">{PAYMENT_STATUS.map(ps => <option key={ps.id} value={ps.id}>{ps.icon} {ps.label}</option>)}</select></td>
-                <td className="px-4 py-2"><button onClick={() => setState(s => ({ ...s, costs: s.costs.filter(cc => cc.id !== c.id) }))} className="text-red-500 hover:text-red-700">✕</button></td>
-              </tr>
-            ))}
+            {state.costs.map(c => {
+              const costType = COST_TYPES.find(ct => ct.id === ((c as any).costType || "fix"))
+              return (
+                <tr key={c.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-2"><input value={c.name} onChange={e => setState(s => ({ ...s, costs: s.costs.map(cc => cc.id === c.id ? { ...cc, name: e.target.value } : cc) }))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm text-gray-900" placeholder="Kostenposition" /></td>
+                  <td className="px-4 py-2"><NumInput value={c.projected} onChange={v => setState(s => ({ ...s, costs: s.costs.map(cc => cc.id === c.id ? { ...cc, projected: v ?? 0 } : cc) }))} prefix="€" step={10} /></td>
+                  <td className="px-4 py-2"><NumInput value={c.actual} onChange={v => setState(s => ({ ...s, costs: s.costs.map(cc => cc.id === c.id ? { ...cc, actual: v } : cc) }))} prefix="€" step={10} placeholder="–" /></td>
+                  <td className="px-4 py-2"><select value={c.status} onChange={e => setState(s => ({ ...s, costs: s.costs.map(cc => cc.id === c.id ? { ...cc, status: e.target.value } : cc) }))} className="border border-indigo-200 bg-indigo-50 text-indigo-700 rounded px-2 py-1 text-sm">{PAYMENT_STATUS.map(ps => <option key={ps.id} value={ps.id}>{ps.icon} {ps.label}</option>)}</select></td>
+                  <td className="px-4 py-2 text-center"><select value={(c as any).costType || "fix"} onChange={e => setState(s => ({ ...s, costs: s.costs.map(cc => cc.id === c.id ? { ...cc, costType: e.target.value } : cc) }))} className="border border-gray-300 rounded px-1 py-1 text-base w-10 text-center appearance-none cursor-pointer" title={costType?.label}>{COST_TYPES.map(ct => <option key={ct.id} value={ct.id}>{ct.icon}</option>)}</select></td>
+                  <td className="px-4 py-2"><button onClick={() => setState(s => ({ ...s, costs: s.costs.filter(cc => cc.id !== c.id) }))} className="text-red-500 hover:text-red-700">✕</button></td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>

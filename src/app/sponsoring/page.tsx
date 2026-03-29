@@ -83,12 +83,12 @@ type AppState = ReturnType<typeof getInitialState>
 function NumInput({ value, onChange, placeholder, min = 0, step = 1, prefix, suffix }: { value: number|null|undefined; onChange: (v: number|null) => void; placeholder?: string; min?: number; step?: number; prefix?: string; suffix?: string }) {
   return (
     <div className="relative">
-      {prefix && <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">{prefix}</span>}
+      {prefix && <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-600 text-sm pointer-events-none">{prefix}</span>}
       <input type="number" value={value === null || value === undefined ? "" : value}
         onChange={e => onChange(e.target.value === "" ? null : Number(e.target.value))}
         placeholder={placeholder} min={min} step={step}
         className={`w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${prefix ? "pl-7" : ""} ${suffix ? "pr-7" : ""}`} />
-      {suffix && <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">{suffix}</span>}
+      {suffix && <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-600 text-sm pointer-events-none">{suffix}</span>}
     </div>
   )
 }
@@ -152,11 +152,10 @@ export default function SponsoringPage() {
           <div>
             <p className="text-yellow-500 text-xs font-semibold tracking-widest uppercase">DJK Ottenhofen e.V.</p>
             <h1 className="text-2xl font-bold text-white">🤝 Sponsoring & Zuschüsse</h1>
-            <p className="text-gray-400 text-sm">Spenden und Sponsorengelder verwalten</p>
           </div>
           <div className="flex gap-2">
-            <button onClick={saveState} className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${saving ? "bg-yellow-500 text-black border-yellow-500" : "border-yellow-500 text-yellow-500 hover:bg-yellow-500 hover:text-black"}`}>
-              {saving ? "✓ Gespeichert" : "💾 Speichern"}
+            <button onClick={saveState} className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${saving ? "bg-green-500 text-white border-green-500" : "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"}`}>
+              {saving ? "✓ Gespeichert" : "Speichern"}
             </button>
             <button onClick={resetAll} className="px-3 py-1.5 rounded-lg border border-gray-600 text-gray-400 text-sm hover:bg-gray-800">↺</button>
           </div>
@@ -166,7 +165,6 @@ export default function SponsoringPage() {
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div>
           <h2 className="text-xl font-bold text-gray-900">🤝 Sponsoring & Zuschüsse</h2>
-          <p className="text-sm text-gray-600">Spenden und Sponsorengelder</p>
         </div>
         <button onClick={addSponsor} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shrink-0 self-start sm:self-auto">+ Sponsor</button>
       </div>
