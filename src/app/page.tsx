@@ -140,6 +140,7 @@ function calcDayScenarioRevenue(state: PlanerState, dayId: string, scenario: str
 export default function Dashboard() {
   const [planer, setPlaner] = useState<PlanerState | null>(null)
   const [loading, setLoading] = useState(true)
+  const [scenariosOpen, setScenariosOpen] = useState(false)
 
   useEffect(() => {
     // Load localStorage planer state
@@ -243,130 +244,120 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Szenario-Ergebnisse (Die Kernfrage) ────────────────────────── */}
-      {scenarioResults.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Erwartetes Ergebnis</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {scenarioResults.map(sr => {
-              const isRealistic = sr.scenario === 'realistic'
-              return (
-                <div
-                  key={sr.scenario}
-                  className={`rounded-xl border-2 p-5 transition-shadow ${isRealistic ? 'border-blue-300 shadow-lg shadow-blue-100' : 'border-gray-200'} ${sr.bg}`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-semibold" style={{ color: sr.color }}>{sr.label}</span>
-                    {isRealistic && <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">Empfohlen</span>}
-                  </div>
-                  <div className={`text-3xl font-bold mb-2 ${sr.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {sr.profit >= 0 ? '+' : ''}{fmtEur(sr.profit)}
-                  </div>
-                  <div className="space-y-1 text-sm text-gray-700">
-                    <div className="flex justify-between">
-                      <span>Getränke-Umsatz</span>
-                      <span className="font-medium">{fmtEur(sr.drinkRevenue)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Eintrittsgelder</span>
-                      <span className="font-medium">{fmtEur(sr.entryRevenue)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Sponsoring</span>
-                      <span className="font-medium">{fmtEur(sr.sponsoring)}</span>
-                    </div>
-                    <div className="border-t pt-1 mt-1 flex justify-between font-semibold text-gray-900">
-                      <span>Einnahmen gesamt</span>
-                      <span>{fmtEur(sr.drinkRevenue + sr.entryRevenue + sr.sponsoring)}</span>
-                    </div>
-                    <div className="flex justify-between text-red-600">
-                      <span>Kosten gesamt</span>
-                      <span className="font-medium">−{fmtEur(sr.totalCosts)}</span>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
+      {/* ── 1. Schnellzugriff ─────────────────────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <h3 className="font-semibold text-gray-900">Schnellzugriff</h3>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {[
+              { href: '/getraenke/katalog', icon: '🍺', label: 'Getränkeliste' },
+              { href: '/getraenke', icon: '📊', label: 'Produkte & Preise' },
+              { href: '/prognose', icon: '🔮', label: 'Prognose-Details' },
+              { href: '/kosten', icon: '💸', label: 'Kostenplanung' },
+              { href: '/sponsoring', icon: '🤝', label: 'Sponsoring' },
+              { href: '/uebersicht', icon: '📊', label: 'Finanzübersicht' },
+            ].map(link => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors text-sm"
+              >
+                <span>{link.icon}</span>
+                <span className="font-medium text-gray-800">{link.label}</span>
+              </Link>
+            ))}
           </div>
-        </div>
-      )}
+        </CardContent>
+      </Card>
 
-      {/* ── Einnahmen vs. Ausgaben (realistisch) ──────────────────────── */}
-      {realisticResult && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Einnahmen */}
-          <Card className="border-green-200">
-            <CardHeader className="pb-2">
-              <h3 className="font-semibold text-green-800">Einnahmen (realistisch)</h3>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🍺</span>
-                    <span className="text-gray-800 font-medium">Getränke-Umsatz</span>
-                  </div>
-                  <span className="font-bold text-gray-900">{fmtEur(realisticResult.drinkRevenue)}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🎟️</span>
-                    <span className="text-gray-800 font-medium">Eintrittsgelder</span>
-                  </div>
-                  <span className="font-bold text-gray-900">{fmtEur(realisticResult.entryRevenue)}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🤝</span>
-                    <span className="text-gray-800 font-medium">Sponsoring</span>
-                  </div>
-                  <span className="font-bold text-gray-900">{fmtEur(realisticResult.sponsoring)}</span>
-                </div>
-                <div className="border-t-2 border-green-200 pt-2 flex justify-between">
-                  <span className="font-bold text-green-800">Gesamt Einnahmen</span>
-                  <span className="font-bold text-green-700 text-lg">{fmtEur(realisticResult.drinkRevenue + realisticResult.entryRevenue + realisticResult.sponsoring)}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Ausgaben */}
-          <Card className="border-red-200">
-            <CardHeader className="pb-2">
-              <h3 className="font-semibold text-red-800">Ausgaben</h3>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {costTypeGroups.map(g => {
-                  const meta = COST_TYPE_META[g.type]
-                  return (
-                    <div key={g.type} className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{meta.icon}</span>
-                        <span className="text-gray-800 font-medium">{meta.label}</span>
-                      </div>
-                      <span className="font-bold text-gray-900">{fmtEur(g.total)}</span>
+      {/* ── 2. Kostenübersicht & Sponsoring ───────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900">Kostenübersicht</h3>
+              <Link href="/kosten" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                Details →
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {costTypeGroups.map(g => {
+                const meta = COST_TYPE_META[g.type]
+                const pct = totalCosts > 0 ? (g.total / totalCosts) * 100 : 0
+                return (
+                  <div key={g.type}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="font-medium text-gray-800">{meta.icon} {meta.label}</span>
+                      <span className="font-bold" style={{ color: meta.color }}>{fmtEur(g.total)}</span>
                     </div>
-                  )
-                })}
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🍺</span>
-                    <span className="text-gray-800 font-medium">Wareneinsatz (Getränke)</span>
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: meta.color }} />
+                    </div>
                   </div>
-                  <span className="font-bold text-gray-900">{fmtEur(realisticResult.drinkCost)}</span>
+                )
+              })}
+
+              <div className="border-t pt-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Bereits bezahlt</span>
+                  <span className="font-medium text-green-600">{fmtEur(totalCostsPaid)}</span>
                 </div>
-                <div className="border-t-2 border-red-200 pt-2 flex justify-between">
-                  <span className="font-bold text-red-800">Gesamt Ausgaben</span>
-                  <span className="font-bold text-red-700 text-lg">{fmtEur(realisticResult.totalCosts)}</span>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Noch offen</span>
+                  <span className="font-medium text-red-600">{fmtEur(totalCostsOpen)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-gray-900 border-t pt-2">
+                  <span>Gesamt</span>
+                  <span>{fmtEur(totalCosts)}</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* ── Umsatz pro Tag (realistisch) ──────────────────────────────── */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900">Sponsoring</h3>
+              <Link href="/sponsoring" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                Details →
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">Zugesagt</span>
+                <span className="font-bold text-gray-900">{fmtEur(totalSponsoring)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">Erhalten</span>
+                <span className="font-bold text-green-600">{fmtEur(totalSponsoringReceived)}</span>
+              </div>
+              {totalSponsoring > 0 && (
+                <div>
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>Fortschritt</span>
+                    <span>{totalSponsoring > 0 ? Math.round((totalSponsoringReceived / totalSponsoring) * 100) : 0}%</span>
+                  </div>
+                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-green-500 rounded-full transition-all"
+                      style={{ width: `${totalSponsoring > 0 ? (totalSponsoringReceived / totalSponsoring) * 100 : 0}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── 3. Umsatz pro Tag (realistisch) ──────────────────────────── */}
       {dayBreakdown.length > 0 && (
         <Card>
           <CardHeader>
@@ -409,125 +400,154 @@ export default function Dashboard() {
         </Card>
       )}
 
-      {/* ── Kosten & Sponsoring Details ───────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Kostenübersicht */}
+      {/* ── 4. Erwartetes Ergebnis (einklappbar) ─────────────────────── */}
+      {scenarioResults.length > 0 && (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900">Kostenübersicht</h3>
-              <Link href="/kosten" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                Details →
-              </Link>
-            </div>
+            <button
+              onClick={() => setScenariosOpen(!scenariosOpen)}
+              className="w-full flex items-center justify-between"
+            >
+              <h3 className="font-semibold text-gray-900">Erwartetes Ergebnis</h3>
+              <div className="flex items-center gap-3">
+                <div className="flex gap-4">
+                  {scenarioResults.map(sr => (
+                    <div key={sr.scenario} className="text-right">
+                      <div className="text-xs font-medium" style={{ color: sr.color }}>{sr.label}</div>
+                      <div className={`text-sm font-bold ${sr.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {sr.profit >= 0 ? '+' : ''}{fmtEur(sr.profit)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <span className={`text-gray-400 transition-transform ${scenariosOpen ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </div>
+            </button>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {/* Cost type bars */}
-              {costTypeGroups.map(g => {
-                const meta = COST_TYPE_META[g.type]
-                const pct = totalCosts > 0 ? (g.total / totalCosts) * 100 : 0
-                return (
-                  <div key={g.type}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="font-medium text-gray-800">{meta.icon} {meta.label}</span>
-                      <span className="font-bold" style={{ color: meta.color }}>{fmtEur(g.total)}</span>
+          {scenariosOpen && (
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {scenarioResults.map(sr => {
+                  const isRealistic = sr.scenario === 'realistic'
+                  return (
+                    <div
+                      key={sr.scenario}
+                      className={`rounded-xl border-2 p-5 transition-shadow ${isRealistic ? 'border-blue-300 shadow-lg shadow-blue-100' : 'border-gray-200'} ${sr.bg}`}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-semibold" style={{ color: sr.color }}>{sr.label}</span>
+                        {isRealistic && <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">Empfohlen</span>}
+                      </div>
+                      <div className={`text-3xl font-bold mb-2 ${sr.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {sr.profit >= 0 ? '+' : ''}{fmtEur(sr.profit)}
+                      </div>
+                      <div className="space-y-1 text-sm text-gray-700">
+                        <div className="flex justify-between">
+                          <span>Getränke-Umsatz</span>
+                          <span className="font-medium">{fmtEur(sr.drinkRevenue)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Eintrittsgelder</span>
+                          <span className="font-medium">{fmtEur(sr.entryRevenue)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Sponsoring</span>
+                          <span className="font-medium">{fmtEur(sr.sponsoring)}</span>
+                        </div>
+                        <div className="border-t pt-1 mt-1 flex justify-between font-semibold text-gray-900">
+                          <span>Einnahmen gesamt</span>
+                          <span>{fmtEur(sr.drinkRevenue + sr.entryRevenue + sr.sponsoring)}</span>
+                        </div>
+                        <div className="flex justify-between text-red-600">
+                          <span>Kosten gesamt</span>
+                          <span className="font-medium">−{fmtEur(sr.totalCosts)}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: meta.color }} />
-                    </div>
-                  </div>
-                )
-              })}
-
-              <div className="border-t pt-3 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Bereits bezahlt</span>
-                  <span className="font-medium text-green-600">{fmtEur(totalCostsPaid)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Noch offen</span>
-                  <span className="font-medium text-red-600">{fmtEur(totalCostsOpen)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-gray-900 border-t pt-2">
-                  <span>Gesamt</span>
-                  <span>{fmtEur(totalCosts)}</span>
-                </div>
+                  )
+                })}
               </div>
-            </div>
-          </CardContent>
+
+              {/* Einnahmen vs. Ausgaben (realistisch) */}
+              {realisticResult && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                  <Card className="border-green-200">
+                    <CardHeader className="pb-2">
+                      <h3 className="font-semibold text-green-800">Einnahmen (realistisch)</h3>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">🍺</span>
+                            <span className="text-gray-800 font-medium">Getränke-Umsatz</span>
+                          </div>
+                          <span className="font-bold text-gray-900">{fmtEur(realisticResult.drinkRevenue)}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">🎟️</span>
+                            <span className="text-gray-800 font-medium">Eintrittsgelder</span>
+                          </div>
+                          <span className="font-bold text-gray-900">{fmtEur(realisticResult.entryRevenue)}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">🤝</span>
+                            <span className="text-gray-800 font-medium">Sponsoring</span>
+                          </div>
+                          <span className="font-bold text-gray-900">{fmtEur(realisticResult.sponsoring)}</span>
+                        </div>
+                        <div className="border-t-2 border-green-200 pt-2 flex justify-between">
+                          <span className="font-bold text-green-800">Gesamt Einnahmen</span>
+                          <span className="font-bold text-green-700 text-lg">{fmtEur(realisticResult.drinkRevenue + realisticResult.entryRevenue + realisticResult.sponsoring)}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-red-200">
+                    <CardHeader className="pb-2">
+                      <h3 className="font-semibold text-red-800">Ausgaben</h3>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {costTypeGroups.map(g => {
+                          const meta = COST_TYPE_META[g.type]
+                          return (
+                            <div key={g.type} className="flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">{meta.icon}</span>
+                                <span className="text-gray-800 font-medium">{meta.label}</span>
+                              </div>
+                              <span className="font-bold text-gray-900">{fmtEur(g.total)}</span>
+                            </div>
+                          )
+                        })}
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">🍺</span>
+                            <span className="text-gray-800 font-medium">Wareneinsatz (Getränke)</span>
+                          </div>
+                          <span className="font-bold text-gray-900">{fmtEur(realisticResult.drinkCost)}</span>
+                        </div>
+                        <div className="border-t-2 border-red-200 pt-2 flex justify-between">
+                          <span className="font-bold text-red-800">Gesamt Ausgaben</span>
+                          <span className="font-bold text-red-700 text-lg">{fmtEur(realisticResult.totalCosts)}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </CardContent>
+          )}
         </Card>
+      )}
 
-        {/* Sponsoring + Quick Links */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Sponsoring</h3>
-                <Link href="/sponsoring" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                  Details →
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-700">Zugesagt</span>
-                  <span className="font-bold text-gray-900">{fmtEur(totalSponsoring)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-700">Erhalten</span>
-                  <span className="font-bold text-green-600">{fmtEur(totalSponsoringReceived)}</span>
-                </div>
-                {totalSponsoring > 0 && (
-                  <div>
-                    <div className="flex justify-between text-xs text-gray-500 mb-1">
-                      <span>Fortschritt</span>
-                      <span>{totalSponsoring > 0 ? Math.round((totalSponsoringReceived / totalSponsoring) * 100) : 0}%</span>
-                    </div>
-                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-green-500 rounded-full transition-all"
-                        style={{ width: `${totalSponsoring > 0 ? (totalSponsoringReceived / totalSponsoring) * 100 : 0}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Links */}
-          <Card>
-            <CardHeader>
-              <h3 className="font-semibold text-gray-900">Schnellzugriff</h3>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { href: '/getraenke/katalog', icon: '🍺', label: 'Getränkeliste' },
-                  { href: '/getraenke', icon: '📊', label: 'Produkte & Preise' },
-                  { href: '/prognose', icon: '🔮', label: 'Prognose-Details' },
-                  { href: '/kosten', icon: '💸', label: 'Kostenplanung' },
-                  { href: '/sponsoring', icon: '🤝', label: 'Sponsoring' },
-                  { href: '/uebersicht', icon: '📊', label: 'Finanzübersicht' },
-                ].map(link => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors text-sm"
-                  >
-                    <span>{link.icon}</span>
-                    <span className="font-medium text-gray-800">{link.label}</span>
-                  </Link>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* ── Hinweise ──────────────────────────────────────────────────── */}
+      {/* ── 5. Hinweise ──────────────────────────────────────────────── */}
       {warnings.length > 0 && (
         <Card>
           <CardHeader>
