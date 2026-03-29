@@ -384,9 +384,9 @@ async function main() {
 
   const products = await Promise.all([
     // Bier & Radler
-    prisma.product.create({ data: { name: 'Halbe (0,5l)', purchasePrice: 1.10, salePrice: 3.50, unit: 'Glas', category: 'Bier & Radler' } }),
-    prisma.product.create({ data: { name: 'Radler Maß (1l)', purchasePrice: 1.80, salePrice: 6.50, unit: 'Maß', category: 'Bier & Radler' } }),
-    prisma.product.create({ data: { name: 'Weißbier (0,5l)', purchasePrice: 1.00, salePrice: 3.50, unit: 'Glas', category: 'Bier & Radler' } }),
+    prisma.product.create({ data: { name: 'Halbe (0,5l)', purchasePrice: 0.80, salePrice: 3.50, unit: 'Glas', category: 'Bier & Radler' } }),
+    prisma.product.create({ data: { name: 'Radler (0,5l)', purchasePrice: 0.80, salePrice: 3.50, unit: 'Glas', category: 'Bier & Radler' } }),
+    prisma.product.create({ data: { name: 'Weißbier (0,5l)', purchasePrice: 0.80, salePrice: 3.50, unit: 'Glas', category: 'Bier & Radler' } }),
     // Softdrinks
     prisma.product.create({ data: { name: 'Spezi/Cola (0,5l)', purchasePrice: 0.50, salePrice: 3.00, unit: 'Flasche', category: 'Softdrinks' } }),
     prisma.product.create({ data: { name: 'Apfelschorle (0,5l)', purchasePrice: 0.45, salePrice: 3.00, unit: 'Flasche', category: 'Softdrinks' } }),
