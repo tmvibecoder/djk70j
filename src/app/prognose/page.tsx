@@ -27,14 +27,14 @@ const SCENARIO_LABELS: Record<string, { label: string; color: string; bg: string
 }
 
 const DEFAULT_COSTS = [
-  { id: 1, name: "Zeltmiete", projected: 4500, actual: null as number|null, status: "before" },
-  { id: 2, name: "DJ Josch (Freitag)", projected: 800, actual: null as number|null, status: "after" },
-  { id: 3, name: "Band Drunter & Drüber (Samstag)", projected: 2500, actual: null as number|null, status: "after" },
-  { id: 4, name: "Strom", projected: 600, actual: null as number|null, status: "after" },
-  { id: 5, name: "Sanitäranlagen", projected: 1200, actual: null as number|null, status: "before" },
-  { id: 6, name: "Werbung & Flyer", projected: 400, actual: null as number|null, status: "paid" },
-  { id: 7, name: "GEMA-Gebühren", projected: 350, actual: null as number|null, status: "before" },
-  { id: 8, name: "Security", projected: 1800, actual: null as number|null, status: "after" },
+  { id: 1, name: "Zeltmiete", projected: 4500, actual: null as number|null, status: "before", costType: "fix" },
+  { id: 2, name: "DJ Josch (Freitag)", projected: 800, actual: null as number|null, status: "after", costType: "fix" },
+  { id: 3, name: "Band Drunter & Drüber (Samstag)", projected: 2500, actual: null as number|null, status: "after", costType: "fix" },
+  { id: 4, name: "Strom", projected: 600, actual: null as number|null, status: "after", costType: "unklar" },
+  { id: 5, name: "Sanitäranlagen", projected: 1200, actual: null as number|null, status: "before", costType: "fix" },
+  { id: 6, name: "Werbung & Flyer", projected: 400, actual: null as number|null, status: "paid", costType: "fix" },
+  { id: 7, name: "GEMA-Gebühren", projected: 350, actual: null as number|null, status: "before", costType: "fix" },
+  { id: 8, name: "Security", projected: 1800, actual: null as number|null, status: "after", costType: "unklar" },
 ]
 
 const DEFAULT_SCENARIOS: Record<string, Record<string, {visitors:number;drinksPerPerson:number;drinkSplit:Record<string,number>}>> = {

@@ -10,15 +10,22 @@ const PAYMENT_STATUS = [
   { id: "paid", label: "Bereits bezahlt", color: "#16A34A", icon: "✅" },
 ]
 
+const COST_TYPES = [
+  { id: "fix", label: "Fixkosten", color: "#DC2626", icon: "📌", description: "Bekannte, feste Beträge" },
+  { id: "variabel_getraenke", label: "Variabel (Getränke)", color: "#D97706", icon: "🍺", description: "Abhängig vom Getränkeverbrauch" },
+  { id: "variabel_sonstig", label: "Variabel (Sonstiges)", color: "#2563EB", icon: "📦", description: "Essen, Material, etc." },
+  { id: "unklar", label: "Unklar / Geschätzt", color: "#7C3AED", icon: "❓", description: "Betrag noch nicht final" },
+]
+
 const DEFAULT_COSTS = [
-  { id: 1, name: "Zeltmiete", projected: 4500, actual: null as number|null, status: "before" },
-  { id: 2, name: "DJ Josch (Freitag)", projected: 800, actual: null as number|null, status: "after" },
-  { id: 3, name: "Band Drunter & Drüber (Samstag)", projected: 2500, actual: null as number|null, status: "after" },
-  { id: 4, name: "Strom", projected: 600, actual: null as number|null, status: "after" },
-  { id: 5, name: "Sanitäranlagen", projected: 1200, actual: null as number|null, status: "before" },
-  { id: 6, name: "Werbung & Flyer", projected: 400, actual: null as number|null, status: "paid" },
-  { id: 7, name: "GEMA-Gebühren", projected: 350, actual: null as number|null, status: "before" },
-  { id: 8, name: "Security", projected: 1800, actual: null as number|null, status: "after" },
+  { id: 1, name: "Zeltmiete", projected: 4500, actual: null as number|null, status: "before", costType: "fix" },
+  { id: 2, name: "DJ Josch (Freitag)", projected: 800, actual: null as number|null, status: "after", costType: "fix" },
+  { id: 3, name: "Band Drunter & Drüber (Samstag)", projected: 2500, actual: null as number|null, status: "after", costType: "fix" },
+  { id: 4, name: "Strom", projected: 600, actual: null as number|null, status: "after", costType: "unklar" },
+  { id: 5, name: "Sanitäranlagen", projected: 1200, actual: null as number|null, status: "before", costType: "fix" },
+  { id: 6, name: "Werbung & Flyer", projected: 400, actual: null as number|null, status: "paid", costType: "fix" },
+  { id: 7, name: "GEMA-Gebühren", projected: 350, actual: null as number|null, status: "before", costType: "fix" },
+  { id: 8, name: "Security", projected: 1800, actual: null as number|null, status: "after", costType: "unklar" },
 ]
 
 const DEFAULT_DAYS = [
@@ -148,7 +155,7 @@ export default function KostenPage() {
     }
   }
 
-  const addCost = () => setState(s => ({ ...s, costs: [...s.costs, { id: s.nextCostId, name: "", projected: 0, actual: null, status: "before" }], nextCostId: s.nextCostId + 1 }))
+  const addCost = () => setState(s => ({ ...s, costs: [...s.costs, { id: s.nextCostId, name: "", projected: 0, actual: null, status: "before", costType: "fix" }], nextCostId: s.nextCostId + 1 }))
   const totalProjected = state.costs.reduce((s, c) => s + (c.projected || 0), 0)
   const totalActual = state.costs.reduce((s, c) => s + (c.actual || 0), 0)
   const hasActuals = state.costs.some(c => c.actual !== null)
@@ -189,15 +196,17 @@ export default function KostenPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b"><tr>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Position</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Kostenart</th>
             <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Prognose (€)</th>
             <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Tatsächlich (€)</th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Zahlung</th>
             <th className="px-4 py-3 w-10"></th>
           </tr></thead>
           <tbody className="divide-y">
             {state.costs.map(c => (
               <tr key={c.id} className="hover:bg-gray-50">
                 <td className="px-4 py-2"><input value={c.name} onChange={e => setState(s => ({ ...s, costs: s.costs.map(cc => cc.id === c.id ? { ...cc, name: e.target.value } : cc) }))} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" placeholder="Kostenposition" /></td>
+                <td className="px-4 py-2"><select value={(c as any).costType || "fix"} onChange={e => setState(s => ({ ...s, costs: s.costs.map(cc => cc.id === c.id ? { ...cc, costType: e.target.value } : cc) }))} className="border border-gray-300 rounded px-2 py-1 text-sm">{COST_TYPES.map(ct => <option key={ct.id} value={ct.id}>{ct.icon} {ct.label}</option>)}</select></td>
                 <td className="px-4 py-2"><NumInput value={c.projected} onChange={v => setState(s => ({ ...s, costs: s.costs.map(cc => cc.id === c.id ? { ...cc, projected: v ?? 0 } : cc) }))} prefix="€" step={10} /></td>
                 <td className="px-4 py-2"><NumInput value={c.actual} onChange={v => setState(s => ({ ...s, costs: s.costs.map(cc => cc.id === c.id ? { ...cc, actual: v } : cc) }))} prefix="€" step={10} placeholder="–" /></td>
                 <td className="px-4 py-2"><select value={c.status} onChange={e => setState(s => ({ ...s, costs: s.costs.map(cc => cc.id === c.id ? { ...cc, status: e.target.value } : cc) }))} className="border border-gray-300 rounded px-2 py-1 text-sm">{PAYMENT_STATUS.map(ps => <option key={ps.id} value={ps.id}>{ps.icon} {ps.label}</option>)}</select></td>
@@ -208,18 +217,41 @@ export default function KostenPage() {
         </table>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {PAYMENT_STATUS.map(ps => {
-          const items = state.costs.filter(c => c.status === ps.id)
-          const total = items.reduce((s, c) => s + (c.projected || 0), 0)
-          return (
-            <div key={ps.id} className="bg-white rounded-lg shadow border p-3" style={{ borderLeftWidth: 4, borderLeftColor: ps.color }}>
-              <div className="text-xs font-semibold text-gray-800">{ps.icon} {ps.label}</div>
-              <div className="text-lg font-bold" style={{ color: ps.color }}>{fmtEur(total)}</div>
-              <div className="text-xs text-gray-600">{items.length} Position{items.length !== 1 ? "en" : ""}</div>
-            </div>
-          )
-        })}
+      {/* Kostenart-Übersicht */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-800 mb-3">Nach Kostenart</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {COST_TYPES.map(ct => {
+            const items = state.costs.filter(c => (c as any).costType === ct.id || (!((c as any).costType) && ct.id === "fix"))
+            const total = items.reduce((s, c) => s + (c.projected || 0), 0)
+            return (
+              <div key={ct.id} className="bg-white rounded-lg shadow border p-3" style={{ borderLeftWidth: 4, borderLeftColor: ct.color }}>
+                <div className="text-xs font-semibold text-gray-800">{ct.icon} {ct.label}</div>
+                <div className="text-lg font-bold" style={{ color: ct.color }}>{fmtEur(total)}</div>
+                <div className="text-xs text-gray-500">{ct.description}</div>
+                <div className="text-xs text-gray-600 mt-1">{items.length} Position{items.length !== 1 ? "en" : ""}</div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Zahlungsstatus-Übersicht */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-800 mb-3">Nach Zahlungsstatus</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {PAYMENT_STATUS.map(ps => {
+            const items = state.costs.filter(c => c.status === ps.id)
+            const total = items.reduce((s, c) => s + (c.projected || 0), 0)
+            return (
+              <div key={ps.id} className="bg-white rounded-lg shadow border p-3" style={{ borderLeftWidth: 4, borderLeftColor: ps.color }}>
+                <div className="text-xs font-semibold text-gray-800">{ps.icon} {ps.label}</div>
+                <div className="text-lg font-bold" style={{ color: ps.color }}>{fmtEur(total)}</div>
+                <div className="text-xs text-gray-600">{items.length} Position{items.length !== 1 ? "en" : ""}</div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

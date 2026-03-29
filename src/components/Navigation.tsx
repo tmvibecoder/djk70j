@@ -23,17 +23,10 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    title: 'ORGANISATION',
-    items: [
-      { href: '/team', label: 'Team & Helfer', icon: '👥' },
-      { href: '/aufgaben', label: 'Aufgaben', icon: '✅' },
-    ],
-  },
-  {
     title: 'GETRÄNKE & LAGER',
     items: [
       { href: '/getraenke/katalog', label: 'Getränkeliste', icon: '🍺' },
-      { href: '/getraenke', label: 'Produkte & Preise', icon: '📊' },
+      { href: '/getraenke', label: 'Produkte & Preise', icon: '📋' },
       { href: '/bestand', label: 'Bestand & Inventur', icon: '📦' },
     ],
   },
