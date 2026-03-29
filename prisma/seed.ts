@@ -384,25 +384,25 @@ async function main() {
 
   const products = await Promise.all([
     // Bier & Radler
-    prisma.product.create({ data: { name: 'Helles 0,5l', purchasePrice: 0.80, salePrice: 3.00, unit: 'Flasche', category: 'Bier & Radler' } }),
-    prisma.product.create({ data: { name: 'Weißbier 0,5l', purchasePrice: 0.90, salePrice: 3.50, unit: 'Flasche', category: 'Bier & Radler' } }),
-    prisma.product.create({ data: { name: 'Radler 0,5l', purchasePrice: 0.75, salePrice: 2.80, unit: 'Flasche', category: 'Bier & Radler' } }),
+    prisma.product.create({ data: { name: 'Halbe (0,5l)', purchasePrice: 1.10, salePrice: 3.50, unit: 'Glas', category: 'Bier & Radler' } }),
+    prisma.product.create({ data: { name: 'Radler Maß (1l)', purchasePrice: 1.80, salePrice: 6.50, unit: 'Maß', category: 'Bier & Radler' } }),
+    prisma.product.create({ data: { name: 'Weißbier (0,5l)', purchasePrice: 1.00, salePrice: 3.50, unit: 'Glas', category: 'Bier & Radler' } }),
     // Softdrinks
-    prisma.product.create({ data: { name: 'Cola 0,33l', purchasePrice: 0.50, salePrice: 2.00, unit: 'Flasche', category: 'Softdrinks' } }),
-    prisma.product.create({ data: { name: 'Spezi 0,33l', purchasePrice: 0.50, salePrice: 2.00, unit: 'Flasche', category: 'Softdrinks' } }),
-    prisma.product.create({ data: { name: 'Apfelschorle 0,5l', purchasePrice: 0.45, salePrice: 2.50, unit: 'Flasche', category: 'Softdrinks' } }),
-    prisma.product.create({ data: { name: 'Wasser 0,5l', purchasePrice: 0.30, salePrice: 1.50, unit: 'Flasche', category: 'Softdrinks' } }),
-    // Wein & Sekt
-    prisma.product.create({ data: { name: 'Weißwein 0,2l', purchasePrice: 1.00, salePrice: 3.50, unit: 'Glas', category: 'Wein & Sekt' } }),
-    prisma.product.create({ data: { name: 'Sekt 0,1l', purchasePrice: 1.20, salePrice: 4.00, unit: 'Glas', category: 'Wein & Sekt' } }),
+    prisma.product.create({ data: { name: 'Spezi/Cola (0,5l)', purchasePrice: 0.50, salePrice: 3.00, unit: 'Flasche', category: 'Softdrinks' } }),
+    prisma.product.create({ data: { name: 'Apfelschorle (0,5l)', purchasePrice: 0.45, salePrice: 3.00, unit: 'Flasche', category: 'Softdrinks' } }),
+    prisma.product.create({ data: { name: 'Wasser (0,5l)', purchasePrice: 0.25, salePrice: 2.00, unit: 'Flasche', category: 'Softdrinks' } }),
     // Schnaps & Shots
-    prisma.product.create({ data: { name: 'Schnaps 2cl', purchasePrice: 0.40, salePrice: 2.00, unit: 'Shot', category: 'Schnaps & Shots' } }),
+    prisma.product.create({ data: { name: 'Schnaps 2cl', purchasePrice: 0.30, salePrice: 2.00, unit: 'Shot', category: 'Schnaps & Shots' } }),
+    prisma.product.create({ data: { name: 'Jägermeister 2cl', purchasePrice: 0.40, salePrice: 2.00, unit: 'Shot', category: 'Schnaps & Shots' } }),
     // Longdrinks
-    prisma.product.create({ data: { name: 'Aperol Spritz', purchasePrice: 1.50, salePrice: 7.00, unit: 'Glas', category: 'Longdrinks' } }),
-    prisma.product.create({ data: { name: 'Cuba Libre', purchasePrice: 1.80, salePrice: 7.50, unit: 'Glas', category: 'Longdrinks' } }),
-    prisma.product.create({ data: { name: 'Weinschorle', purchasePrice: 1.00, salePrice: 5.50, unit: '0,25l', category: 'Longdrinks' } }),
+    prisma.product.create({ data: { name: 'Aperol Spritz', purchasePrice: 1.50, salePrice: 5.00, unit: 'Glas', category: 'Longdrinks' } }),
+    prisma.product.create({ data: { name: 'Cuba Libre', purchasePrice: 1.80, salePrice: 5.00, unit: 'Glas', category: 'Longdrinks' } }),
+    prisma.product.create({ data: { name: 'Weinschorle (0,25l)', purchasePrice: 0.80, salePrice: 5.00, unit: 'Glas', category: 'Longdrinks' } }),
+    // Wein & Sekt
+    prisma.product.create({ data: { name: 'Sekt (0,1l)', purchasePrice: 0.80, salePrice: 3.50, unit: 'Glas', category: 'Wein & Sekt' } }),
     // Speisen
     prisma.product.create({ data: { name: 'Leberkäs-Semmel', purchasePrice: 1.50, salePrice: 4.00, unit: 'Stück', category: 'Warme Speisen' } }),
+    prisma.product.create({ data: { name: 'Steaksemmel', purchasePrice: 2.50, salePrice: 5.00, unit: 'Stück', category: 'Warme Speisen' } }),
     prisma.product.create({ data: { name: 'Brezel', purchasePrice: 0.50, salePrice: 1.50, unit: 'Stück', category: 'Snacks' } }),
   ])
   console.log(`Created ${products.length} products`)
@@ -443,14 +443,14 @@ async function main() {
 
   // ─── INVENTORY ───────────────────────────────────────────────────────────────
 
-  const helles = products.find(p => p.name === 'Helles 0,5l')!
-  const weissbier = products.find(p => p.name === 'Weißbier 0,5l')!
-  const cola = products.find(p => p.name === 'Cola 0,33l')!
+  const halbe = products.find(p => p.name === 'Halbe (0,5l)')!
+  const weissbier = products.find(p => p.name === 'Weißbier (0,5l)')!
+  const spezi = products.find(p => p.name === 'Spezi/Cola (0,5l)')!
 
   await Promise.all([
-    prisma.inventory.create({ data: { productId: helles.id, quantity: 100, eventDay: 'thursday', type: 'start' } }),
+    prisma.inventory.create({ data: { productId: halbe.id, quantity: 100, eventDay: 'thursday', type: 'start' } }),
     prisma.inventory.create({ data: { productId: weissbier.id, quantity: 50, eventDay: 'thursday', type: 'start' } }),
-    prisma.inventory.create({ data: { productId: cola.id, quantity: 60, eventDay: 'thursday', type: 'start' } }),
+    prisma.inventory.create({ data: { productId: spezi.id, quantity: 60, eventDay: 'thursday', type: 'start' } }),
   ])
   console.log('Created inventory entries')
 
