@@ -390,12 +390,17 @@ async function main() {
     // Softdrinks
     prisma.product.create({ data: { name: 'Cola 0,33l', purchasePrice: 0.50, salePrice: 2.00, unit: 'Flasche', category: 'Softdrinks' } }),
     prisma.product.create({ data: { name: 'Spezi 0,33l', purchasePrice: 0.50, salePrice: 2.00, unit: 'Flasche', category: 'Softdrinks' } }),
+    prisma.product.create({ data: { name: 'Apfelschorle 0,5l', purchasePrice: 0.45, salePrice: 2.50, unit: 'Flasche', category: 'Softdrinks' } }),
     prisma.product.create({ data: { name: 'Wasser 0,5l', purchasePrice: 0.30, salePrice: 1.50, unit: 'Flasche', category: 'Softdrinks' } }),
     // Wein & Sekt
     prisma.product.create({ data: { name: 'Weißwein 0,2l', purchasePrice: 1.00, salePrice: 3.50, unit: 'Glas', category: 'Wein & Sekt' } }),
     prisma.product.create({ data: { name: 'Sekt 0,1l', purchasePrice: 1.20, salePrice: 4.00, unit: 'Glas', category: 'Wein & Sekt' } }),
     // Schnaps & Shots
     prisma.product.create({ data: { name: 'Schnaps 2cl', purchasePrice: 0.40, salePrice: 2.00, unit: 'Shot', category: 'Schnaps & Shots' } }),
+    // Longdrinks
+    prisma.product.create({ data: { name: 'Aperol Spritz', purchasePrice: 1.50, salePrice: 7.00, unit: 'Glas', category: 'Longdrinks' } }),
+    prisma.product.create({ data: { name: 'Cuba Libre', purchasePrice: 1.80, salePrice: 7.50, unit: 'Glas', category: 'Longdrinks' } }),
+    prisma.product.create({ data: { name: 'Weinschorle', purchasePrice: 1.00, salePrice: 5.50, unit: '0,25l', category: 'Longdrinks' } }),
     // Speisen
     prisma.product.create({ data: { name: 'Leberkäs-Semmel', purchasePrice: 1.50, salePrice: 4.00, unit: 'Stück', category: 'Warme Speisen' } }),
     prisma.product.create({ data: { name: 'Brezel', purchasePrice: 0.50, salePrice: 1.50, unit: 'Stück', category: 'Snacks' } }),

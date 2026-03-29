@@ -27,14 +27,14 @@ const SCENARIO_LABELS: Record<string, { label: string; color: string; bg: string
 }
 
 const DEFAULT_COSTS = [
-  { id: 1, name: "Zeltmiete", projected: 4500, actual: null as number|null, status: "before" },
-  { id: 2, name: "DJ Josch (Freitag)", projected: 800, actual: null as number|null, status: "after" },
-  { id: 3, name: "Band Drunter & Drüber (Samstag)", projected: 2500, actual: null as number|null, status: "after" },
-  { id: 4, name: "Strom", projected: 600, actual: null as number|null, status: "after" },
-  { id: 5, name: "Sanitäranlagen", projected: 1200, actual: null as number|null, status: "before" },
-  { id: 6, name: "Werbung & Flyer", projected: 400, actual: null as number|null, status: "paid" },
-  { id: 7, name: "GEMA-Gebühren", projected: 350, actual: null as number|null, status: "before" },
-  { id: 8, name: "Security", projected: 1800, actual: null as number|null, status: "after" },
+  { id: 1, name: "Zeltmiete", projected: 4500, actual: null as number|null, status: "before", costType: "fix" },
+  { id: 2, name: "DJ Josch (Freitag)", projected: 800, actual: null as number|null, status: "after", costType: "fix" },
+  { id: 3, name: "Band Drunter & Drüber (Samstag)", projected: 2500, actual: null as number|null, status: "after", costType: "fix" },
+  { id: 4, name: "Strom", projected: 600, actual: null as number|null, status: "after", costType: "unklar" },
+  { id: 5, name: "Sanitäranlagen", projected: 1200, actual: null as number|null, status: "before", costType: "fix" },
+  { id: 6, name: "Werbung & Flyer", projected: 400, actual: null as number|null, status: "paid", costType: "fix" },
+  { id: 7, name: "GEMA-Gebühren", projected: 350, actual: null as number|null, status: "before", costType: "fix" },
+  { id: 8, name: "Security", projected: 1800, actual: null as number|null, status: "after", costType: "unklar" },
 ]
 
 const DEFAULT_SCENARIOS: Record<string, Record<string, {visitors:number;drinksPerPerson:number;drinkSplit:Record<string,number>}>> = {
@@ -141,10 +141,10 @@ function DayPlanning({ state, setState }: { state: AppState; setState: React.Dis
       <div className="flex flex-wrap justify-between items-center gap-4">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Tagesplanung & Prognose</h2>
-          <p className="text-sm text-gray-500">Szenarien für jeden Festtag planen</p>
+          <p className="text-sm text-gray-600">Szenarien für jeden Festtag planen</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Durchschn. Gewinn/Getränk:</span>
+          <span className="text-sm text-gray-700">Durchschn. Gewinn/Getränk:</span>
           <div className="w-24"><NumInput value={state.profitPerDrink} onChange={v => setState(s => ({ ...s, profitPerDrink: v ?? 0 }))} prefix="€" step={0.5} /></div>
         </div>
       </div>
@@ -153,9 +153,9 @@ function DayPlanning({ state, setState }: { state: AppState; setState: React.Dis
         {state.days.map(d => (
           <button key={d.id} onClick={() => setSelectedDay(d.id)}
             className={`p-3 rounded-lg border-2 text-left transition-colors ${selectedDay === d.id ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:bg-gray-50"}`}>
-            <div className="text-xs text-gray-500">{d.date}</div>
-            <div className="font-semibold text-sm">{d.name}</div>
-            <div className="text-xs text-gray-500 truncate">{d.event}</div>
+            <div className="text-xs text-gray-600">{d.date}</div>
+            <div className="font-semibold text-sm text-gray-900">{d.name}</div>
+            <div className="text-xs text-gray-600 truncate">{d.event}</div>
           </button>
         ))}
       </div>
@@ -176,15 +176,15 @@ function DayPlanning({ state, setState }: { state: AppState; setState: React.Dis
             <div key={key} className="bg-white rounded-lg shadow border p-5" style={{ borderTopWidth: 4, borderTopColor: meta.color }}>
               <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-4" style={{ color: meta.color, backgroundColor: meta.bg }}>{meta.label}</span>
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <div><label className="block text-xs font-medium text-gray-500 mb-1">Besucher</label><NumInput value={sc.visitors} onChange={v => updateScenario(key, "visitors", v ?? 0)} /></div>
-                <div><label className="block text-xs font-medium text-gray-500 mb-1">Getränke/Pers.</label><NumInput value={sc.drinksPerPerson} onChange={v => updateScenario(key, "drinksPerPerson", v ?? 0)} step={0.5} /></div>
+                <div><label className="block text-xs font-medium text-gray-700 mb-1">Besucher</label><NumInput value={sc.visitors} onChange={v => updateScenario(key, "visitors", v ?? 0)} /></div>
+                <div><label className="block text-xs font-medium text-gray-700 mb-1">Getränke/Pers.</label><NumInput value={sc.drinksPerPerson} onChange={v => updateScenario(key, "drinksPerPerson", v ?? 0)} step={0.5} /></div>
               </div>
               <div className="mb-4">
-                <label className="block text-xs font-medium text-gray-500 mb-2">Verteilung (%) {splitTotal !== 100 && <span className="text-red-500">Summe: {splitTotal}%</span>}</label>
+                <label className="block text-xs font-medium text-gray-700 mb-2">Verteilung (%) {splitTotal !== 100 && <span className="text-red-500">Summe: {splitTotal}%</span>}</label>
                 <div className="grid grid-cols-3 gap-2">
                   {DRINK_CATS.map(cat => (
                     <div key={cat.id} className="text-center">
-                      <div className="text-xs text-gray-500 mb-1">{cat.icon}</div>
+                      <div className="text-xs text-gray-700 mb-1">{cat.icon}</div>
                       <NumInput value={sc.drinkSplit[cat.id]} onChange={v => updateDrinkSplit(key, cat.id, v ?? 0)} suffix="%" />
                     </div>
                   ))}
@@ -192,8 +192,8 @@ function DayPlanning({ state, setState }: { state: AppState; setState: React.Dis
               </div>
               <div className="rounded-lg p-3 text-sm space-y-1" style={{ backgroundColor: meta.bg }}>
                 <div className="font-semibold text-xs mb-2" style={{ color: meta.color }}>Prognostizierter Umsatz</div>
-                <div className="flex justify-between"><span className="text-gray-500">Getränke:</span><span className="font-semibold">{fmtNum(rev.totalDrinks)} Stk. &rarr; {fmtEur(rev.drinkRevenue)}</span></div>
-                {day.hasEntry && <div className="flex justify-between"><span className="text-gray-500">Eintritt:</span><span className="font-semibold">{fmtEur(rev.entryRevenue)}</span></div>}
+                <div className="flex justify-between"><span className="text-gray-700">Getränke:</span><span className="font-semibold text-gray-900">{fmtNum(rev.totalDrinks)} Stk. &rarr; {fmtEur(rev.drinkRevenue)}</span></div>
+                {day.hasEntry && <div className="flex justify-between"><span className="text-gray-700">Eintritt:</span><span className="font-semibold text-gray-900">{fmtEur(rev.entryRevenue)}</span></div>}
                 <div className="border-t pt-1 mt-1 flex justify-between font-bold" style={{ borderColor: meta.color + "40", color: meta.color }}>
                   <span>Gesamt:</span><span className="text-lg">{fmtEur(rev.total)}</span>
                 </div>
@@ -242,7 +242,7 @@ function ActualNumbers({ state, setState }: { state: AppState; setState: React.D
 
   return (
     <div className="space-y-6">
-      <div><h2 className="text-xl font-bold text-gray-900">Tatsächliche Zahlen</h2><p className="text-sm text-gray-500">Echte Absatz- und Umsatzzahlen eintragen</p></div>
+      <div><h2 className="text-xl font-bold text-gray-900">Tatsächliche Zahlen</h2><p className="text-sm text-gray-600">Echte Absatz- und Umsatzzahlen eintragen</p></div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {state.days.map(d => {
           const has = state.actuals[d.id].visitors !== null
@@ -250,8 +250,8 @@ function ActualNumbers({ state, setState }: { state: AppState; setState: React.D
             <button key={d.id} onClick={() => setSelectedDay(d.id)}
               className={`p-3 rounded-lg border-2 text-left transition-colors relative ${selectedDay === d.id ? "border-blue-500 bg-blue-50" : "border-gray-200"}`}>
               {has && <span className="absolute top-1 right-2 text-xs text-green-600 font-bold">Erfasst</span>}
-              <div className="text-xs text-gray-500">{d.date}</div>
-              <div className="font-semibold text-sm">{d.name}</div>
+              <div className="text-xs text-gray-600">{d.date}</div>
+              <div className="font-semibold text-sm text-gray-900">{d.name}</div>
             </button>
           )
         })}
@@ -259,13 +259,13 @@ function ActualNumbers({ state, setState }: { state: AppState; setState: React.D
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow border p-5 space-y-4">
           <h3 className="font-bold text-gray-900">Eingabe – {day.name}</h3>
-          <div><label className="block text-sm font-medium text-gray-600 mb-1">Tatsächliche Besucher</label><NumInput value={actuals.visitors} onChange={v => updateActual("visitors", v)} placeholder="z.B. 150" /></div>
+          <div><label className="block text-sm font-medium text-gray-800 mb-1">Tatsächliche Besucher</label><NumInput value={actuals.visitors} onChange={v => updateActual("visitors", v)} placeholder="z.B. 150" /></div>
           <p className="font-semibold text-gray-900 text-sm">Verkaufte Getränke</p>
           {DRINK_CATS.map(cat => (
-            <div key={cat.id}><label className="block text-sm text-gray-600 mb-1">{cat.icon} {cat.label} (Stück)</label><NumInput value={actuals[cat.id]} onChange={v => updateActual(cat.id, v)} placeholder="Anzahl" /></div>
+            <div key={cat.id}><label className="block text-sm text-gray-800 mb-1">{cat.icon} {cat.label} (Stück)</label><NumInput value={actuals[cat.id]} onChange={v => updateActual(cat.id, v)} placeholder="Anzahl" /></div>
           ))}
           {day.hasEntry && (
-            <div className="pt-3 border-t"><label className="block text-sm text-gray-600 mb-1">Eintrittseinnahmen (EUR)</label><NumInput value={actuals.entryRevenue} onChange={v => updateActual("entryRevenue", v)} prefix="€" /></div>
+            <div className="pt-3 border-t"><label className="block text-sm text-gray-800 mb-1">Eintrittseinnahmen (EUR)</label><NumInput value={actuals.entryRevenue} onChange={v => updateActual("entryRevenue", v)} prefix="€" /></div>
           )}
         </div>
         <div className="bg-white rounded-lg shadow border p-5">
@@ -273,20 +273,20 @@ function ActualNumbers({ state, setState }: { state: AppState; setState: React.D
           {hasData ? (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <span className="text-gray-500">Besucher:</span><span className="font-bold text-right">{fmtNum(actuals.visitors || 0)}</span>
-                <span className="text-gray-500">Getränke gesamt:</span><span className="font-bold text-right">{fmtNum(actualDrinkTotal)}</span>
-                <span className="text-gray-500">Durchschn. Getränke/Person:</span><span className="font-bold text-right">{actuals.visitors ? (actualDrinkTotal / actuals.visitors).toFixed(1) : "–"}</span>
+                <span className="text-gray-700">Besucher:</span><span className="font-bold text-right text-gray-900">{fmtNum(actuals.visitors || 0)}</span>
+                <span className="text-gray-700">Getränke gesamt:</span><span className="font-bold text-right text-gray-900">{fmtNum(actualDrinkTotal)}</span>
+                <span className="text-gray-700">Durchschn. Getränke/Person:</span><span className="font-bold text-right text-gray-900">{actuals.visitors ? (actualDrinkTotal / actuals.visitors).toFixed(1) : "–"}</span>
               </div>
               {DRINK_CATS.map(cat => (
-                <div key={cat.id} className="flex justify-between text-sm text-gray-600">
+                <div key={cat.id} className="flex justify-between text-sm text-gray-800">
                   <span>{cat.icon} {cat.label}:</span>
-                  <span className="font-semibold">{fmtNum(actuals[cat.id] || 0)} ({actualDrinkTotal > 0 ? Math.round((actuals[cat.id] || 0) / actualDrinkTotal * 100) : 0}%)</span>
+                  <span className="font-semibold text-gray-900">{fmtNum(actuals[cat.id] || 0)} ({actualDrinkTotal > 0 ? Math.round((actuals[cat.id] || 0) / actualDrinkTotal * 100) : 0}%)</span>
                 </div>
               ))}
               <div className="bg-gray-50 rounded-lg p-3 mt-4 space-y-1 text-sm">
                 <div className="font-semibold text-blue-700 text-xs mb-2">Tatsächlicher Umsatz</div>
-                <div className="flex justify-between"><span className="text-gray-500">Getränkeumsatz:</span><span className="font-bold">{fmtEur(actualDrinkRevenue)}</span></div>
-                {day.hasEntry && <div className="flex justify-between"><span className="text-gray-500">Eintritt:</span><span className="font-bold">{fmtEur(actualEntryRevenue)}</span></div>}
+                <div className="flex justify-between"><span className="text-gray-700">Getränkeumsatz:</span><span className="font-bold text-gray-900">{fmtEur(actualDrinkRevenue)}</span></div>
+                {day.hasEntry && <div className="flex justify-between"><span className="text-gray-700">Eintritt:</span><span className="font-bold text-gray-900">{fmtEur(actualEntryRevenue)}</span></div>}
                 <div className="border-t pt-1 flex justify-between font-bold text-blue-700"><span>Gesamt:</span><span className="text-lg">{fmtEur(actualTotal)}</span></div>
               </div>
               <div className={`rounded-lg p-3 text-sm font-semibold ${actualTotal >= realisticTotal ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>

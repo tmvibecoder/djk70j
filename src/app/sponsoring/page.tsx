@@ -166,15 +166,15 @@ export default function SponsoringPage() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-xl font-bold text-gray-900">🤝 Sponsoring & Zuschüsse</h2>
-          <p className="text-sm text-gray-500">Spenden und Sponsorengelder</p>
+          <p className="text-sm text-gray-600">Spenden und Sponsorengelder</p>
         </div>
         <button onClick={addSponsor} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">+ Sponsor</button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg shadow border p-4 text-center"><div className="text-xs text-gray-500">Zugesagt</div><div className="text-2xl font-bold text-blue-600">{fmtEur(totalPledged)}</div></div>
-        <div className="bg-white rounded-lg shadow border p-4 text-center"><div className="text-xs text-gray-500">Erhalten</div><div className="text-2xl font-bold text-green-600">{fmtEur(totalReceived)}</div></div>
-        <div className="bg-white rounded-lg shadow border p-4 text-center"><div className="text-xs text-gray-500">Ausstehend</div><div className="text-2xl font-bold text-yellow-600">{fmtEur(totalPledged - totalReceived)}</div></div>
+        <div className="bg-white rounded-lg shadow border p-4 text-center"><div className="text-xs text-gray-700 font-medium">Zugesagt</div><div className="text-2xl font-bold text-blue-600">{fmtEur(totalPledged)}</div></div>
+        <div className="bg-white rounded-lg shadow border p-4 text-center"><div className="text-xs text-gray-700 font-medium">Erhalten</div><div className="text-2xl font-bold text-green-600">{fmtEur(totalReceived)}</div></div>
+        <div className="bg-white rounded-lg shadow border p-4 text-center"><div className="text-xs text-gray-700 font-medium">Ausstehend</div><div className="text-2xl font-bold text-yellow-600">{fmtEur(totalPledged - totalReceived)}</div></div>
       </div>
 
       <div className="bg-white rounded-lg shadow border p-5 space-y-3">

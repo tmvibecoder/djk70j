@@ -4,71 +4,45 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader } from '@/components/ui'
 
-interface DashboardData {
-  products: number
-  users: number
-  taskStats: {
-    total: number
-    open: number
-    inProgress: number
-    done: number
-    highPriority: number
-  }
-  participantStats: {
-    total: number
-    paid: number
-    unpaid: number
-  }
-  shiftStats: {
-    total: number
-    filled: number
-    understaffed: number
-    totalAssignments: number
-    totalRequired: number
-  }
-  warnings: { type: string; message: string; severity: 'low' | 'medium' | 'high' }[]
-  dayOverview: {
-    day: string
-    shifts: { total: number; filled: number }
-    tasks: { total: number; done: number }
-    participants: number
-  }[]
-  topTasks?: { id: string; title: string; priority: string; status: string; eventDay?: string; category?: string }[]
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface PlanerState {
+  days: { id: string; name: string; date: string; event: string; hasEntry: boolean; entryFee: number }[]
+  scenarios: Record<string, Record<string, { visitors: number; drinksPerPerson: number; drinkSplit: Record<string, number> }>>
+  actuals: Record<string, Record<string, number | null>>
+  profitPerDrink: number
+  prices: { id: number; name: string; category: string; sellPrice: number; costPrice: number }[]
+  costs: { id: number; name: string; projected: number; actual: number | null; status: string; costType?: string }[]
+  sponsors: { id: number; name: string; amount: number; received: boolean }[]
 }
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 const EVENT_START = new Date('2026-07-09T00:00:00')
-const DAY_LABELS: Record<string, string> = {
-  monday: 'Montag',
-  tuesday: 'Dienstag',
-  thursday: 'Donnerstag',
-  friday: 'Freitag',
-  saturday: 'Samstag',
-  sunday: 'Sonntag',
+
+const DAY_META: Record<string, { icon: string; date: string; event: string }> = {
+  do: { icon: '🃏', date: '09.07.', event: 'Watt-Turnier' },
+  fr: { icon: '🎶', date: '10.07.', event: 'Disco-Party mit DJ Josch' },
+  sa: { icon: '🎉', date: '11.07.', event: 'Drunter & Drüber' },
+  so: { icon: '⛪', date: '12.07.', event: 'Bayrischer Festsonntag' },
 }
-const DAY_DATES: Record<string, string> = {
-  monday: '06.07.',
-  tuesday: '07.07.',
-  thursday: '09.07.',
-  friday: '10.07.',
-  saturday: '11.07.',
-  sunday: '12.07.',
+
+const COST_TYPE_META: Record<string, { label: string; color: string; icon: string }> = {
+  fix: { label: 'Fixkosten', color: '#DC2626', icon: '📌' },
+  variabel_getraenke: { label: 'Variabel (Getränke)', color: '#D97706', icon: '🍺' },
+  variabel_sonstig: { label: 'Variabel (Sonstiges)', color: '#2563EB', icon: '📦' },
+  unklar: { label: 'Unklar / Geschätzt', color: '#7C3AED', icon: '❓' },
 }
-const DAY_EVENTS: Record<string, string> = {
-  monday: 'Aufbau Innenzelt',
-  tuesday: 'Aufbau Zelt',
-  thursday: 'Watt-Turnier',
-  friday: 'Disco-Party mit DJ Josch',
-  saturday: 'Festzeltparty mit Drunter & Drüber',
-  sunday: 'Bayrischer Festsonntag',
+
+const SCENARIO_META: Record<string, { label: string; color: string; bg: string }> = {
+  conservative: { label: 'Vorsichtig', color: '#6B7280', bg: 'bg-gray-50' },
+  realistic: { label: 'Realistisch', color: '#2563EB', bg: 'bg-blue-50' },
+  optimistic: { label: 'Optimistisch', color: '#16A34A', bg: 'bg-green-50' },
 }
-const DAY_ICONS: Record<string, string> = {
-  monday: '🔨',
-  tuesday: '🏗️',
-  thursday: '🃏',
-  friday: '🎶',
-  saturday: '🎉',
-  sunday: '⛪',
-}
+
+const fmtEur = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
+
+// ─── Countdown Component ──────────────────────────────────────────────────────
 
 function Countdown() {
   const [now, setNow] = useState(new Date())
@@ -98,39 +72,83 @@ function Countdown() {
   )
 }
 
-function StatusLight({ value, total, label, href }: { value: number; total: number; label: string; href: string }) {
-  const pct = total > 0 ? value / total : 0
-  const color = pct >= 0.8 ? 'bg-green-500' : pct >= 0.5 ? 'bg-yellow-500' : 'bg-red-500'
-  const textColor = pct >= 0.8 ? 'text-green-600' : pct >= 0.5 ? 'text-yellow-600' : 'text-red-600'
-  const ringColor = pct >= 0.8 ? 'ring-green-200' : pct >= 0.5 ? 'ring-yellow-200' : 'ring-red-200'
+// ─── Revenue Calculation from Scenarios ───────────────────────────────────────
 
-  return (
-    <Link href={href} className="block">
-      <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg transition-all cursor-pointer">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-medium text-gray-600">{label}</span>
-          <div className={`w-3 h-3 rounded-full ${color} ring-4 ${ringColor}`} />
-        </div>
-        <div className={`text-2xl font-bold ${textColor}`}>
-          {value}/{total}
-        </div>
-        <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${pct * 100}%` }} />
-        </div>
-      </div>
-    </Link>
-  )
+function calcScenarioRevenue(state: PlanerState, scenario: string) {
+  let totalDrinkRevenue = 0
+  let totalDrinkCost = 0
+  let totalEntryRevenue = 0
+
+  const avgPrices: Record<string, { sell: number; cost: number }> = {}
+  for (const cat of ['bier', 'softdrinks', 'schnaps']) {
+    const catPrices = state.prices.filter(p => p.category === cat)
+    if (catPrices.length > 0) {
+      avgPrices[cat] = {
+        sell: catPrices.reduce((s, p) => s + p.sellPrice, 0) / catPrices.length,
+        cost: catPrices.reduce((s, p) => s + p.costPrice, 0) / catPrices.length,
+      }
+    } else {
+      avgPrices[cat] = { sell: 5, cost: 2 }
+    }
+  }
+
+  for (const day of state.days) {
+    const sc = state.scenarios[day.id]?.[scenario]
+    if (!sc) continue
+
+    const totalDrinks = sc.visitors * sc.drinksPerPerson
+    for (const [cat, pct] of Object.entries(sc.drinkSplit)) {
+      const drinks = totalDrinks * (pct / 100)
+      const prices = avgPrices[cat] || { sell: 5, cost: 2 }
+      totalDrinkRevenue += drinks * prices.sell
+      totalDrinkCost += drinks * prices.cost
+    }
+
+    if (day.hasEntry) {
+      totalEntryRevenue += sc.visitors * day.entryFee
+    }
+  }
+
+  return { drinkRevenue: totalDrinkRevenue, drinkCost: totalDrinkCost, entryRevenue: totalEntryRevenue }
 }
 
+function calcDayScenarioRevenue(state: PlanerState, dayId: string, scenario: string) {
+  const day = state.days.find(d => d.id === dayId)
+  if (!day) return { revenue: 0, visitors: 0 }
+
+  const sc = state.scenarios[dayId]?.[scenario]
+  if (!sc) return { revenue: 0, visitors: 0 }
+
+  const avgPrices: Record<string, { sell: number }> = {}
+  for (const cat of ['bier', 'softdrinks', 'schnaps']) {
+    const catPrices = state.prices.filter(p => p.category === cat)
+    avgPrices[cat] = { sell: catPrices.length > 0 ? catPrices.reduce((s, p) => s + p.sellPrice, 0) / catPrices.length : 5 }
+  }
+
+  const totalDrinks = sc.visitors * sc.drinksPerPerson
+  let revenue = 0
+  for (const [cat, pct] of Object.entries(sc.drinkSplit)) {
+    revenue += totalDrinks * (pct / 100) * (avgPrices[cat]?.sell || 5)
+  }
+  if (day.hasEntry) revenue += sc.visitors * day.entryFee
+
+  return { revenue, visitors: sc.visitors }
+}
+
+// ─── Dashboard Component ──────────────────────────────────────────────────────
+
 export default function Dashboard() {
-  const [data, setData] = useState<DashboardData | null>(null)
+  const [planer, setPlaner] = useState<PlanerState | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/dashboard')
-      .then((res) => res.json())
-      .then((d) => { setData(d); setLoading(false) })
-      .catch(() => setLoading(false))
+    // Load localStorage planer state
+    try {
+      const saved = localStorage.getItem('djk-planer-state')
+      if (saved) setPlaner(JSON.parse(saved))
+    } catch { /* ignore */ }
+
+    setLoading(false)
   }, [])
 
   if (loading) {
@@ -144,22 +162,71 @@ export default function Dashboard() {
     )
   }
 
-  if (!data) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">Fehler beim Laden der Daten</p>
-      </div>
-    )
-  }
+  // ── Calculate financial data from planer state ──
+  const costs = planer?.costs || []
+  const sponsors = planer?.sponsors || []
 
-  const severityConfig = {
-    high: { bg: 'bg-red-50', border: 'border-red-200', icon: '🔴', text: 'text-red-800' },
-    medium: { bg: 'bg-yellow-50', border: 'border-yellow-200', icon: '🟡', text: 'text-yellow-800' },
-    low: { bg: 'bg-blue-50', border: 'border-blue-200', icon: '🔵', text: 'text-blue-800' },
-  }
+  const totalFixCosts = costs.filter(c => (c.costType || 'fix') === 'fix').reduce((s, c) => s + (c.projected || 0), 0)
+  const totalVarGetraenke = costs.filter(c => c.costType === 'variabel_getraenke').reduce((s, c) => s + (c.projected || 0), 0)
+  const totalVarSonstig = costs.filter(c => c.costType === 'variabel_sonstig').reduce((s, c) => s + (c.projected || 0), 0)
+  const totalUnklar = costs.filter(c => c.costType === 'unklar').reduce((s, c) => s + (c.projected || 0), 0)
+  const totalCosts = costs.reduce((s, c) => s + (c.projected || 0), 0)
+  const totalCostsPaid = costs.filter(c => c.status === 'paid').reduce((s, c) => s + (c.projected || 0), 0)
+  const totalCostsOpen = totalCosts - totalCostsPaid
 
-  const highWarnings = data.warnings.filter(w => w.severity === 'high')
-  const otherWarnings = data.warnings.filter(w => w.severity !== 'high')
+  const totalSponsoring = sponsors.reduce((s, sp) => s + (sp.amount || 0), 0)
+  const totalSponsoringReceived = sponsors.filter(sp => sp.received).reduce((s, sp) => s + (sp.amount || 0), 0)
+
+  // Scenario calculations
+  const scenarios = ['conservative', 'realistic', 'optimistic'] as const
+  const scenarioResults = planer ? scenarios.map(sc => {
+    const rev = calcScenarioRevenue(planer, sc)
+    const totalRevenue = rev.drinkRevenue + rev.entryRevenue + totalSponsoring
+    const profit = totalRevenue - totalCosts - rev.drinkCost
+    return {
+      scenario: sc,
+      ...SCENARIO_META[sc],
+      drinkRevenue: rev.drinkRevenue,
+      drinkCost: rev.drinkCost,
+      entryRevenue: rev.entryRevenue,
+      sponsoring: totalSponsoring,
+      totalRevenue,
+      totalCosts: totalCosts + rev.drinkCost,
+      profit,
+    }
+  }) : []
+
+  const realisticResult = scenarioResults.find(s => s.scenario === 'realistic')
+
+  // Day breakdown (realistic)
+  const dayBreakdown = planer ? planer.days.map(day => {
+    const calc = calcDayScenarioRevenue(planer, day.id, 'realistic')
+    return { ...day, ...DAY_META[day.id], ...calc }
+  }) : []
+
+  const maxDayRevenue = Math.max(...dayBreakdown.map(d => d.revenue), 1)
+
+  // Cost type breakdown for display
+  const costTypeGroups = [
+    { type: 'fix', total: totalFixCosts },
+    { type: 'variabel_getraenke', total: totalVarGetraenke },
+    { type: 'variabel_sonstig', total: totalVarSonstig },
+    { type: 'unklar', total: totalUnklar },
+  ].filter(g => g.total > 0)
+
+  // Warnings
+  const warnings: { message: string; severity: 'high' | 'medium' | 'low' }[] = []
+  if (totalUnklar > 0) {
+    warnings.push({ message: `${costs.filter(c => c.costType === 'unklar').length} Kostenposition(en) mit unklarem Betrag (${fmtEur(totalUnklar)})`, severity: 'medium' })
+  }
+  const costsWithoutActual = costs.filter(c => c.actual === null && c.status !== 'paid').length
+  if (costsWithoutActual > 0) {
+    warnings.push({ message: `${costsWithoutActual} Kostenposition(en) noch ohne Ist-Wert`, severity: 'low' })
+  }
+  const sponsorsOpen = sponsors.filter(sp => !sp.received && sp.amount > 0).length
+  if (sponsorsOpen > 0) {
+    warnings.push({ message: `${sponsorsOpen} Sponsor(en) ausstehend`, severity: 'low' })
+  }
 
   return (
     <div className="space-y-6">
@@ -176,222 +243,315 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Kritische Warnungen */}
-      {highWarnings.length > 0 && (
-        <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg">🚨</span>
-            <h2 className="font-bold text-red-800">Achtung – Handlungsbedarf</h2>
-          </div>
-          <div className="space-y-2">
-            {highWarnings.map((w, i) => (
-              <div key={i} className="flex items-start gap-2 text-sm text-red-700">
-                <span className="shrink-0 mt-0.5">•</span>
-                <span>{w.message}</span>
-              </div>
-            ))}
+      {/* ── Szenario-Ergebnisse (Die Kernfrage) ────────────────────────── */}
+      {scenarioResults.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Erwartetes Ergebnis</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {scenarioResults.map(sr => {
+              const isRealistic = sr.scenario === 'realistic'
+              return (
+                <div
+                  key={sr.scenario}
+                  className={`rounded-xl border-2 p-5 transition-shadow ${isRealistic ? 'border-blue-300 shadow-lg shadow-blue-100' : 'border-gray-200'} ${sr.bg}`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-semibold" style={{ color: sr.color }}>{sr.label}</span>
+                    {isRealistic && <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">Empfohlen</span>}
+                  </div>
+                  <div className={`text-3xl font-bold mb-2 ${sr.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {sr.profit >= 0 ? '+' : ''}{fmtEur(sr.profit)}
+                  </div>
+                  <div className="space-y-1 text-sm text-gray-700">
+                    <div className="flex justify-between">
+                      <span>Getränke-Umsatz</span>
+                      <span className="font-medium">{fmtEur(sr.drinkRevenue)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Eintrittsgelder</span>
+                      <span className="font-medium">{fmtEur(sr.entryRevenue)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Sponsoring</span>
+                      <span className="font-medium">{fmtEur(sr.sponsoring)}</span>
+                    </div>
+                    <div className="border-t pt-1 mt-1 flex justify-between font-semibold text-gray-900">
+                      <span>Einnahmen gesamt</span>
+                      <span>{fmtEur(sr.drinkRevenue + sr.entryRevenue + sr.sponsoring)}</span>
+                    </div>
+                    <div className="flex justify-between text-red-600">
+                      <span>Kosten gesamt</span>
+                      <span className="font-medium">−{fmtEur(sr.totalCosts)}</span>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
 
-      {/* Ampel-Übersicht */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">Status-Übersicht</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatusLight
-            value={data.shiftStats.totalAssignments}
-            total={data.shiftStats.totalRequired}
-            label="Schichten besetzt"
-            href="/team"
-          />
-          <StatusLight
-            value={data.taskStats.done}
-            total={data.taskStats.total}
-            label="Aufgaben erledigt"
-            href="/aufgaben"
-          />
-          <StatusLight
-            value={data.participantStats.paid}
-            total={data.participantStats.total}
-            label="Teilnehmer bezahlt"
-            href="/team"
-          />
-          <Link href="/getraenke" className="block">
-            <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg transition-all cursor-pointer">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-gray-600">Produkte aktiv</span>
-                <div className="w-3 h-3 rounded-full bg-green-500 ring-4 ring-green-200" />
+      {/* ── Einnahmen vs. Ausgaben (realistisch) ──────────────────────── */}
+      {realisticResult && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Einnahmen */}
+          <Card className="border-green-200">
+            <CardHeader className="pb-2">
+              <h3 className="font-semibold text-green-800">Einnahmen (realistisch)</h3>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🍺</span>
+                    <span className="text-gray-800 font-medium">Getränke-Umsatz</span>
+                  </div>
+                  <span className="font-bold text-gray-900">{fmtEur(realisticResult.drinkRevenue)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🎟️</span>
+                    <span className="text-gray-800 font-medium">Eintrittsgelder</span>
+                  </div>
+                  <span className="font-bold text-gray-900">{fmtEur(realisticResult.entryRevenue)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🤝</span>
+                    <span className="text-gray-800 font-medium">Sponsoring</span>
+                  </div>
+                  <span className="font-bold text-gray-900">{fmtEur(realisticResult.sponsoring)}</span>
+                </div>
+                <div className="border-t-2 border-green-200 pt-2 flex justify-between">
+                  <span className="font-bold text-green-800">Gesamt Einnahmen</span>
+                  <span className="font-bold text-green-700 text-lg">{fmtEur(realisticResult.drinkRevenue + realisticResult.entryRevenue + realisticResult.sponsoring)}</span>
+                </div>
               </div>
-              <div className="text-2xl font-bold text-green-600">{data.products}</div>
-              <div className="mt-2 text-xs text-gray-400">Getränke & Speisen</div>
-            </div>
-          </Link>
-        </div>
-      </div>
+            </CardContent>
+          </Card>
 
-      {/* Tagesübersicht als Timeline */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">Veranstaltungstage</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {data.dayOverview.map((day) => {
-            const shiftPct = day.shifts.total > 0 ? day.shifts.filled / day.shifts.total : 0
-            const shiftColor = shiftPct >= 0.8 ? 'text-green-600' : shiftPct >= 0.5 ? 'text-yellow-600' : 'text-red-600'
-            const shiftBg = shiftPct >= 0.8 ? 'bg-green-500' : shiftPct >= 0.5 ? 'bg-yellow-500' : 'bg-red-500'
-            const icon = DAY_ICONS[day.day] || '📅'
-            const label = DAY_LABELS[day.day] || day.day
-            const date = DAY_DATES[day.day] || ''
-            const event = DAY_EVENTS[day.day] || ''
-
-            return (
-              <Card key={day.day} className="hover:shadow-md transition-shadow">
-                <CardContent className="pt-5">
-                  <div className="flex items-start gap-3">
-                    <div className="text-2xl">{icon}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-gray-900">{label}</h3>
-                        <span className="text-xs text-gray-400">{date}</span>
+          {/* Ausgaben */}
+          <Card className="border-red-200">
+            <CardHeader className="pb-2">
+              <h3 className="font-semibold text-red-800">Ausgaben</h3>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {costTypeGroups.map(g => {
+                  const meta = COST_TYPE_META[g.type]
+                  return (
+                    <div key={g.type} className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{meta.icon}</span>
+                        <span className="text-gray-800 font-medium">{meta.label}</span>
                       </div>
-                      <p className="text-sm text-gray-500 truncate">{event}</p>
+                      <span className="font-bold text-gray-900">{fmtEur(g.total)}</span>
+                    </div>
+                  )
+                })}
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🍺</span>
+                    <span className="text-gray-800 font-medium">Wareneinsatz (Getränke)</span>
+                  </div>
+                  <span className="font-bold text-gray-900">{fmtEur(realisticResult.drinkCost)}</span>
+                </div>
+                <div className="border-t-2 border-red-200 pt-2 flex justify-between">
+                  <span className="font-bold text-red-800">Gesamt Ausgaben</span>
+                  <span className="font-bold text-red-700 text-lg">{fmtEur(realisticResult.totalCosts)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
-                      <div className="mt-3 space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-500">Helfer</span>
-                          <span className={`font-semibold ${shiftColor}`}>
-                            {day.shifts.filled}/{day.shifts.total}
-                          </span>
-                        </div>
-                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div className={`h-full ${shiftBg} rounded-full`} style={{ width: `${shiftPct * 100}%` }} />
-                        </div>
-
-                        {day.tasks.total > 0 && (
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-500">Aufgaben</span>
-                            <span className="text-gray-700">{day.tasks.done}/{day.tasks.total}</span>
-                          </div>
-                        )}
-
-                        {day.day === 'thursday' && day.participants > 0 && (
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-500">Teilnehmer</span>
-                            <span className="text-gray-700">{day.participants}</span>
-                          </div>
-                        )}
+      {/* ── Umsatz pro Tag (realistisch) ──────────────────────────────── */}
+      {dayBreakdown.length > 0 && (
+        <Card>
+          <CardHeader>
+            <h3 className="font-semibold text-gray-900">Umsatz pro Tag (realistisch)</h3>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {dayBreakdown.map(day => {
+                const pct = maxDayRevenue > 0 ? (day.revenue / maxDayRevenue) * 100 : 0
+                return (
+                  <div key={day.id} className="flex items-center gap-3">
+                    <div className="w-6 text-center text-lg">{day.icon}</div>
+                    <div className="w-20 shrink-0">
+                      <div className="font-semibold text-gray-900 text-sm">{day.name.substring(0, 2)}.</div>
+                      <div className="text-xs text-gray-500">{day.date}</div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="h-7 bg-gray-100 rounded-full overflow-hidden relative">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
+                          style={{ width: `${pct}%` }}
+                        />
+                        <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-800">
+                          {fmtEur(day.revenue)}
+                        </span>
                       </div>
                     </div>
+                    <div className="w-20 text-right text-xs text-gray-500 shrink-0">
+                      ~{day.visitors} Besucher
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      </div>
+                )
+              })}
+              <div className="border-t pt-2 flex justify-between font-bold text-gray-900">
+                <span>Gesamt</span>
+                <span>{fmtEur(dayBreakdown.reduce((s, d) => s + d.revenue, 0))}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Zwei-Spalten: Aufgaben + Hinweise */}
+      {/* ── Kosten & Sponsoring Details ───────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Aufgaben-Status */}
+        {/* Kostenübersicht */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Aufgaben</h2>
-              <Link href="/aufgaben" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                Alle anzeigen →
+              <h3 className="font-semibold text-gray-900">Kostenübersicht</h3>
+              <Link href="/kosten" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                Details →
               </Link>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-6 mb-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-400">{data.taskStats.open}</div>
-                <div className="text-xs text-gray-500">Offen</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-500">{data.taskStats.inProgress}</div>
-                <div className="text-xs text-gray-500">In Arbeit</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-500">{data.taskStats.done}</div>
-                <div className="text-xs text-gray-500">Erledigt</div>
-              </div>
-              {data.taskStats.highPriority > 0 && (
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-500">{data.taskStats.highPriority}</div>
-                  <div className="text-xs text-gray-500">Dringend</div>
+            <div className="space-y-4">
+              {/* Cost type bars */}
+              {costTypeGroups.map(g => {
+                const meta = COST_TYPE_META[g.type]
+                const pct = totalCosts > 0 ? (g.total / totalCosts) * 100 : 0
+                return (
+                  <div key={g.type}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="font-medium text-gray-800">{meta.icon} {meta.label}</span>
+                      <span className="font-bold" style={{ color: meta.color }}>{fmtEur(g.total)}</span>
+                    </div>
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: meta.color }} />
+                    </div>
+                  </div>
+                )
+              })}
+
+              <div className="border-t pt-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Bereits bezahlt</span>
+                  <span className="font-medium text-green-600">{fmtEur(totalCostsPaid)}</span>
                 </div>
-              )}
-            </div>
-            {data.taskStats.total > 0 && (
-              <div className="h-3 bg-gray-100 rounded-full overflow-hidden flex">
-                <div className="bg-green-500 transition-all" style={{ width: `${(data.taskStats.done / data.taskStats.total) * 100}%` }} />
-                <div className="bg-blue-500 transition-all" style={{ width: `${(data.taskStats.inProgress / data.taskStats.total) * 100}%` }} />
-                <div className="bg-gray-300 transition-all" style={{ width: `${(data.taskStats.open / data.taskStats.total) * 100}%` }} />
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Noch offen</span>
+                  <span className="font-medium text-red-600">{fmtEur(totalCostsOpen)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-gray-900 border-t pt-2">
+                  <span>Gesamt</span>
+                  <span>{fmtEur(totalCosts)}</span>
+                </div>
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Hinweise & Infos */}
-        <Card>
-          <CardHeader>
-            <h2 className="text-lg font-semibold text-gray-900">Hinweise</h2>
-          </CardHeader>
-          <CardContent>
-            {otherWarnings.length > 0 ? (
-              <div className="space-y-2">
-                {otherWarnings.map((w, i) => {
-                  const cfg = severityConfig[w.severity]
-                  return (
-                    <div key={i} className={`flex items-start gap-2 p-2.5 rounded-lg ${cfg.bg} ${cfg.border} border`}>
-                      <span className="shrink-0 text-sm">{cfg.icon}</span>
-                      <span className={`text-sm ${cfg.text}`}>{w.message}</span>
+        {/* Sponsoring + Quick Links */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-gray-900">Sponsoring</h3>
+                <Link href="/sponsoring" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                  Details →
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-700">Zugesagt</span>
+                  <span className="font-bold text-gray-900">{fmtEur(totalSponsoring)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-700">Erhalten</span>
+                  <span className="font-bold text-green-600">{fmtEur(totalSponsoringReceived)}</span>
+                </div>
+                {totalSponsoring > 0 && (
+                  <div>
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <span>Fortschritt</span>
+                      <span>{totalSponsoring > 0 ? Math.round((totalSponsoringReceived / totalSponsoring) * 100) : 0}%</span>
                     </div>
-                  )
-                })}
+                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-green-500 rounded-full transition-all"
+                        style={{ width: `${totalSponsoring > 0 ? (totalSponsoringReceived / totalSponsoring) * 100 : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="text-center py-8 text-gray-400">
-                <div className="text-3xl mb-2">✅</div>
-                <p className="text-sm">Alles im grünen Bereich!</p>
+            </CardContent>
+          </Card>
+
+          {/* Quick Links */}
+          <Card>
+            <CardHeader>
+              <h3 className="font-semibold text-gray-900">Schnellzugriff</h3>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { href: '/getraenke/katalog', icon: '🍺', label: 'Getränkeliste' },
+                  { href: '/getraenke', icon: '📊', label: 'Produkte & Preise' },
+                  { href: '/prognose', icon: '🔮', label: 'Prognose-Details' },
+                  { href: '/kosten', icon: '💸', label: 'Kostenplanung' },
+                  { href: '/sponsoring', icon: '🤝', label: 'Sponsoring' },
+                  { href: '/uebersicht', icon: '📊', label: 'Finanzübersicht' },
+                ].map(link => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors text-sm"
+                  >
+                    <span>{link.icon}</span>
+                    <span className="font-medium text-gray-800">{link.label}</span>
+                  </Link>
+                ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      {/* Helfer-Schnellübersicht */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Helfer-Besetzung</h2>
-            <Link href="/team" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-              Schichtplan öffnen →
-            </Link>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
-              <div className="text-3xl font-bold text-gray-900">{data.users}</div>
-              <div className="text-sm text-gray-500 mt-1">Registrierte Helfer</div>
+      {/* ── Hinweise ──────────────────────────────────────────────────── */}
+      {warnings.length > 0 && (
+        <Card>
+          <CardHeader>
+            <h3 className="font-semibold text-gray-900">Hinweise</h3>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {warnings.map((w, i) => {
+                const cfg = w.severity === 'high'
+                  ? { bg: 'bg-red-50', border: 'border-red-200', icon: '🔴', text: 'text-red-800' }
+                  : w.severity === 'medium'
+                    ? { bg: 'bg-yellow-50', border: 'border-yellow-200', icon: '🟡', text: 'text-yellow-800' }
+                    : { bg: 'bg-blue-50', border: 'border-blue-200', icon: '🔵', text: 'text-blue-800' }
+                return (
+                  <div key={i} className={`flex items-start gap-2 p-2.5 rounded-lg ${cfg.bg} ${cfg.border} border`}>
+                    <span className="shrink-0 text-sm">{cfg.icon}</span>
+                    <span className={`text-sm ${cfg.text}`}>{w.message}</span>
+                  </div>
+                )
+              })}
             </div>
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
-              <div className="text-3xl font-bold text-indigo-600">{data.shiftStats.total}</div>
-              <div className="text-sm text-gray-500 mt-1">Schichten gesamt</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
-              <div className="text-3xl font-bold text-green-600">{data.shiftStats.filled}</div>
-              <div className="text-sm text-gray-500 mt-1">Voll besetzt</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
-              <div className={`text-3xl font-bold ${data.shiftStats.understaffed > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                {data.shiftStats.understaffed}
-              </div>
-              <div className="text-sm text-gray-500 mt-1">Unterbesetzt</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

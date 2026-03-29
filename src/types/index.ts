@@ -35,8 +35,9 @@ export const EVENT_DAY_EVENTS: Record<string, string> = {
 export const PRODUCT_CATEGORIES = [
   'Bier & Radler',
   'Softdrinks',
-  'Wein & Sekt',
   'Schnaps & Shots',
+  'Longdrinks',
+  'Wein & Sekt',
   'Warme Speisen',
   'Snacks',
 ] as const
