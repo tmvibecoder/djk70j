@@ -141,12 +141,11 @@ export default function UebersichtPage() {
           <div>
             <p className="text-yellow-500 text-xs font-semibold tracking-widest uppercase">DJK Ottenhofen e.V.</p>
             <h1 className="text-2xl font-bold text-white">📊 Gesamtübersicht</h1>
-            <p className="text-gray-400 text-sm">DJK Ottenhofen – 70-Jahr-Jubiläumsfest · 09.–12. Juli 2026</p>
           </div>
         </div>
       </div>
 
-      <div><h2 className="text-xl font-bold text-gray-900">📊 Gesamtübersicht</h2><p className="text-sm text-gray-600">DJK Ottenhofen – 70-Jahr-Jubiläumsfest · 09.–12. Juli 2026</p></div>
+      <div><h2 className="text-xl font-bold text-gray-900">📊 Gesamtübersicht</h2></div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {scenarioTotals.map(st => {
