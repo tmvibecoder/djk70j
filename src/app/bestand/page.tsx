@@ -127,12 +127,12 @@ export default function BestandPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center border-b border-gray-200 pb-4">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b border-gray-200 pb-4 gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Bestand & Inventur</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">Bestand & Inventur</h1>
           <p className="mt-1 text-sm text-gray-500">Bestandserfassung und Verbrauchsübersicht für alle Tage</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0">
           <Button
             variant={viewMode === 'entry' ? 'primary' : 'secondary'}
             onClick={() => setViewMode('entry')}
@@ -153,13 +153,13 @@ export default function BestandPage() {
           {/* Tagesauswahl */}
           <Card>
             <CardContent className="py-4">
-              <div className="flex gap-4 items-end">
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
                 <Select
                   label="Tag"
                   value={selectedDay}
                   onChange={(e) => setSelectedDay(e.target.value)}
                   options={ALL_DAYS.map((day) => ({ value: day, label: DAY_LABELS[day] }))}
-                  className="w-48"
+                  className="w-full sm:w-48"
                 />
                 <Select
                   label="Typ"
@@ -170,9 +170,9 @@ export default function BestandPage() {
                     loadData()
                   }}
                   options={INVENTORY_TYPES.map((type) => ({ value: type, label: INVENTORY_TYPE_LABELS[type] }))}
-                  className="w-48"
+                  className="w-full sm:w-48"
                 />
-                <Button onClick={handleSave} disabled={saving}>
+                <Button onClick={handleSave} disabled={saving} className="shrink-0">
                   {saving ? 'Speichere...' : 'Speichern'}
                 </Button>
               </div>
@@ -189,14 +189,14 @@ export default function BestandPage() {
                 <CardHeader>
                   <h2 className="text-lg font-semibold text-gray-900">{category}</h2>
                 </CardHeader>
-                <CardContent className="p-0">
-                  <table className="w-full">
+                <CardContent className="p-0 overflow-x-auto">
+                  <table className="w-full min-w-[480px]">
                     <thead className="bg-gray-50 border-b">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produkt</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Einheit</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Akt. Bestand</th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase w-32">Menge</th>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produkt</th>
+                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Einheit</th>
+                        <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Akt. Bestand</th>
+                        <th className="px-4 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase w-32">Menge</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -268,15 +268,15 @@ export default function BestandPage() {
             <CardHeader>
               <h2 className="text-lg font-semibold text-gray-900">Verbrauch nach Produkt</h2>
             </CardHeader>
-            <CardContent className="p-0">
-              <table className="w-full">
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="w-full min-w-[560px]">
                 <thead className="bg-gray-50 border-b">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produkt</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Akt. Bestand</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Verbrauch</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Umsatz</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Gewinn</th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produkt</th>
+                    <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Akt. Bestand</th>
+                    <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Verbrauch</th>
+                    <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Umsatz</th>
+                    <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Gewinn</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">

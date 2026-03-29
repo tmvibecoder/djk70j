@@ -339,7 +339,7 @@ export default function PrognosePage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gray-900 -mx-4 -mt-6 px-4 pt-6 pb-4 mb-6 rounded-b-lg">
+      <div className="bg-gray-900 -mx-4 -mt-16 lg:-mt-6 px-4 pt-16 lg:pt-6 pb-4 mb-6 rounded-b-lg">
         <div className="flex justify-between items-start mb-4">
           <div>
             <p className="text-yellow-500 text-xs font-semibold tracking-widest uppercase">DJK Ottenhofen e.V.</p>
