@@ -245,14 +245,14 @@ export default function GetraenkePage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Produkte & Preise</h1>
-          <p className="text-gray-600">Verkaufsplanung und Live-Tracking pro Tag</p>
+          <p className="text-gray-600 text-sm">Verkaufsplanung und Live-Tracking pro Tag</p>
         </div>
         <Link
           href="/getraenke/katalog"
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm shadow-sm shrink-0"
         >
           <span className="text-lg">🍺</span>
           Getränkeliste verwalten
@@ -309,30 +309,34 @@ export default function GetraenkePage() {
       {/* Day & Category Filter */}
       <Card>
         <CardContent className="py-4">
-          <div className="flex gap-4 items-center flex-wrap">
-            <span className="text-sm font-semibold text-gray-800">Tag:</span>
-            <div className="flex gap-1">
-              {EVENT_DAYS.map((day) => (
-                <Button
-                  key={day}
-                  variant={selectedDay === day ? 'primary' : 'secondary'}
-                  size="sm"
-                  onClick={() => setSelectedDay(day)}
-                >
-                  {EVENT_DAY_LABELS[day]}
-                </Button>
-              ))}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-semibold text-gray-800">Tag:</span>
+              <div className="flex gap-1">
+                {EVENT_DAYS.map((day) => (
+                  <Button
+                    key={day}
+                    variant={selectedDay === day ? 'primary' : 'secondary'}
+                    size="sm"
+                    onClick={() => setSelectedDay(day)}
+                  >
+                    {EVENT_DAY_LABELS[day]}
+                  </Button>
+                ))}
+              </div>
             </div>
-            <span className="text-sm font-semibold text-gray-800 ml-4">Kategorie:</span>
-            <Select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              options={[
-                { value: '', label: 'Alle' },
-                ...PRODUCT_CATEGORIES.map((cat) => ({ value: cat, label: cat })),
-              ]}
-              className="w-40"
-            />
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-800">Kategorie:</span>
+              <Select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                options={[
+                  { value: '', label: 'Alle' },
+                  ...PRODUCT_CATEGORIES.map((cat) => ({ value: cat, label: cat })),
+                ]}
+                className="w-40"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -346,13 +350,13 @@ export default function GetraenkePage() {
         return (
           <Card key={category}>
             <CardHeader>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-1">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">{icon}</span>
                   <h2 className="text-lg font-semibold text-gray-900">{category}</h2>
                 </div>
                 {categoryTotals[category] && (
-                  <div className="text-sm font-medium">
+                  <div className="text-xs sm:text-sm font-medium">
                     <span className="text-blue-700">Prognose: {categoryTotals[category].estRevenue.toFixed(2)} €</span>
                     <span className="mx-2 text-gray-400">|</span>
                     <span className="text-green-700">Verkauft: {categoryTotals[category].actRevenue.toFixed(2)} €</span>
@@ -360,8 +364,8 @@ export default function GetraenkePage() {
                 )}
               </div>
             </CardHeader>
-            <CardContent className="p-0">
-              <table className="w-full">
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="w-full min-w-[700px]">
                 <thead className="bg-gray-50 border-b">
                   <tr>
                     <th className="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase w-8"></th>

@@ -136,7 +136,7 @@ export default function KatalogPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
         <div>
           <Link
             href="/getraenke"
@@ -148,9 +148,9 @@ export default function KatalogPage() {
             Zurück zu Produkte & Preise
           </Link>
           <h1 className="text-2xl font-bold text-gray-900">Getränkeliste</h1>
-          <p className="text-gray-600">Verwalte alle Getränke und Speisen mit EK- und VK-Preisen</p>
+          <p className="text-gray-600 text-sm">Verwalte alle Getränke und Speisen mit EK- und VK-Preisen</p>
         </div>
-        <Button onClick={() => openModal()}>+ Neues Produkt</Button>
+        <Button onClick={() => openModal()} className="shrink-0">+ Neues Produkt</Button>
       </div>
 
       {/* Summary */}
@@ -189,8 +189,8 @@ export default function KatalogPage() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-0">
-              <table className="w-full">
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="w-full min-w-[640px]">
                 <thead className="bg-gray-50 border-b">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Produkt</th>

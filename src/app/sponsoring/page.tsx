@@ -147,7 +147,7 @@ export default function SponsoringPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gray-900 -mx-4 -mt-6 px-4 pt-6 pb-4 mb-6 rounded-b-lg">
+      <div className="bg-gray-900 -mx-4 -mt-16 lg:-mt-6 px-4 pt-16 lg:pt-6 pb-4 mb-6 rounded-b-lg">
         <div className="flex justify-between items-start mb-2">
           <div>
             <p className="text-yellow-500 text-xs font-semibold tracking-widest uppercase">DJK Ottenhofen e.V.</p>
@@ -163,12 +163,12 @@ export default function SponsoringPage() {
         </div>
       </div>
 
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div>
           <h2 className="text-xl font-bold text-gray-900">🤝 Sponsoring & Zuschüsse</h2>
           <p className="text-sm text-gray-600">Spenden und Sponsorengelder</p>
         </div>
-        <button onClick={addSponsor} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">+ Sponsor</button>
+        <button onClick={addSponsor} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shrink-0 self-start sm:self-auto">+ Sponsor</button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -136,7 +136,7 @@ export default function UebersichtPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gray-900 -mx-4 -mt-6 px-4 pt-6 pb-4 mb-6 rounded-b-lg">
+      <div className="bg-gray-900 -mx-4 -mt-16 lg:-mt-6 px-4 pt-16 lg:pt-6 pb-4 mb-6 rounded-b-lg">
         <div className="flex justify-between items-start mb-2">
           <div>
             <p className="text-yellow-500 text-xs font-semibold tracking-widest uppercase">DJK Ottenhofen e.V.</p>
@@ -195,9 +195,9 @@ export default function UebersichtPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow border p-5">
+      <div className="bg-white rounded-lg shadow border p-5 overflow-x-auto">
         <h3 className="font-bold text-gray-900 mb-4">Detail nach Tag (Realistisch)</h3>
-        <table className="w-full text-sm">
+        <table className="w-full text-sm min-w-[400px]">
           <thead><tr className="border-b-2 border-gray-200 text-xs text-gray-700 font-medium"><th className="text-left py-2 px-2">Tag</th><th className="text-right py-2 px-2">Besucher</th><th className="text-right py-2 px-2">Getränke</th><th className="text-right py-2 px-2">Umsatz</th></tr></thead>
           <tbody>
             {state.days.map(d => { const rev = calcDayRevenue(d.id, "realistic"); return (
