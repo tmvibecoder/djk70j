@@ -23,26 +23,23 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    title: 'GETRÄNKE & LAGER',
+    title: 'PLANUNG',
     items: [
-      { href: '/getraenke/katalog', label: 'Getränkeliste', icon: '🍺' },
-      { href: '/getraenke', label: 'Produkte & Preise', icon: '📋' },
-      { href: '/bestand', label: 'Bestand & Inventur', icon: '📦' },
+      { href: '/produkte', label: 'Produkte', icon: '🍺' },
+      { href: '/prognose', label: 'Prognose', icon: '🔮' },
+      { href: '/finanzen', label: 'Finanzen', icon: '💰' },
     ],
   },
   {
-    title: 'FINANZEN & PROGNOSE',
+    title: 'FESTBETRIEB',
     items: [
-      { href: '/prognose', label: 'Prognose', icon: '🔮' },
-      { href: '/kosten', label: 'Kosten', icon: '💸' },
-      { href: '/sponsoring', label: 'Sponsoring', icon: '🤝' },
-      { href: '/uebersicht', label: 'Übersicht', icon: '📊' },
+      { href: '/bestand', label: 'Bestand & Inventur', icon: '📦' },
     ],
   },
   {
     title: 'DOKUMENTATION',
     items: [
-      { href: '/protokolle', label: 'Transkripte & Sitzungen', icon: '📝' },
+      { href: '/protokolle', label: 'Sitzungsprotokolle', icon: '📝' },
     ],
   },
 ]
