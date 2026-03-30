@@ -36,9 +36,10 @@ model Product {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  inventories    Inventory[]
-  salesEstimates SalesEstimate[]
-  salesEntries   SalesEntry[]
+  inventories     Inventory[]
+  salesEstimates  SalesEstimate[]
+  salesEntries    SalesEntry[]
+  forecastEntries ForecastEntry[]
 }
 
 // Verkaufs-Eintragungen (protokolliert mit Zeitstempel und Benutzer)
@@ -164,4 +165,55 @@ model Task {
   @@index([assigneeId])
   @@index([status])
   @@index([eventDay])
+}
+
+// ─── Finanzen ────────────────────────────────────────────────────────────────
+
+// Kostenpositionen (Zeltmiete, Band, Security, etc.)
+model CostItem {
+  id          String   @id @default(cuid())
+  name        String
+  projected   Float    @default(0)
+  actual      Float?
+  dueDate     String   @default("before") // "before", "during", "after", "paid"
+  costType    String   @default("fix")    // "fix", "variabel_getraenke", "variabel_sonstig", "unklar"
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Sponsoren & Zuschüsse
+model Sponsor {
+  id        String   @id @default(cuid())
+  name      String
+  amount    Float    @default(0)
+  received  Boolean  @default(false)
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Prognose-Szenarien (pro Produkt, pro Tag, pro Szenario)
+model ForecastEntry {
+  id        String @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  eventDay  String  // "thursday", "friday", "saturday", "sunday"
+  scenario  String  // "pessimistic", "realistic", "optimistic"
+  quantity  Float   @default(0)
+
+  @@unique([productId, eventDay, scenario])
+  @@index([eventDay])
+  @@index([scenario])
+}
+
+// Eintrittsprognose pro Tag und Szenario
+model EntryForecast {
+  id        String @id @default(cuid())
+  eventDay  String  // "thursday", "friday", "saturday", "sunday"
+  scenario  String  // "pessimistic", "realistic", "optimistic"
+  visitors  Int     @default(0)
+  entryFee  Float   @default(0)
+
+  @@unique([eventDay, scenario])
 }
