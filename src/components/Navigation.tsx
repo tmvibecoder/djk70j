@@ -39,6 +39,12 @@ const navGroups: NavGroup[] = [
       { href: '/uebersicht', label: 'Übersicht', icon: '📊' },
     ],
   },
+  {
+    title: 'DOKUMENTATION',
+    items: [
+      { href: '/protokolle', label: 'Transkripte & Sitzungen', icon: '📝' },
+    ],
+  },
 ]
 
 export function Navigation() {
