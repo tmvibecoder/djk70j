@@ -244,34 +244,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── 1. Schnellzugriff ─────────────────────────────────────────── */}
-      <Card>
-        <CardHeader>
-          <h3 className="font-semibold text-gray-900">Schnellzugriff</h3>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {[
-              { href: '/getraenke/katalog', icon: '🍺', label: 'Getränkeliste' },
-              { href: '/getraenke', icon: '📊', label: 'Produkte & Preise' },
-              { href: '/prognose', icon: '🔮', label: 'Prognose-Details' },
-              { href: '/kosten', icon: '💸', label: 'Kostenplanung' },
-              { href: '/sponsoring', icon: '🤝', label: 'Sponsoring' },
-              { href: '/uebersicht', icon: '📊', label: 'Finanzübersicht' },
-            ].map(link => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors text-sm"
-              >
-                <span>{link.icon}</span>
-                <span className="font-medium text-gray-800">{link.label}</span>
-              </Link>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* ── 2. Kostenübersicht & Sponsoring ───────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
