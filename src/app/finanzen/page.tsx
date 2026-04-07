@@ -34,10 +34,11 @@ const TABS = [
 ]
 
 const COST_TYPES = [
-  { value: 'fix', label: 'Fixkosten', icon: '📌' },
-  { value: 'variabel_getraenke', label: 'Variabel (Getränke)', icon: '🍺' },
-  { value: 'variabel_sonstig', label: 'Variabel (Sonstiges)', icon: '📦' },
-  { value: 'unklar', label: 'Unklar / Geschätzt', icon: '❓' },
+  { value: 'musik', label: 'Musik & Unterhaltung', icon: '🎵' },
+  { value: 'infrastruktur', label: 'Infrastruktur & Miete', icon: '⛺' },
+  { value: 'personal', label: 'Personal & Service', icon: '👥' },
+  { value: 'material', label: 'Material & Ausstattung', icon: '📦' },
+  { value: 'werbung', label: 'Werbung & Druck', icon: '📣' },
 ]
 
 const STATUS_OPTIONS = [
