@@ -52,13 +52,6 @@ const STATUS_OPTIONS = [
   { value: 'offen', label: 'OFFEN', color: 'bg-red-50 text-red-700 border-red-200' },
 ]
 
-const DUE_OPTIONS = [
-  { value: 'before', label: 'Vor dem Fest' },
-  { value: 'during', label: 'Während' },
-  { value: 'after', label: 'Danach' },
-  { value: 'paid', label: 'Bezahlt' },
-]
-
 const EVENT_DAY_OPTIONS = [
   { value: '', label: 'Allgemein (kein Tag)' },
   { value: 'thursday', label: 'Donnerstag' },
