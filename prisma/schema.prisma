@@ -177,6 +177,8 @@ model CostItem {
   actual      Float?
   dueDate     String   @default("before") // "before", "during", "after", "paid"
   costType    String   @default("fix")    // "fix", "variabel_getraenke", "variabel_sonstig", "unklar"
+  status      String   @default("offen")  // "fix", "bezahlt", "zugesagt", "geplant", "geschaetzt", "offen", "klaeren", "bestellen", "anfragen"
+  eventDay    String?                     // "thursday", "friday", "saturday", "sunday", null = Allgemein
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

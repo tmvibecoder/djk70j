@@ -419,13 +419,13 @@ export default function PrognosePage() {
               <label className="text-sm text-gray-600 font-medium">Besucher:</label>
               <input type="number" value={getEntry(selectedDay, selectedScenario).visitors || ''}
                 onChange={e => setEntry(selectedDay, selectedScenario, 'visitors', +e.target.value || 0)}
-                className="w-24 border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white" />
+                className="w-24 border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-gray-900 bg-white" />
             </div>
             <div className="flex items-center gap-2">
               <label className="text-sm text-gray-600 font-medium">Eintritt (EUR):</label>
               <input type="number" step="0.50" value={getEntry(selectedDay, selectedScenario).entryFee || ''}
                 onChange={e => setEntry(selectedDay, selectedScenario, 'entryFee', +e.target.value || 0)}
-                className="w-24 border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white" />
+                className="w-24 border border-gray-300 rounded-lg px-3 py-1.5 text-sm text-gray-900 bg-white" />
             </div>
             <div className="text-sm text-gray-600 ml-auto">
               = <span className="font-bold text-gray-900">{fmtEur(getEntry(selectedDay, selectedScenario).visitors * getEntry(selectedDay, selectedScenario).entryFee)}</span> Einnahmen
@@ -464,7 +464,7 @@ export default function PrognosePage() {
                         <td className="px-3 py-2 text-right">
                           <input type="number" min="0" value={qty || ''}
                             onChange={e => setQuantity(p.id, selectedDay, selectedScenario, +e.target.value || 0)}
-                            className="w-20 border border-gray-300 rounded px-2 py-1 text-sm text-right" />
+                            className="w-20 border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 text-right" />
                         </td>
                         <td className="px-3 py-2 text-right font-medium text-gray-900">{fmtEur(revenue)}</td>
                         <td className="px-3 py-2 text-right font-medium text-green-600">{fmtEur(margin)}</td>
