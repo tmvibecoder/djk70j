@@ -195,7 +195,20 @@ model Sponsor {
   updatedAt DateTime @updatedAt
 }
 
-// Prognose-Szenarien (pro Produkt, pro Tag, pro Szenario)
+// Vereinfachte Prognose (Besucher × Umsatz/Person)
+model SimpleForecast {
+  id               String @id @default(cuid())
+  eventDay         String  // "thursday", "friday", "saturday_day", "saturday_night", "sunday"
+  scenario         String  // "pessimistic", "realistic", "optimistic"
+  visitors         Int     @default(0)
+  revenuePerPerson Float   @default(0)
+  entryFee         Float   @default(0)
+  costPercent      Float   @default(25)
+
+  @@unique([eventDay, scenario])
+}
+
+// Prognose-Szenarien (pro Produkt, pro Tag, pro Szenario) — Legacy
 model ForecastEntry {
   id        String @id @default(cuid())
   productId String

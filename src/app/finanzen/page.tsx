@@ -22,9 +22,13 @@ interface Sponsor {
   notes: string | null
 }
 
-interface ForecastData {
-  forecasts: { productId: string; eventDay: string; scenario: string; quantity: number; product: { name: string; salePrice: number; purchasePrice: number; category: string } }[]
-  entryForecasts: { eventDay: string; scenario: string; visitors: number; entryFee: number }[]
+interface SimpleForecast {
+  eventDay: string
+  scenario: string
+  visitors: number
+  revenuePerPerson: number
+  entryFee: number
+  costPercent: number
 }
 
 const TABS = [
@@ -63,7 +67,7 @@ const EVENT_DAY_OPTIONS = [
 
 const ACCORDION_DAYS = [
   { key: 'friday', label: 'Freitag', date: '10.07.', event: 'Disco-Party mit DJ Josh', icon: '🎶' },
-  { key: 'saturday', label: 'Samstag', date: '11.07.', event: 'Drunter & Drüber', icon: '🎉' },
+  { key: 'saturday', label: 'Samstag', date: '11.07.', event: 'Festprogramm + Festzeltparty', icon: '🎉' },
   { key: 'sunday', label: 'Sonntag', date: '12.07.', event: 'Bayrischer Festsonntag', icon: '⛪' },
   { key: null, label: 'Allgemein', date: '', event: 'Tagesunabhängig', icon: '📦' },
 ]
@@ -75,11 +79,20 @@ const SCENARIOS = [
 ]
 
 const EVENT_DAYS = [
-  { key: 'thursday', label: 'Do 09.07.', short: 'Do' },
-  { key: 'friday', label: 'Fr 10.07.', short: 'Fr' },
-  { key: 'saturday', label: 'Sa 11.07.', short: 'Sa' },
-  { key: 'sunday', label: 'So 12.07.', short: 'So' },
+  { key: 'thursday', label: 'Do 09.07.', short: 'Do', icon: '🃏' },
+  { key: 'friday', label: 'Fr 10.07.', short: 'Fr', icon: '🎶' },
+  { key: 'saturday_day', label: 'Sa Tag', short: 'Sa☀️', icon: '⚽' },
+  { key: 'saturday_night', label: 'Sa Abend', short: 'Sa🌙', icon: '🎉' },
+  { key: 'sunday', label: 'So 12.07.', short: 'So', icon: '⛪' },
 ]
+
+// Map cost eventDay "saturday" to both saturday_day + saturday_night for revenue calc
+const COST_DAY_TO_FORECAST_DAYS: Record<string, string[]> = {
+  thursday: ['thursday'],
+  friday: ['friday'],
+  saturday: ['saturday_day', 'saturday_night'],
+  sunday: ['sunday'],
+}
 
 const fmtEur = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
 const fmtNum = (v: number) => v.toLocaleString('de-DE', { maximumFractionDigits: 0 })
@@ -93,7 +106,7 @@ export default function FinanzenPage() {
   const [tab, setTab] = useState('kosten')
   const [costs, setCosts] = useState<CostItem[]>([])
   const [sponsors, setSponsors] = useState<Sponsor[]>([])
-  const [forecast, setForecast] = useState<ForecastData | null>(null)
+  const [simpleForecasts, setSimpleForecasts] = useState<SimpleForecast[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedScenario, setSelectedScenario] = useState('realistic')
   const [openDays, setOpenDays] = useState<Record<string, boolean>>({})
@@ -111,7 +124,7 @@ export default function FinanzenPage() {
     const [costsRes, sponsorsRes, forecastRes] = await Promise.all([
       fetch('/api/costs'),
       fetch('/api/sponsors'),
-      fetch('/api/forecast'),
+      fetch('/api/simple-forecast'),
     ])
     const [costsData, sponsorsData, forecastData] = await Promise.all([
       costsRes.json(),
@@ -120,7 +133,7 @@ export default function FinanzenPage() {
     ])
     setCosts(costsData)
     setSponsors(sponsorsData)
-    setForecast(forecastData)
+    setSimpleForecasts(forecastData)
     setLoading(false)
   }, [])
 
@@ -185,31 +198,36 @@ export default function FinanzenPage() {
   const costsForDay = (dayKey: string | null) => costs.filter(c => c.eventDay === dayKey)
   const costSumForDay = (dayKey: string | null) => costsForDay(dayKey).reduce((s, c) => s + c.projected, 0)
 
-  // Revenue per scenario per day
-  const calcDayRevenue = (dayKey: string, scenario: string) => {
-    if (!forecast) return 0
-    const entries = forecast.forecasts.filter(f => f.eventDay === dayKey && f.scenario === scenario)
-    const drinkRev = entries.reduce((s, e) => s + e.quantity * e.product.salePrice, 0)
-    const entryData = forecast.entryForecasts.find(f => f.eventDay === dayKey && f.scenario === scenario)
-    const entryRev = entryData ? entryData.visitors * entryData.entryFee : 0
-    return drinkRev + entryRev
+  // Revenue from SimpleForecast
+  const calcForecastDay = (dayKey: string, scenario: string) => {
+    const f = simpleForecasts.find(sf => sf.eventDay === dayKey && sf.scenario === scenario)
+    if (!f) return { umsatz: 0, eintritt: 0, wareneinsatz: 0, rohertrag: 0 }
+    const umsatz = f.visitors * f.revenuePerPerson
+    const eintritt = f.visitors * f.entryFee
+    const wareneinsatz = umsatz * (f.costPercent / 100)
+    return { umsatz, eintritt, wareneinsatz, rohertrag: umsatz - wareneinsatz + eintritt }
+  }
+
+  // Revenue for a cost-day (maps saturday → saturday_day + saturday_night)
+  const calcCostDayRevenue = (costDay: string, scenario: string) => {
+    const forecastDays = COST_DAY_TO_FORECAST_DAYS[costDay] || [costDay]
+    return forecastDays.reduce((s, d) => s + calcForecastDay(d, scenario).rohertrag, 0)
   }
 
   const calcScenarioRevenue = (scenario: string) => {
-    if (!forecast) return { drinkRevenue: 0, drinkCost: 0, entryRevenue: 0 }
-    const entries = forecast.forecasts.filter(f => f.scenario === scenario)
-    let drinkRevenue = 0, drinkCost = 0
-    for (const e of entries) {
-      drinkRevenue += e.quantity * e.product.salePrice
-      drinkCost += e.quantity * e.product.purchasePrice
+    let umsatz = 0, eintritt = 0, wareneinsatz = 0, rohertrag = 0
+    for (const day of EVENT_DAYS) {
+      const c = calcForecastDay(day.key, scenario)
+      umsatz += c.umsatz
+      eintritt += c.eintritt
+      wareneinsatz += c.wareneinsatz
+      rohertrag += c.rohertrag
     }
-    const entryEntries = forecast.entryForecasts.filter(f => f.scenario === scenario)
-    const entryRevenue = entryEntries.reduce((s, e) => s + e.visitors * e.entryFee, 0)
-    return { drinkRevenue, drinkCost, entryRevenue }
+    return { umsatz, eintritt, wareneinsatz, rohertrag }
   }
 
   const totalRevenueForScenario = (scenario: string) => {
-    return EVENT_DAYS.reduce((s, d) => s + calcDayRevenue(d.key, scenario), 0)
+    return calcScenarioRevenue(scenario).rohertrag
   }
 
   // Status breakdown
@@ -275,61 +293,68 @@ export default function FinanzenPage() {
               <span className={`text-[10px] px-2 py-0.5 rounded-full ${currentScenario.bg} ${currentScenario.color} font-bold`}>{currentScenario.label}</span>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-xs text-gray-500">
-                    <th className="text-left font-medium pb-2"></th>
-                    <th className="text-center font-medium pb-2 px-2">🃏 Do</th>
-                    <th className="text-center font-medium pb-2 px-2">🎶 Fr</th>
-                    <th className="text-center font-medium pb-2 px-2 bg-blue-50 rounded-t-lg">🎉 Sa</th>
-                    <th className="text-center font-medium pb-2 px-2">⛪ So</th>
-                    <th className="text-center font-medium pb-2 px-2">📦 Allg.</th>
-                    <th className="text-center font-bold pb-2 px-2 text-gray-700">Gesamt</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="text-xs font-medium text-emerald-600 py-1.5">Einnahmen</td>
-                    {EVENT_DAYS.map(d => (
-                      <td key={d.key} className={`text-center text-emerald-600 font-medium py-1.5 px-2 ${d.key === 'saturday' ? 'bg-blue-50' : ''}`}>
-                        {fmtNum(calcDayRevenue(d.key, selectedScenario))}
-                      </td>
-                    ))}
-                    <td className="text-center text-gray-300 py-1.5 px-2">—</td>
-                    <td className="text-center text-emerald-700 font-bold py-1.5 px-2">{fmtNum(totalRevenueForScenario(selectedScenario))}</td>
-                  </tr>
-                  <tr>
-                    <td className="text-xs font-medium text-red-500 py-1.5">Kosten</td>
-                    {EVENT_DAYS.map(d => {
-                      const dayC = costSumForDay(d.key)
-                      return (
-                        <td key={d.key} className={`text-center py-1.5 px-2 ${d.key === 'saturday' ? 'bg-blue-50' : ''} ${dayC > 0 ? 'text-red-500 font-medium' : 'text-gray-300'}`}>
-                          {dayC > 0 ? fmtNum(dayC) : '—'}
+            {(() => {
+              const COST_DAYS = [
+                { key: 'thursday', label: '🃏 Do' },
+                { key: 'friday', label: '🎶 Fr' },
+                { key: 'saturday', label: '🎉 Sa' },
+                { key: 'sunday', label: '⛪ So' },
+              ]
+              return (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-xs text-gray-500">
+                        <th className="text-left font-medium pb-2"></th>
+                        {COST_DAYS.map(d => <th key={d.key} className={`text-center font-medium pb-2 px-2 ${d.key === 'saturday' ? 'bg-blue-50 rounded-t-lg' : ''}`}>{d.label}</th>)}
+                        <th className="text-center font-medium pb-2 px-2">📦 Allg.</th>
+                        <th className="text-center font-bold pb-2 px-2 text-gray-700">Gesamt</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="text-xs font-medium text-emerald-600 py-1.5">Rohertrag</td>
+                        {COST_DAYS.map(d => (
+                          <td key={d.key} className={`text-center text-emerald-600 font-medium py-1.5 px-2 ${d.key === 'saturday' ? 'bg-blue-50' : ''}`}>
+                            {fmtNum(calcCostDayRevenue(d.key, selectedScenario))}
+                          </td>
+                        ))}
+                        <td className="text-center text-gray-300 py-1.5 px-2">—</td>
+                        <td className="text-center text-emerald-700 font-bold py-1.5 px-2">{fmtNum(totalRevenueForScenario(selectedScenario))}</td>
+                      </tr>
+                      <tr>
+                        <td className="text-xs font-medium text-red-500 py-1.5">Kosten</td>
+                        {COST_DAYS.map(d => {
+                          const dayC = costSumForDay(d.key)
+                          return (
+                            <td key={d.key} className={`text-center py-1.5 px-2 ${d.key === 'saturday' ? 'bg-blue-50' : ''} ${dayC > 0 ? 'text-red-500 font-medium' : 'text-gray-300'}`}>
+                              {dayC > 0 ? fmtNum(dayC) : '—'}
+                            </td>
+                          )
+                        })}
+                        <td className="text-center text-red-500 font-medium py-1.5 px-2">{fmtNum(costSumForDay(null))}</td>
+                        <td className="text-center text-red-600 font-bold py-1.5 px-2">{fmtNum(totalCosts)}</td>
+                      </tr>
+                      <tr className="border-t border-gray-200">
+                        <td className="text-xs font-bold text-gray-700 py-1.5">Saldo</td>
+                        {COST_DAYS.map(d => {
+                          const saldo = calcCostDayRevenue(d.key, selectedScenario) - costSumForDay(d.key)
+                          return (
+                            <td key={d.key} className={`text-center font-bold py-1.5 px-2 ${d.key === 'saturday' ? 'bg-blue-50 rounded-b-lg' : ''} ${saldo >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
+                              {saldo >= 0 ? '+' : ''}{fmtNum(saldo)}
+                            </td>
+                          )
+                        })}
+                        <td className="text-center text-red-500 font-bold py-1.5 px-2">−{fmtNum(costSumForDay(null))}</td>
+                        <td className="text-center font-bold py-1.5 px-2">
+                          <span className="text-lg text-blue-700">{fmtNum(totalRevenueForScenario(selectedScenario) - totalCosts)}</span>
                         </td>
-                      )
-                    })}
-                    <td className="text-center text-red-500 font-medium py-1.5 px-2">{fmtNum(costSumForDay(null))}</td>
-                    <td className="text-center text-red-600 font-bold py-1.5 px-2">{fmtNum(totalCosts)}</td>
-                  </tr>
-                  <tr className="border-t border-gray-200">
-                    <td className="text-xs font-bold text-gray-700 py-1.5">Saldo</td>
-                    {EVENT_DAYS.map(d => {
-                      const saldo = calcDayRevenue(d.key, selectedScenario) - costSumForDay(d.key)
-                      return (
-                        <td key={d.key} className={`text-center font-bold py-1.5 px-2 ${d.key === 'saturday' ? 'bg-blue-50 rounded-b-lg' : ''} ${saldo >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
-                          {saldo >= 0 ? '+' : ''}{fmtNum(saldo)}
-                        </td>
-                      )
-                    })}
-                    <td className="text-center text-red-500 font-bold py-1.5 px-2">-{fmtNum(costSumForDay(null))}</td>
-                    <td className="text-center font-bold py-1.5 px-2">
-                      <span className="text-lg text-blue-700">+{fmtNum(totalRevenueForScenario(selectedScenario) - totalCosts)}</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )
+            })()}
 
             {/* Fortschrittsbalken */}
             <div className="mt-4 pt-3 border-t border-gray-100">
@@ -575,9 +600,8 @@ export default function FinanzenPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {SCENARIOS.map(sc => {
               const rev = calcScenarioRevenue(sc.key)
-              const totalRevenue = rev.drinkRevenue + rev.entryRevenue + totalSponsoring
-              const totalExpenses = totalCosts + rev.drinkCost
-              const profit = totalRevenue - totalExpenses
+              const totalRevenue = rev.rohertrag + totalSponsoring
+              const profit = totalRevenue - totalCosts
               const isRealistic = sc.key === 'realistic'
 
               return (
@@ -594,12 +618,12 @@ export default function FinanzenPage() {
                   <div className="space-y-2 text-sm">
                     <div className="font-semibold text-gray-700 text-xs uppercase tracking-wider">Einnahmen</div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Getränke-Umsatz</span>
-                      <span className="font-medium text-gray-900">{fmtEur(rev.drinkRevenue)}</span>
+                      <span className="text-gray-600">Rohertrag (Umsatz − Wareneinsatz)</span>
+                      <span className="font-medium text-gray-900">{fmtEur(rev.rohertrag)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Eintrittsgelder</span>
-                      <span className="font-medium text-gray-900">{fmtEur(rev.entryRevenue)}</span>
+                      <span className="text-gray-600">davon Eintritt</span>
+                      <span className="font-medium text-gray-500">{fmtEur(rev.eintritt)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Sponsoring</span>
@@ -612,16 +636,12 @@ export default function FinanzenPage() {
 
                     <div className="font-semibold text-gray-700 text-xs uppercase tracking-wider pt-2">Ausgaben</div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Fixkosten & Sonstige</span>
+                      <span className="text-gray-600">Kosten (alle Positionen)</span>
                       <span className="font-medium text-gray-900">{fmtEur(totalCosts)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Wareneinsatz</span>
-                      <span className="font-medium text-gray-900">{fmtEur(rev.drinkCost)}</span>
-                    </div>
-                    <div className="flex justify-between font-bold text-gray-900 border-t pt-2">
-                      <span>Gesamt Ausgaben</span>
-                      <span>{fmtEur(totalExpenses)}</span>
+                    <div className={`flex justify-between font-bold border-t pt-2 ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <span>Ergebnis</span>
+                      <span>{profit >= 0 ? '+' : ''}{fmtEur(profit)}</span>
                     </div>
                   </div>
                 </div>
@@ -629,10 +649,10 @@ export default function FinanzenPage() {
             })}
           </div>
 
-          {forecast && forecast.forecasts.length > 0 && (
+          {simpleForecasts.length > 0 && (
             <div className="bg-white rounded-lg shadow border overflow-hidden">
               <div className="bg-gray-50 border-b px-4 py-3">
-                <h3 className="font-semibold text-gray-900">Umsatz pro Tag & Szenario</h3>
+                <h3 className="font-semibold text-gray-900">Rohertrag pro Tag & Szenario</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -647,10 +667,13 @@ export default function FinanzenPage() {
                   <tbody>
                     {EVENT_DAYS.map(day => (
                       <tr key={day.key} className="border-b">
-                        <td className="px-4 py-2 font-medium text-gray-900">{day.label}</td>
+                        <td className="px-4 py-2">
+                          <span className="mr-1">{day.icon}</span>
+                          <span className="font-medium text-gray-900">{day.label}</span>
+                        </td>
                         {SCENARIOS.map(sc => (
                           <td key={sc.key} className="px-4 py-2 text-right font-medium text-gray-900">
-                            {fmtEur(calcDayRevenue(day.key, sc.key))}
+                            {fmtEur(calcForecastDay(day.key, sc.key).rohertrag)}
                           </td>
                         ))}
                       </tr>
@@ -661,7 +684,7 @@ export default function FinanzenPage() {
                         const rev = calcScenarioRevenue(sc.key)
                         return (
                           <td key={sc.key} className={`px-4 py-2 text-right ${sc.color}`}>
-                            {fmtEur(rev.drinkRevenue + rev.entryRevenue)}
+                            {fmtEur(rev.rohertrag)}
                           </td>
                         )
                       })}
