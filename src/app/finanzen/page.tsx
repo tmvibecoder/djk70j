@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
 interface CostItem {
   id: string
@@ -58,6 +59,13 @@ const STATUS_OPTIONS = [
   { value: 'offen', label: 'OFFEN', color: 'bg-red-50 text-red-700 border-red-200' },
 ]
 
+const DUE_DATE_OPTIONS = [
+  { value: 'before', label: 'Vor dem Fest', icon: '📅', color: 'bg-purple-50 text-purple-700 border-purple-200' },
+  { value: 'during', label: 'Während dem Fest', icon: '🎪', color: 'bg-orange-50 text-orange-700 border-orange-200' },
+  { value: 'after', label: 'Nach dem Fest', icon: '📬', color: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
+  { value: 'paid', label: 'Bereits bezahlt', icon: '✅', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+]
+
 const EVENT_DAY_OPTIONS = [
   { value: '', label: 'Allgemein (kein Tag)' },
   { value: 'thursday', label: 'Donnerstag' },
@@ -86,14 +94,6 @@ const EVENT_DAYS = [
   { key: 'saturday_night', label: 'Sa Abend', short: 'Sa🌙', icon: '🎉' },
   { key: 'sunday', label: 'So 12.07.', short: 'So', icon: '⛪' },
 ]
-
-// Map cost eventDay "saturday" to both saturday_day + saturday_night for revenue calc
-const COST_DAY_TO_FORECAST_DAYS: Record<string, string[]> = {
-  thursday: ['thursday'],
-  friday: ['friday'],
-  saturday: ['saturday_day', 'saturday_night'],
-  sunday: ['sunday'],
-}
 
 const fmtEur = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
 const fmtNum = (v: number) => v.toLocaleString('de-DE', { maximumFractionDigits: 0 })
@@ -256,12 +256,6 @@ export default function FinanzenPage() {
     return { umsatz, eintritt, wareneinsatz, rohertrag: umsatz - wareneinsatz + eintritt }
   }
 
-  // Revenue for a cost-day (maps saturday → saturday_day + saturday_night)
-  const calcCostDayRevenue = (costDay: string, scenario: string) => {
-    const forecastDays = COST_DAY_TO_FORECAST_DAYS[costDay] || [costDay]
-    return forecastDays.reduce((s, d) => s + calcForecastDay(d, scenario).rohertrag, 0)
-  }
-
   const calcScenarioRevenue = (scenario: string) => {
     let umsatz = 0, eintritt = 0, wareneinsatz = 0, rohertrag = 0
     for (const day of EVENT_DAYS) {
@@ -272,10 +266,6 @@ export default function FinanzenPage() {
       rohertrag += c.rohertrag
     }
     return { umsatz, eintritt, wareneinsatz, rohertrag }
-  }
-
-  const totalRevenueForScenario = (scenario: string) => {
-    return calcScenarioRevenue(scenario).rohertrag
   }
 
   // Status breakdown
@@ -319,111 +309,77 @@ export default function FinanzenPage() {
       {/* ── KOSTEN TAB ── */}
       {tab === 'kosten' && (
         <div className="space-y-6">
-          {/* Szenario-Auswahl */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Szenario:</span>
-            {SCENARIOS.map(sc => (
-              <button key={sc.key} onClick={() => setSelectedScenario(sc.key)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  selectedScenario === sc.key
-                    ? sc.headerBg + ' text-white shadow-md'
-                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                }`}>
-                {sc.label}
-              </button>
-            ))}
-          </div>
 
-          {/* Matrix-Übersicht: Einnahmen vs Kosten */}
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide">Kosten vs. Einnahmen</h2>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full ${currentScenario.bg} ${currentScenario.color} font-bold`}>{currentScenario.label}</span>
-            </div>
-
-            {(() => {
-              const COST_DAYS = [
-                { key: 'thursday', label: '🃏 Do' },
-                { key: 'friday', label: '🎶 Fr' },
-                { key: 'saturday', label: '🎉 Sa' },
-                { key: 'sunday', label: '⛪ So' },
-              ]
+          {/* Kosten-Übersicht */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {DUE_DATE_OPTIONS.map(dd => {
+              const sum = costs.filter(c => c.dueDate === dd.value).reduce((s, c) => s + c.projected, 0)
+              const count = costs.filter(c => c.dueDate === dd.value).length
               return (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-xs text-gray-500">
-                        <th className="text-left font-medium pb-2"></th>
-                        {COST_DAYS.map(d => <th key={d.key} className={`text-center font-medium pb-2 px-2 ${d.key === 'saturday' ? 'bg-blue-50 rounded-t-lg' : ''}`}>{d.label}</th>)}
-                        <th className="text-center font-medium pb-2 px-2">📦 Allg.</th>
-                        <th className="text-center font-bold pb-2 px-2 text-gray-700">Gesamt</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td className="text-xs font-medium text-emerald-600 py-1.5">Rohertrag</td>
-                        {COST_DAYS.map(d => (
-                          <td key={d.key} className={`text-center text-emerald-600 font-medium py-1.5 px-2 ${d.key === 'saturday' ? 'bg-blue-50' : ''}`}>
-                            {fmtNum(calcCostDayRevenue(d.key, selectedScenario))}
-                          </td>
-                        ))}
-                        <td className="text-center text-gray-300 py-1.5 px-2">—</td>
-                        <td className="text-center text-emerald-700 font-bold py-1.5 px-2">{fmtNum(totalRevenueForScenario(selectedScenario))}</td>
-                      </tr>
-                      <tr>
-                        <td className="text-xs font-medium text-red-500 py-1.5">Kosten</td>
-                        {COST_DAYS.map(d => {
-                          const dayC = costSumForDay(d.key)
-                          return (
-                            <td key={d.key} className={`text-center py-1.5 px-2 ${d.key === 'saturday' ? 'bg-blue-50' : ''} ${dayC > 0 ? 'text-red-500 font-medium' : 'text-gray-300'}`}>
-                              {dayC > 0 ? fmtNum(dayC) : '—'}
-                            </td>
-                          )
-                        })}
-                        <td className="text-center text-red-500 font-medium py-1.5 px-2">{fmtNum(costSumForDay(null))}</td>
-                        <td className="text-center text-red-600 font-bold py-1.5 px-2">{fmtNum(totalCosts)}</td>
-                      </tr>
-                      <tr className="border-t border-gray-200">
-                        <td className="text-xs font-bold text-gray-700 py-1.5">Saldo</td>
-                        {COST_DAYS.map(d => {
-                          const saldo = calcCostDayRevenue(d.key, selectedScenario) - costSumForDay(d.key)
-                          return (
-                            <td key={d.key} className={`text-center font-bold py-1.5 px-2 ${d.key === 'saturday' ? 'bg-blue-50 rounded-b-lg' : ''} ${saldo >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
-                              {saldo >= 0 ? '+' : ''}{fmtNum(saldo)}
-                            </td>
-                          )
-                        })}
-                        <td className="text-center text-red-500 font-bold py-1.5 px-2">−{fmtNum(costSumForDay(null))}</td>
-                        <td className="text-center font-bold py-1.5 px-2">
-                          <span className="text-lg text-blue-700">{fmtNum(totalRevenueForScenario(selectedScenario) - totalCosts)}</span>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <div key={dd.value} className="bg-white rounded-xl border border-gray-200 p-3 text-center">
+                  <div className="text-lg mb-1">{dd.icon}</div>
+                  <div className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">{dd.label}</div>
+                  <div className="text-lg font-bold text-gray-900 mt-1">{fmtEur(sum)}</div>
+                  <div className="text-[10px] text-gray-400">{count} {count === 1 ? 'Position' : 'Positionen'}</div>
                 </div>
               )
-            })()}
+            })}
+          </div>
 
-            {/* Fortschrittsbalken */}
-            <div className="mt-4 pt-3 border-t border-gray-100">
-              <div className="flex justify-between text-[10px] text-gray-500 mb-1">
-                <span>Budget-Status: {totalCosts > 0 ? Math.round((statusGroups.confirmed / totalCosts) * 100) : 0}% bestätigt</span>
-                <span>{fmtEur(statusGroups.confirmed)} von {fmtEur(totalCosts)} fix</span>
+          {/* Kosten pro Tag – Balkendiagramm */}
+          {(() => {
+            const CHART_DAYS = [
+              { key: 'friday', label: 'Fr 10.07.', icon: '🎶' },
+              { key: 'saturday', label: 'Sa 11.07.', icon: '🎉' },
+              { key: 'sunday', label: 'So 12.07.', icon: '⛪' },
+              { key: null as string | null, label: 'Allgemein', icon: '📦' },
+            ]
+            const chartData = CHART_DAYS.map(d => ({
+              name: d.label,
+              icon: d.icon,
+              kosten: costSumForDay(d.key),
+            }))
+            const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#94a3b8']
+            return (
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Kosten pro Tag</h2>
+                <div className="h-52">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                      <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
+                      <Tooltip formatter={(value) => fmtEur(Number(value))} />
+                      <Bar dataKey="kosten" name="Kosten" radius={[6, 6, 0, 0]}>
+                        {chartData.map((_, i) => (
+                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
-              <div className="h-2 bg-gray-200 rounded-full overflow-hidden flex">
-                {totalCosts > 0 && <>
-                  <div className="h-full bg-emerald-500" style={{ width: `${(statusGroups.confirmed / totalCosts) * 100}%` }} title="Bezahlt/Zugesagt" />
-                  <div className="h-full bg-blue-400" style={{ width: `${(statusGroups.planned / totalCosts) * 100}%` }} title="Geplant" />
-                  <div className="h-full bg-amber-400" style={{ width: `${(statusGroups.pending / totalCosts) * 100}%` }} title="Klären" />
-                  <div className="h-full bg-red-400" style={{ width: `${(statusGroups.open / totalCosts) * 100}%` }} title="Offen" />
-                </>}
-              </div>
-              <div className="flex gap-3 mt-1.5 text-[10px] text-gray-400 flex-wrap">
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />Fix/Zugesagt</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-400" />Geplant</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400" />Klären</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400" />Offen</span>
-              </div>
+            )
+          })()}
+
+          {/* Fortschrittsbalken */}
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+              <span>Budget-Status: {totalCosts > 0 ? Math.round((statusGroups.confirmed / totalCosts) * 100) : 0}% bestätigt</span>
+              <span>{fmtEur(statusGroups.confirmed)} von {fmtEur(totalCosts)} fix</span>
+            </div>
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden flex">
+              {totalCosts > 0 && <>
+                <div className="h-full bg-emerald-500" style={{ width: `${(statusGroups.confirmed / totalCosts) * 100}%` }} title="Bezahlt/Zugesagt" />
+                <div className="h-full bg-blue-400" style={{ width: `${(statusGroups.planned / totalCosts) * 100}%` }} title="Geplant" />
+                <div className="h-full bg-amber-400" style={{ width: `${(statusGroups.pending / totalCosts) * 100}%` }} title="Klären" />
+                <div className="h-full bg-red-400" style={{ width: `${(statusGroups.open / totalCosts) * 100}%` }} title="Offen" />
+              </>}
+            </div>
+            <div className="flex gap-3 mt-1.5 text-[10px] text-gray-400 flex-wrap">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />Fix/Zugesagt</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-400" />Geplant</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400" />Klären</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400" />Offen</span>
             </div>
           </div>
 
@@ -440,7 +396,7 @@ export default function FinanzenPage() {
               <div className="space-y-3">
                 <input value={costForm.name} onChange={e => setCostForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="Position (z.B. Zeltmiete)" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900" />
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="text-xs text-gray-500 font-medium">Betrag (€)</label>
                     <input type="number" step="0.01" value={costForm.projected || ''} onChange={e => setCostForm(f => ({ ...f, projected: +e.target.value }))}
@@ -454,6 +410,15 @@ export default function FinanzenPage() {
                     </select>
                   </div>
                   <div>
+                    <label className="text-xs text-gray-500 font-medium">Zahlungszeitpunkt</label>
+                    <select value={costForm.dueDate} onChange={e => setCostForm(f => ({ ...f, dueDate: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1">
+                      {DUE_DATE_OPTIONS.map(d => <option key={d.value} value={d.value}>{d.icon} {d.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
+                  <div>
                     <label className="text-xs text-gray-500 font-medium">Tag</label>
                     <select value={costForm.eventDay} onChange={e => setCostForm(f => ({ ...f, eventDay: e.target.value }))}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1">
@@ -461,7 +426,7 @@ export default function FinanzenPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 font-medium">Typ</label>
+                    <label className="text-xs text-gray-500 font-medium">Kategorie</label>
                     <select value={costForm.costType} onChange={e => setCostForm(f => ({ ...f, costType: e.target.value }))}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1">
                       {COST_TYPES.map(ct => <option key={ct.value} value={ct.value}>{ct.icon} {ct.label}</option>)}
@@ -488,8 +453,6 @@ export default function FinanzenPage() {
             const daySum = dayCosts.reduce((s, c) => s + c.projected, 0)
             if (dayCosts.length === 0) return null
             const isOpen = openDays[dayKey] || false
-            const dayRevenue = day.key ? calcCostDayRevenue(day.key, selectedScenario) : 0
-            const saldo = dayRevenue - daySum
 
             return (
               <div key={dayKey} className="mb-2">
@@ -501,12 +464,6 @@ export default function FinanzenPage() {
                     <span className="text-xs text-gray-400">{dayCosts.length} {dayCosts.length === 1 ? 'Position' : 'Positionen'}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    {day.key && saldo !== 0 && (
-                      <span className={`text-xs font-medium hidden sm:inline ${saldo >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                        {saldo >= 0 ? '+' : ''}{fmtNum(saldo)} € Saldo
-                      </span>
-                    )}
-                    {!day.key && <span className="text-xs text-red-500 font-medium hidden sm:inline">Nur Kosten</span>}
                     <span className="text-sm font-bold text-gray-900">{fmtEur(daySum)}</span>
                     <svg className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -519,16 +476,24 @@ export default function FinanzenPage() {
                       <tbody>
                         {dayCosts.map(c => {
                           const badge = getStatusBadge(c.status)
+                          const dueBadge = DUE_DATE_OPTIONS.find(d => d.value === c.dueDate)
                           return (
                             <tr key={c.id} className="border-b border-gray-100 group">
                               <td className="px-4 py-2.5">
                                 <div className="font-medium text-gray-900">{c.name}</div>
                                 {c.notes && <div className="text-xs text-gray-400">{c.notes}</div>}
                               </td>
-                              <td className="px-3 py-2.5">
+                              <td className="px-2 py-2.5">
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${badge.color}`}>
                                   {badge.label}
                                 </span>
+                              </td>
+                              <td className="px-2 py-2.5 hidden sm:table-cell">
+                                {dueBadge && (
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${dueBadge.color}`}>
+                                    {dueBadge.icon} {dueBadge.label}
+                                  </span>
+                                )}
                               </td>
                               <td className="px-3 py-2.5 text-right font-bold text-gray-900">{fmtEur(c.projected)}</td>
                               <td className="px-2 py-2.5 text-right opacity-0 group-hover:opacity-100 transition-opacity">
@@ -541,7 +506,7 @@ export default function FinanzenPage() {
                       </tbody>
                       <tfoot>
                         <tr className="bg-gray-50">
-                          <td className="px-4 py-2 font-bold text-gray-700 text-xs" colSpan={2}>SUMME</td>
+                          <td className="px-4 py-2 font-bold text-gray-700 text-xs" colSpan={3}>SUMME</td>
                           <td className="px-3 py-2 text-right font-bold text-gray-900">{fmtEur(daySum)}</td>
                           <td></td>
                         </tr>
