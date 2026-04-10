@@ -26,8 +26,7 @@ const navGroups: NavGroup[] = [
     title: 'PLANUNG',
     items: [
       { href: '/produkte', label: 'Produkte', icon: '🍺' },
-      { href: '/prognose', label: 'Prognose', icon: '🔮' },
-      { href: '/finanzen', label: 'Finanzen', icon: '💰' },
+      { href: '/finanzen', label: 'Finanzplanung', icon: '💰' },
     ],
   },
   {

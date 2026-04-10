@@ -32,9 +32,10 @@ interface SimpleForecast {
 }
 
 const TABS = [
+  { id: 'ergebnis', label: 'Gewinn', icon: '📊' },
+  { id: 'prognose', label: 'Rohertrag', icon: '🔮' },
   { id: 'kosten', label: 'Kosten', icon: '📋' },
-  { id: 'sponsoring', label: 'Sponsoring', icon: '🤝' },
-  { id: 'ergebnis', label: 'Ergebnis', icon: '📊' },
+  { id: 'sponsoring', label: 'Spenden', icon: '🤝' },
 ]
 
 const COST_TYPES = [
@@ -103,13 +104,60 @@ function getStatusBadge(status: string) {
 }
 
 export default function FinanzenPage() {
-  const [tab, setTab] = useState('kosten')
+  const [tab, setTab] = useState('ergebnis')
   const [costs, setCosts] = useState<CostItem[]>([])
   const [sponsors, setSponsors] = useState<Sponsor[]>([])
   const [simpleForecasts, setSimpleForecasts] = useState<SimpleForecast[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedScenario, setSelectedScenario] = useState('realistic')
   const [openDays, setOpenDays] = useState<Record<string, boolean>>({})
+
+  // Prognose edits
+  const [forecastEdits, setForecastEdits] = useState<Record<string, SimpleForecast>>({})
+  const [savingForecast, setSavingForecast] = useState(false)
+
+  const FORECAST_DAYS = [
+    { key: 'thursday', label: 'Donnerstag', event: 'Watt-Turnier', icon: '🃏' },
+    { key: 'friday', label: 'Freitag', event: 'Disco-Party', icon: '🎶' },
+    { key: 'saturday_day', label: 'Sa Festprogramm', event: 'Tagsüber', icon: '⚽' },
+    { key: 'saturday_night', label: 'Sa Festzeltparty', event: 'Abends', icon: '🎉' },
+    { key: 'sunday', label: 'Sonntag', event: 'Festsonntag', icon: '⛪' },
+  ]
+
+  const DEFAULTS: Record<string, Record<string, { visitors: number; revenuePerPerson: number; entryFee: number; costPercent: number }>> = {
+    thursday:       { pessimistic: { visitors: 100, revenuePerPerson: 10, entryFee: 0, costPercent: 25 }, realistic: { visitors: 150, revenuePerPerson: 15, entryFee: 0, costPercent: 25 }, optimistic: { visitors: 200, revenuePerPerson: 20, entryFee: 0, costPercent: 25 } },
+    friday:         { pessimistic: { visitors: 200, revenuePerPerson: 20, entryFee: 5, costPercent: 25 }, realistic: { visitors: 300, revenuePerPerson: 30, entryFee: 5, costPercent: 25 }, optimistic: { visitors: 400, revenuePerPerson: 40, entryFee: 5, costPercent: 25 } },
+    saturday_day:   { pessimistic: { visitors: 150, revenuePerPerson: 10, entryFee: 0, costPercent: 25 }, realistic: { visitors: 300, revenuePerPerson: 15, entryFee: 0, costPercent: 25 }, optimistic: { visitors: 400, revenuePerPerson: 20, entryFee: 0, costPercent: 25 } },
+    saturday_night: { pessimistic: { visitors: 300, revenuePerPerson: 20, entryFee: 10, costPercent: 25 }, realistic: { visitors: 400, revenuePerPerson: 30, entryFee: 10, costPercent: 25 }, optimistic: { visitors: 500, revenuePerPerson: 40, entryFee: 10, costPercent: 25 } },
+    sunday:         { pessimistic: { visitors: 100, revenuePerPerson: 20, entryFee: 0, costPercent: 25 }, realistic: { visitors: 200, revenuePerPerson: 30, entryFee: 0, costPercent: 25 }, optimistic: { visitors: 300, revenuePerPerson: 40, entryFee: 0, costPercent: 25 } },
+  }
+
+  const getForecastEntry = (day: string, scenario: string): SimpleForecast => {
+    const key = `${day}-${scenario}`
+    if (forecastEdits[key]) return forecastEdits[key]
+    const saved = simpleForecasts.find(f => f.eventDay === day && f.scenario === scenario)
+    if (saved) return saved
+    const def = DEFAULTS[day]?.[scenario]
+    return { eventDay: day, scenario, visitors: def?.visitors || 0, revenuePerPerson: def?.revenuePerPerson || 0, entryFee: def?.entryFee || 0, costPercent: def?.costPercent || 25 }
+  }
+
+  const setForecastField = (day: string, scenario: string, field: keyof SimpleForecast, value: number) => {
+    const key = `${day}-${scenario}`
+    const current = getForecastEntry(day, scenario)
+    setForecastEdits(prev => ({ ...prev, [key]: { ...current, [field]: value } }))
+  }
+
+  const hasForecastChanges = Object.keys(forecastEdits).length > 0
+
+  const saveForecast = async () => {
+    setSavingForecast(true)
+    for (const entry of Object.values(forecastEdits)) {
+      await fetch('/api/simple-forecast', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry) })
+    }
+    setForecastEdits({})
+    await loadAll()
+    setSavingForecast(false)
+  }
 
   // Cost form
   const [editCostId, setEditCostId] = useState<string | null>(null)
@@ -180,7 +228,7 @@ export default function FinanzenPage() {
   }
 
   const deleteSponsor = async (id: string) => {
-    if (!confirm('Sponsor wirklich löschen?')) return
+    if (!confirm('Spende wirklich löschen?')) return
     await fetch(`/api/sponsors?id=${id}`, { method: 'DELETE' })
     loadAll()
   }
@@ -250,7 +298,7 @@ export default function FinanzenPage() {
       <div className="bg-gray-900 -mx-4 -mt-16 lg:-mt-6 px-4 pt-16 lg:pt-6 pb-4 mb-6 rounded-b-lg">
         <p className="text-yellow-500 text-xs font-semibold tracking-widest uppercase">DJK Ottenhofen e.V.</p>
         <div className="flex items-end justify-between">
-          <h1 className="text-2xl font-bold text-white">Finanzen</h1>
+          <h1 className="text-2xl font-bold text-white">Finanzplanung</h1>
           <div className="text-right">
             <div className="text-3xl font-bold text-white">{fmtEur(totalCosts)}</div>
             <div className="text-xs text-gray-400">{costs.length} Positionen</div>
@@ -507,7 +555,99 @@ export default function FinanzenPage() {
         </div>
       )}
 
-      {/* ── SPONSORING TAB ── */}
+      {/* ── ROHERTRAG / PROGNOSE TAB ── */}
+      {tab === 'prognose' && (
+        <div className="space-y-4">
+          {/* Szenario-Auswahl */}
+          <div className="flex gap-2">
+            {SCENARIOS.map(sc => (
+              <button key={sc.key} onClick={() => setSelectedScenario(sc.key)}
+                className={`flex-1 py-2 rounded-full text-xs font-medium transition-all ${
+                  selectedScenario === sc.key ? sc.headerBg + ' text-white shadow-md' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}>
+                {sc.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Wareneinsatz global */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between">
+            <div>
+              <div className="text-xs font-bold text-amber-700">Wareneinsatz-Anteil</div>
+              <div className="text-[10px] text-amber-600">% des Umsatzes als Selbstkosten</div>
+            </div>
+            <div className="flex items-center gap-1">
+              <input type="number" min="0" max="100"
+                value={getForecastEntry(FORECAST_DAYS[0].key, selectedScenario).costPercent || ''}
+                onChange={e => { const v = +e.target.value || 0; FORECAST_DAYS.forEach(d => setForecastField(d.key, selectedScenario, 'costPercent', v)) }}
+                className="w-14 border border-amber-300 rounded-lg px-2 py-1.5 text-sm text-center text-gray-900 font-bold bg-white" />
+              <span className="text-sm font-bold text-amber-700">%</span>
+            </div>
+          </div>
+
+          {/* Tages-Karten (Mobile First) */}
+          {FORECAST_DAYS.map(day => {
+            const e = getForecastEntry(day.key, selectedScenario)
+            const umsatz = e.visitors * e.revenuePerPerson
+            const eintritt = e.visitors * e.entryFee
+            const wareneinsatz = umsatz * (e.costPercent / 100)
+            const rohertrag = umsatz - wareneinsatz + eintritt
+            const isSa = day.key.startsWith('saturday')
+            return (
+              <div key={day.key} className={`rounded-xl border p-3 ${isSa ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-sm text-gray-900">{day.icon} {day.label}</span>
+                  <span className="text-sm font-bold text-emerald-600">{fmtEur(rohertrag)}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="text-[10px] text-gray-500 font-medium">Besucher</label>
+                    <input type="number" min="0" value={e.visitors || ''}
+                      onChange={ev => setForecastField(day.key, selectedScenario, 'visitors', +ev.target.value || 0)}
+                      className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-center text-gray-900" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 font-medium">€/Person</label>
+                    <input type="number" min="0" step="1" value={e.revenuePerPerson || ''}
+                      onChange={ev => setForecastField(day.key, selectedScenario, 'revenuePerPerson', +ev.target.value || 0)}
+                      className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-center text-gray-900" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 font-medium">Eintritt</label>
+                    <input type="number" min="0" step="0.5" value={e.entryFee || ''}
+                      onChange={ev => setForecastField(day.key, selectedScenario, 'entryFee', +ev.target.value || 0)}
+                      className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-center text-gray-900" />
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+
+          {/* Gesamt + Speichern */}
+          {(() => {
+            const t = calcScenarioRevenue(selectedScenario)
+            const visitors = FORECAST_DAYS.reduce((s, d) => s + getForecastEntry(d.key, selectedScenario).visitors, 0)
+            return (
+              <div className={`rounded-xl p-3 flex items-center justify-between ${currentScenario.headerBg}`}>
+                <div>
+                  <div className="font-bold text-sm text-white">Gesamt Rohertrag</div>
+                  <div className="text-[10px] text-white/70">{fmtNum(visitors)} Besucher</div>
+                </div>
+                <div className="text-xl font-bold text-white">{fmtEur(t.rohertrag)}</div>
+              </div>
+            )
+          })()}
+
+          {hasForecastChanges && (
+            <button onClick={saveForecast} disabled={savingForecast}
+              className="w-full py-3 rounded-xl bg-blue-600 text-white font-medium text-sm hover:bg-blue-700">
+              {savingForecast ? 'Speichern...' : 'Änderungen speichern'}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── SPENDEN TAB ── */}
       {tab === 'sponsoring' && (
         <div className="space-y-6">
           <div className="grid grid-cols-3 gap-3">
@@ -538,10 +678,10 @@ export default function FinanzenPage() {
           )}
 
           <div className="bg-white rounded-lg shadow border p-5">
-            <h3 className="font-semibold text-gray-900 mb-3">{editSponsorId ? 'Sponsor bearbeiten' : 'Neuer Sponsor'}</h3>
+            <h3 className="font-semibold text-gray-900 mb-3">{editSponsorId ? 'Spende bearbeiten' : 'Neue Spende'}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               <input value={sponsorForm.name} onChange={e => setSponsorForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Sponsor-Name" className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 lg:col-span-2" />
+                placeholder="Spender-Name" className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 lg:col-span-2" />
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-sm">EUR</span>
                 <input type="number" step="0.01" value={sponsorForm.amount || ''} onChange={e => setSponsorForm(f => ({ ...f, amount: +e.target.value }))}
@@ -566,10 +706,10 @@ export default function FinanzenPage() {
 
           <div className="bg-white rounded-lg shadow border overflow-hidden">
             <div className="bg-gray-50 border-b px-4 py-3">
-              <h3 className="font-semibold text-gray-900">Sponsoren ({sponsors.length})</h3>
+              <h3 className="font-semibold text-gray-900">Spenden ({sponsors.length})</h3>
             </div>
             {sponsors.length === 0 ? (
-              <div className="px-4 py-8 text-center text-gray-400">Noch keine Sponsoren eingetragen.</div>
+              <div className="px-4 py-8 text-center text-gray-400">Noch keine Spenden eingetragen.</div>
             ) : (
               <div className="divide-y">
                 {sponsors.map(s => (
@@ -626,7 +766,7 @@ export default function FinanzenPage() {
                       <span className="font-medium text-gray-500">{fmtEur(rev.eintritt)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Sponsoring</span>
+                      <span className="text-gray-600">Spenden</span>
                       <span className="font-medium text-gray-900">{fmtEur(totalSponsoring)}</span>
                     </div>
                     <div className="flex justify-between font-bold text-gray-900 border-t pt-2">
