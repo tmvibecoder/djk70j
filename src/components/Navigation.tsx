@@ -25,14 +25,13 @@ const navGroups: NavGroup[] = [
   {
     title: 'PLANUNG',
     items: [
-      { href: '/produkte', label: 'Produkte', icon: '🍺' },
       { href: '/finanzen', label: 'Finanzplanung', icon: '💰' },
     ],
   },
   {
     title: 'FESTBETRIEB',
     items: [
-      { href: '/bestand', label: 'Bestand & Inventur', icon: '📦' },
+      { href: '/waren', label: 'Warenwirtschaft', icon: '📦' },
     ],
   },
   {
