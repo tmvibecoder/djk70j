@@ -440,7 +440,7 @@ export default function FinanzenPage() {
             const daySum = dayCosts.reduce((s, c) => s + c.projected, 0)
             if (dayCosts.length === 0) return null
             const isOpen = openDays[dayKey] || false
-            const dayRevenue = day.key ? calcDayRevenue(day.key, selectedScenario) : 0
+            const dayRevenue = day.key ? calcCostDayRevenue(day.key, selectedScenario) : 0
             const saldo = dayRevenue - daySum
 
             return (
