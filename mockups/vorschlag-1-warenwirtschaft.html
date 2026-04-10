@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vorschlag 1: Warenwirtschaft (Tabs)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, Helvetica, sans-serif; }
+  .tab-active { background-color: #4f46e5; color: white; }
+  .tab-inactive { background-color: #e5e7eb; color: #374151; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div class="flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="hidden lg:flex flex-col shrink-0 bg-gray-900 w-64">
+    <div class="flex items-center h-16 px-4 border-b border-gray-800">
+      <span class="text-2xl mr-3">🎉</span>
+      <span class="font-bold text-lg text-white">DJK 70 Jahre</span>
+    </div>
+    <nav class="flex-1 py-4 px-3 space-y-6">
+      <div>
+        <h3 class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500">Übersicht</h3>
+        <ul class="space-y-1">
+          <li><a href="#" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white"><span class="text-lg">📊</span>Dashboard</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500">Planung & Betrieb</h3>
+        <ul class="space-y-1">
+          <li><a href="#" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium bg-indigo-600 text-white shadow-lg shadow-indigo-600/25"><span class="text-lg">📦</span>Warenwirtschaft</a></li>
+          <li><a href="#" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white"><span class="text-lg">💰</span>Finanzplanung</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500">Dokumentation</h3>
+        <ul class="space-y-1">
+          <li><a href="#" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white"><span class="text-lg">📝</span>Sitzungsprotokolle</a></li>
+        </ul>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 overflow-auto p-6 bg-gray-50">
+    <div class="max-w-7xl mx-auto space-y-6">
+
+      <!-- Header -->
+      <div class="bg-gray-900 -mx-6 -mt-6 px-6 pt-6 pb-5 rounded-b-lg">
+        <p class="text-yellow-500 text-xs font-semibold tracking-widest uppercase">DJK Ottenhofen e.V.</p>
+        <h1 class="text-2xl font-bold text-white mt-1">Warenwirtschaft</h1>
+        <p class="text-gray-400 text-sm mt-1">Produkte, Bestand und Auswertung an einem Ort</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-2 border-b border-gray-200 pb-0">
+        <button onclick="switchTab('produkte')" id="tab-produkte" class="tab-active rounded-t-lg px-5 py-2.5 text-sm font-semibold transition-all">
+          🍺 Produkte
+        </button>
+        <button onclick="switchTab('bestand')" id="tab-bestand" class="tab-inactive rounded-t-lg px-5 py-2.5 text-sm font-semibold transition-all hover:bg-gray-300">
+          📦 Bestand
+        </button>
+        <button onclick="switchTab('auswertung')" id="tab-auswertung" class="tab-inactive rounded-t-lg px-5 py-2.5 text-sm font-semibold transition-all hover:bg-gray-300">
+          📊 Auswertung
+        </button>
+      </div>
+
+      <!-- TAB: Produkte -->
+      <div id="content-produkte" class="tab-content active space-y-6">
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="bg-white rounded-lg shadow border p-4 text-center">
+            <div class="text-xs text-gray-500 font-medium">Produkte</div>
+            <div class="text-2xl font-bold text-gray-900">24</div>
+          </div>
+          <div class="bg-white rounded-lg shadow border p-4 text-center">
+            <div class="text-xs text-gray-500 font-medium">Kategorien</div>
+            <div class="text-2xl font-bold text-gray-900">7</div>
+          </div>
+          <div class="bg-white rounded-lg shadow border p-4 text-center">
+            <div class="text-xs text-gray-500 font-medium">Ø Marge</div>
+            <div class="text-2xl font-bold text-green-600">2,30 €</div>
+          </div>
+          <div class="bg-white rounded-lg shadow border p-4 text-center">
+            <div class="text-xs text-gray-500 font-medium">Ø VK-Preis</div>
+            <div class="text-2xl font-bold text-blue-600">3,80 €</div>
+          </div>
+        </div>
+
+        <!-- Add Product Form -->
+        <div class="bg-white rounded-lg shadow border p-5">
+          <h3 class="font-semibold text-gray-900 mb-3">Neues Produkt</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+            <input placeholder="Name" class="border border-gray-300 rounded-lg px-3 py-2 text-sm lg:col-span-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">EK</span>
+              <input type="number" placeholder="0,00" class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">VK</span>
+              <input type="number" placeholder="0,00" class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+              <option>Bier & Radler</option><option>Softdrinks</option><option>Schnaps & Shots</option>
+              <option>Longdrinks</option><option>Wein & Sekt</option><option>Warme Speisen</option><option>Snacks</option>
+            </select>
+            <button class="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700">+ Hinzufügen</button>
+          </div>
+        </div>
+
+        <!-- Product List: Bier -->
+        <div class="bg-white rounded-lg shadow border overflow-hidden">
+          <div class="bg-gray-50 border-b px-4 py-3 flex items-center gap-2">
+            <span class="text-lg">🍺</span>
+            <h3 class="font-semibold text-gray-900">Bier & Radler</h3>
+            <span class="text-xs text-gray-500 ml-auto">5 Produkte</span>
+          </div>
+          <div class="divide-y">
+            <div class="px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-1">
+              <div class="font-medium text-gray-900 min-w-[180px] flex-1">Helles 0,5l</div>
+              <div class="text-sm text-gray-500">Glas</div>
+              <div class="text-sm"><span class="text-gray-500">EK</span> <span class="font-medium text-gray-700">1,20 €</span></div>
+              <div class="text-sm"><span class="text-gray-500">VK</span> <span class="font-bold text-gray-900">3,50 €</span></div>
+              <div class="text-sm font-semibold text-green-600">+2,30 €</div>
+              <div class="flex gap-2">
+                <button class="text-blue-600 hover:text-blue-800 text-sm">Bearbeiten</button>
+                <button class="text-red-500 hover:text-red-700 text-sm">Löschen</button>
+              </div>
+            </div>
+            <div class="px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-1">
+              <div class="font-medium text-gray-900 min-w-[180px] flex-1">Radler 0,5l</div>
+              <div class="text-sm text-gray-500">Glas</div>
+              <div class="text-sm"><span class="text-gray-500">EK</span> <span class="font-medium text-gray-700">1,10 €</span></div>
+              <div class="text-sm"><span class="text-gray-500">VK</span> <span class="font-bold text-gray-900">3,50 €</span></div>
+              <div class="text-sm font-semibold text-green-600">+2,40 €</div>
+              <div class="flex gap-2">
+                <button class="text-blue-600 hover:text-blue-800 text-sm">Bearbeiten</button>
+                <button class="text-red-500 hover:text-red-700 text-sm">Löschen</button>
+              </div>
+            </div>
+            <div class="px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-1">
+              <div class="font-medium text-gray-900 min-w-[180px] flex-1">Weißbier 0,5l</div>
+              <div class="text-sm text-gray-500">Glas</div>
+              <div class="text-sm"><span class="text-gray-500">EK</span> <span class="font-medium text-gray-700">1,40 €</span></div>
+              <div class="text-sm"><span class="text-gray-500">VK</span> <span class="font-bold text-gray-900">4,00 €</span></div>
+              <div class="text-sm font-semibold text-green-600">+2,60 €</div>
+              <div class="flex gap-2">
+                <button class="text-blue-600 hover:text-blue-800 text-sm">Bearbeiten</button>
+                <button class="text-red-500 hover:text-red-700 text-sm">Löschen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product List: Softdrinks -->
+        <div class="bg-white rounded-lg shadow border overflow-hidden">
+          <div class="bg-gray-50 border-b px-4 py-3 flex items-center gap-2">
+            <span class="text-lg">🥤</span>
+            <h3 class="font-semibold text-gray-900">Softdrinks</h3>
+            <span class="text-xs text-gray-500 ml-auto">4 Produkte</span>
+          </div>
+          <div class="divide-y">
+            <div class="px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-1">
+              <div class="font-medium text-gray-900 min-w-[180px] flex-1">Spezi 0,5l</div>
+              <div class="text-sm text-gray-500">Glas</div>
+              <div class="text-sm"><span class="text-gray-500">EK</span> <span class="font-medium text-gray-700">0,80 €</span></div>
+              <div class="text-sm"><span class="text-gray-500">VK</span> <span class="font-bold text-gray-900">3,00 €</span></div>
+              <div class="text-sm font-semibold text-green-600">+2,20 €</div>
+              <div class="flex gap-2">
+                <button class="text-blue-600 hover:text-blue-800 text-sm">Bearbeiten</button>
+                <button class="text-red-500 hover:text-red-700 text-sm">Löschen</button>
+              </div>
+            </div>
+            <div class="px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-1">
+              <div class="font-medium text-gray-900 min-w-[180px] flex-1">Wasser 0,5l</div>
+              <div class="text-sm text-gray-500">Flasche</div>
+              <div class="text-sm"><span class="text-gray-500">EK</span> <span class="font-medium text-gray-700">0,40 €</span></div>
+              <div class="text-sm"><span class="text-gray-500">VK</span> <span class="font-bold text-gray-900">2,50 €</span></div>
+              <div class="text-sm font-semibold text-green-600">+2,10 €</div>
+              <div class="flex gap-2">
+                <button class="text-blue-600 hover:text-blue-800 text-sm">Bearbeiten</button>
+                <button class="text-red-500 hover:text-red-700 text-sm">Löschen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product List: Warme Speisen -->
+        <div class="bg-white rounded-lg shadow border overflow-hidden">
+          <div class="bg-gray-50 border-b px-4 py-3 flex items-center gap-2">
+            <span class="text-lg">🍖</span>
+            <h3 class="font-semibold text-gray-900">Warme Speisen</h3>
+            <span class="text-xs text-gray-500 ml-auto">3 Produkte</span>
+          </div>
+          <div class="divide-y">
+            <div class="px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-1">
+              <div class="font-medium text-gray-900 min-w-[180px] flex-1">Halbes Hendl</div>
+              <div class="text-sm text-gray-500">Stück</div>
+              <div class="text-sm"><span class="text-gray-500">EK</span> <span class="font-medium text-gray-700">4,50 €</span></div>
+              <div class="text-sm"><span class="text-gray-500">VK</span> <span class="font-bold text-gray-900">9,00 €</span></div>
+              <div class="text-sm font-semibold text-green-600">+4,50 €</div>
+              <div class="flex gap-2">
+                <button class="text-blue-600 hover:text-blue-800 text-sm">Bearbeiten</button>
+                <button class="text-red-500 hover:text-red-700 text-sm">Löschen</button>
+              </div>
+            </div>
+            <div class="px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-1">
+              <div class="font-medium text-gray-900 min-w-[180px] flex-1">Leberkäs-Semmel</div>
+              <div class="text-sm text-gray-500">Stück</div>
+              <div class="text-sm"><span class="text-gray-500">EK</span> <span class="font-medium text-gray-700">1,80 €</span></div>
+              <div class="text-sm"><span class="text-gray-500">VK</span> <span class="font-bold text-gray-900">4,50 €</span></div>
+              <div class="text-sm font-semibold text-green-600">+2,70 €</div>
+              <div class="flex gap-2">
+                <button class="text-blue-600 hover:text-blue-800 text-sm">Bearbeiten</button>
+                <button class="text-red-500 hover:text-red-700 text-sm">Löschen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Bestand -->
+      <div id="content-bestand" class="tab-content space-y-6">
+
+        <!-- Day/Type Selector -->
+        <div class="bg-white rounded-lg shadow-md border border-gray-200">
+          <div class="px-6 py-4">
+            <div class="flex flex-col sm:flex-row gap-3 sm:items-end">
+              <div class="w-full sm:w-48">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Tag</label>
+                <select class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                  <option>Mo 06.07.</option><option>Di 07.07.</option><option selected>Do 09.07.</option>
+                  <option>Fr 10.07.</option><option>Sa 11.07.</option><option>So 12.07.</option>
+                </select>
+              </div>
+              <div class="w-full sm:w-48">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Typ</label>
+                <select class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                  <option>Anfangsbestand</option><option>Endbestand</option><option>Lieferung</option>
+                </select>
+              </div>
+              <button class="bg-blue-600 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-blue-700 shrink-0">Speichern</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Entry Table: Bier -->
+        <div class="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">🍺 Bier & Radler</h2>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50 border-b">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produkt</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Einheit</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Akt. Bestand</th>
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase w-32">Menge</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr>
+                  <td class="px-6 py-4 font-medium text-gray-900">Helles 0,5l</td>
+                  <td class="px-6 py-4 text-gray-500">Glas</td>
+                  <td class="px-6 py-4 text-right"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">48 Glas</span></td>
+                  <td class="px-6 py-4 text-center"><input type="number" value="48" class="w-24 text-center border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"></td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 font-medium text-gray-900">Radler 0,5l</td>
+                  <td class="px-6 py-4 text-gray-500">Glas</td>
+                  <td class="px-6 py-4 text-right"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">8 Glas</span></td>
+                  <td class="px-6 py-4 text-center"><input type="number" value="8" class="w-24 text-center border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"></td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 font-medium text-gray-900">Weißbier 0,5l</td>
+                  <td class="px-6 py-4 text-gray-500">Glas</td>
+                  <td class="px-6 py-4 text-right"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">3 Glas</span></td>
+                  <td class="px-6 py-4 text-center"><input type="number" value="3" class="w-24 text-center border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Entry Table: Softdrinks -->
+        <div class="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">🥤 Softdrinks</h2>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50 border-b">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produkt</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Einheit</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Akt. Bestand</th>
+                  <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase w-32">Menge</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr>
+                  <td class="px-6 py-4 font-medium text-gray-900">Spezi 0,5l</td>
+                  <td class="px-6 py-4 text-gray-500">Glas</td>
+                  <td class="px-6 py-4 text-right"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">32 Glas</span></td>
+                  <td class="px-6 py-4 text-center"><input type="number" value="32" class="w-24 text-center border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"></td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 font-medium text-gray-900">Wasser 0,5l</td>
+                  <td class="px-6 py-4 text-gray-500">Flasche</td>
+                  <td class="px-6 py-4 text-right"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">24 Flasche</span></td>
+                  <td class="px-6 py-4 text-center"><input type="number" value="24" class="w-24 text-center border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Auswertung -->
+      <div id="content-auswertung" class="tab-content space-y-6">
+
+        <!-- Financial Summary -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-white rounded-lg shadow-md border border-gray-200">
+            <div class="px-6 py-6 text-center">
+              <p class="text-sm text-gray-500">Umsatz (gesamt)</p>
+              <p class="text-3xl font-bold text-gray-900 mt-1">8.420,00 €</p>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg shadow-md border border-gray-200">
+            <div class="px-6 py-6 text-center">
+              <p class="text-sm text-gray-500">Kosten (EK)</p>
+              <p class="text-3xl font-bold text-red-600 mt-1">3.180,00 €</p>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg shadow-md border border-gray-200">
+            <div class="px-6 py-6 text-center">
+              <p class="text-sm text-gray-500">Gewinn</p>
+              <p class="text-3xl font-bold text-green-600 mt-1">5.240,00 €</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Consumption Table -->
+        <div class="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Verbrauch nach Produkt</h2>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50 border-b">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produkt</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Akt. Bestand</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Verbrauch</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Umsatz</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Gewinn</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr>
+                  <td class="px-6 py-4"><p class="font-medium text-gray-900">Helles 0,5l</p><p class="text-sm text-gray-500">Bier & Radler</p></td>
+                  <td class="px-6 py-4 text-right"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">48 Glas</span></td>
+                  <td class="px-6 py-4 text-right text-gray-900">152 Glas</td>
+                  <td class="px-6 py-4 text-right text-gray-900">532,00 €</td>
+                  <td class="px-6 py-4 text-right text-green-600 font-medium">349,60 €</td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4"><p class="font-medium text-gray-900">Spezi 0,5l</p><p class="text-sm text-gray-500">Softdrinks</p></td>
+                  <td class="px-6 py-4 text-right"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">32 Glas</span></td>
+                  <td class="px-6 py-4 text-right text-gray-900">89 Glas</td>
+                  <td class="px-6 py-4 text-right text-gray-900">267,00 €</td>
+                  <td class="px-6 py-4 text-right text-green-600 font-medium">195,80 €</td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4"><p class="font-medium text-gray-900">Halbes Hendl</p><p class="text-sm text-gray-500">Warme Speisen</p></td>
+                  <td class="px-6 py-4 text-right"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">6 Stück</span></td>
+                  <td class="px-6 py-4 text-right text-gray-900">74 Stück</td>
+                  <td class="px-6 py-4 text-right text-gray-900">666,00 €</td>
+                  <td class="px-6 py-4 text-right text-green-600 font-medium">333,00 €</td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4"><p class="font-medium text-gray-900">Weißbier 0,5l</p><p class="text-sm text-gray-500">Bier & Radler</p></td>
+                  <td class="px-6 py-4 text-right"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">3 Glas</span></td>
+                  <td class="px-6 py-4 text-right text-gray-900">45 Glas</td>
+                  <td class="px-6 py-4 text-right text-gray-900">180,00 €</td>
+                  <td class="px-6 py-4 text-right text-green-600 font-medium">117,00 €</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info Banner -->
+      <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mt-8">
+        <p class="text-sm text-indigo-800 font-medium">Vorschlag 1: Warenwirtschaft mit Tabs</p>
+        <p class="text-sm text-indigo-700 mt-1">Alle Funktionen (Produkte, Bestand, Auswertung) sind in einer einzigen Seite mit Tab-Navigation zusammengefasst. Die Sidebar hat nur noch einen Eintrag statt zwei.</p>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+function switchTab(tabName) {
+  // Hide all content
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  // Deactivate all tabs
+  document.querySelectorAll('[id^="tab-"]').forEach(el => {
+    el.classList.remove('tab-active');
+    el.classList.add('tab-inactive');
+  });
+  // Show selected content
+  document.getElementById('content-' + tabName).classList.add('active');
+  // Activate selected tab
+  const tab = document.getElementById('tab-' + tabName);
+  tab.classList.remove('tab-inactive');
+  tab.classList.add('tab-active');
+}
+</script>
+</body>
+</html>
