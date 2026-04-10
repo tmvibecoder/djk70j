@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   const forecasts = await prisma.simpleForecast.findMany({ orderBy: [{ eventDay: 'asc' }, { scenario: 'asc' }] })
   return NextResponse.json(forecasts)
