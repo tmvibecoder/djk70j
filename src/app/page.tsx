@@ -2,13 +2,43 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { BEREICHE, getBereichStats } from '@/data/protokolle'
 
-interface DashboardData {
-  products: { id: string; name: string; salePrice: number; purchasePrice: number; category: string; isActive: boolean }[]
-  costs: { id: string; name: string; projected: number; actual: number | null; dueDate: string; costType: string }[]
-  sponsors: { id: string; name: string; amount: number; received: boolean }[]
-  forecasts: { productId: string; eventDay: string; scenario: string; quantity: number; product: { salePrice: number; purchasePrice: number } }[]
-  entryForecasts: { eventDay: string; scenario: string; visitors: number; entryFee: number }[]
+interface SimpleForecast {
+  eventDay: string
+  scenario: string
+  visitors: number
+  revenuePerPerson: number
+  entryFee: number
+  costPercent: number
+}
+
+interface CostItem {
+  id: string
+  name: string
+  projected: number
+  actual: number | null
+  dueDate: string
+  costType: string
+  status: string
+}
+
+interface Sponsor {
+  id: string
+  name: string
+  amount: number
+  received: boolean
+}
+
+interface Task {
+  id: string
+  title: string
+  description: string | null
+  status: string
+  priority: string
+  deadline: string | null
+  eventDay: string | null
+  category: string | null
 }
 
 const EVENT_START = new Date('2026-07-09T00:00:00')
@@ -19,19 +49,6 @@ const EVENT_DAYS = [
   { key: 'saturday', label: 'Sa', date: '11.07.', event: 'Drunter & Drüber', icon: '🎉' },
   { key: 'sunday', label: 'So', date: '12.07.', event: 'Festsonntag', icon: '⛪' },
 ]
-
-const SCENARIOS = [
-  { key: 'pessimistic', label: 'Pessimistisch', color: 'text-red-600' },
-  { key: 'realistic', label: 'Realistisch', color: 'text-blue-600' },
-  { key: 'optimistic', label: 'Optimistisch', color: 'text-green-600' },
-]
-
-const COST_TYPE_META: Record<string, { label: string; color: string; icon: string }> = {
-  fix: { label: 'Fixkosten', color: '#DC2626', icon: '📌' },
-  variabel_getraenke: { label: 'Variabel (Getränke)', color: '#D97706', icon: '🍺' },
-  variabel_sonstig: { label: 'Variabel (Sonstiges)', color: '#2563EB', icon: '📦' },
-  unklar: { label: 'Unklar / Geschätzt', color: '#7C3AED', icon: '❓' },
-}
 
 const fmtEur = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
 
@@ -46,49 +63,41 @@ function Countdown() {
   if (diff <= 0) return <span className="text-green-400 font-bold text-lg">Das Fest läuft!</span>
 
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
 
   return (
-    <div className="flex items-center gap-4">
-      <div className="text-center">
-        <div className="text-3xl font-bold text-white">{days}</div>
-        <div className="text-xs text-gray-400 uppercase">Tage</div>
-      </div>
-      <div className="text-gray-600 text-2xl">:</div>
-      <div className="text-center">
-        <div className="text-3xl font-bold text-white">{hours}</div>
-        <div className="text-xs text-gray-400 uppercase">Stunden</div>
-      </div>
+    <div className="text-center">
+      <div className="text-xl font-bold text-white">{days}</div>
+      <div className="text-[10px] text-gray-500 uppercase">Tage</div>
     </div>
   )
 }
 
 export default function Dashboard() {
-  const [data, setData] = useState<DashboardData | null>(null)
+  const [forecasts, setForecasts] = useState<SimpleForecast[]>([])
+  const [costs, setCosts] = useState<CostItem[]>([])
+  const [sponsors, setSponsors] = useState<Sponsor[]>([])
+  const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function loadAll() {
       try {
-        const [productsRes, costsRes, sponsorsRes, forecastRes] = await Promise.all([
-          fetch('/api/products'),
+        const [forecastRes, costsRes, sponsorsRes, tasksRes] = await Promise.all([
+          fetch('/api/simple-forecast'),
           fetch('/api/costs'),
           fetch('/api/sponsors'),
-          fetch('/api/forecast'),
+          fetch('/api/tasks'),
         ])
-        const [products, costs, sponsors, forecastData] = await Promise.all([
-          productsRes.json(),
+        const [forecastData, costsData, sponsorsData, tasksData] = await Promise.all([
+          forecastRes.json(),
           costsRes.json(),
           sponsorsRes.json(),
-          forecastRes.json(),
+          tasksRes.json(),
         ])
-        setData({
-          products,
-          costs,
-          sponsors,
-          forecasts: forecastData.forecasts,
-          entryForecasts: forecastData.entryForecasts,
-        })
+        setForecasts(forecastData)
+        setCosts(costsData)
+        setSponsors(sponsorsData)
+        setTasks(tasksData)
       } catch {
         // ignore
       }
@@ -108,234 +117,312 @@ export default function Dashboard() {
     )
   }
 
-  if (!data) return <div className="text-center text-gray-400 py-12">Fehler beim Laden der Daten.</div>
+  // --- Finanzen aus SimpleForecast (realistisch) ---
+  const realisticForecasts = forecasts.filter(f => f.scenario === 'realistic')
+  let totalRevenue = 0
+  let totalEntryCost = 0
+  let totalEntryFee = 0
+  for (const f of realisticForecasts) {
+    const umsatz = f.visitors * f.revenuePerPerson
+    totalRevenue += umsatz
+    totalEntryCost += umsatz * (f.costPercent / 100)
+    totalEntryFee += f.visitors * f.entryFee
+  }
 
-  const { costs, sponsors, forecasts, entryForecasts } = data
-
-  // Cost calculations
   const totalCosts = costs.reduce((s, c) => s + c.projected, 0)
   const totalCostsPaid = costs.filter(c => c.dueDate === 'paid').reduce((s, c) => s + c.projected, 0)
-
-  // Sponsoring calculations
   const totalSponsoring = sponsors.reduce((s, sp) => s + sp.amount, 0)
   const totalSponsoringReceived = sponsors.filter(sp => sp.received).reduce((s, sp) => s + sp.amount, 0)
 
-  // Revenue per scenario
-  const calcScenarioRevenue = (scenario: string) => {
-    const entries = forecasts.filter(f => f.scenario === scenario)
-    let drinkRevenue = 0
-    let drinkCost = 0
-    for (const e of entries) {
-      drinkRevenue += e.quantity * e.product.salePrice
-      drinkCost += e.quantity * e.product.purchasePrice
-    }
-    const entryEntries = entryForecasts.filter(f => f.scenario === scenario)
-    const entryRevenue = entryEntries.reduce((s, e) => s + e.visitors * e.entryFee, 0)
-    return { drinkRevenue, drinkCost, entryRevenue }
-  }
+  const grossRevenue = totalRevenue + totalEntryFee + totalSponsoring
+  const grossExpenses = totalCosts + totalEntryCost
+  const expectedProfit = grossRevenue - grossExpenses
 
-  const scenarioResults = SCENARIOS.map(sc => {
-    const rev = calcScenarioRevenue(sc.key)
-    const totalRevenue = rev.drinkRevenue + rev.entryRevenue + totalSponsoring
-    const totalExpenses = totalCosts + rev.drinkCost
-    const profit = totalRevenue - totalExpenses
-    return { ...sc, ...rev, totalRevenue, totalExpenses, profit }
+  // --- Aufgaben ---
+  const openTasks = tasks.filter(t => t.status === 'open')
+  const inProgressTasks = tasks.filter(t => t.status === 'in_progress')
+  const doneTasks = tasks.filter(t => t.status === 'done')
+  const highPrioTasks = openTasks
+    .sort((a, b) => {
+      const prioPriority: Record<string, number> = { high: 0, medium: 1, low: 2 }
+      return (prioPriority[a.priority] ?? 2) - (prioPriority[b.priority] ?? 2)
+    })
+    .slice(0, 5)
+
+  // --- Protokoll-Fortschritt ---
+  const bereicheStats = BEREICHE.map(b => {
+    const stats = getBereichStats(b)
+    const total = stats.allBeschluesse.length + stats.allAufgaben.length
+    const done = stats.allBeschluesse.length
+    const pct = total > 0 ? Math.round((done / total) * 100) : 100
+    return { ...b, stats, total, done, pct }
+  }).sort((a, b) => b.pct - a.pct)
+
+  const totalBeschluesse = bereicheStats.reduce((s, b) => s + b.stats.allBeschluesse.length, 0)
+  const totalAufgaben = bereicheStats.reduce((s, b) => s + b.stats.allAufgaben.length, 0)
+  const overallTotal = totalBeschluesse + totalAufgaben
+  const overallPct = overallTotal > 0 ? Math.round((totalBeschluesse / overallTotal) * 100) : 0
+
+  // --- Neueste Beschlüsse & offene Aufgaben aus Protokollen ---
+  const allEntries = BEREICHE.flatMap(b =>
+    b.eintraege.map(e => ({ bereich: b, eintrag: e }))
+  ).sort((a, b) => {
+    const parseD = (d: string) => { const [day, month, year] = d.split('.').map(Number); return new Date(year, month - 1, day).getTime() }
+    return parseD(b.eintrag.datum) - parseD(a.eintrag.datum)
   })
 
-  // Day breakdown (realistic)
-  const dayBreakdown = EVENT_DAYS.map(day => {
-    const dayForecasts = forecasts.filter(f => f.eventDay === day.key && f.scenario === 'realistic')
-    const revenue = dayForecasts.reduce((s, e) => s + e.quantity * e.product.salePrice, 0)
-    const dayEntry = entryForecasts.find(f => f.eventDay === day.key && f.scenario === 'realistic')
-    const entryRevenue = dayEntry ? dayEntry.visitors * dayEntry.entryFee : 0
-    return { ...day, revenue: revenue + entryRevenue, visitors: dayEntry?.visitors || 0 }
-  })
-  const maxDayRevenue = Math.max(...dayBreakdown.map(d => d.revenue), 1)
+  const recentBeschluesse = allEntries
+    .filter(e => e.eintrag.beschluesse && e.eintrag.beschluesse.length > 0)
+    .slice(0, 4)
 
-  // Cost type groups
-  const costTypeGroups = ['fix', 'variabel_getraenke', 'variabel_sonstig', 'unklar']
-    .map(type => ({ type, total: costs.filter(c => c.costType === type).reduce((s, c) => s + c.projected, 0) }))
-    .filter(g => g.total > 0)
+  const openProtokollAufgaben = allEntries
+    .filter(e => e.eintrag.aufgaben && e.eintrag.aufgaben.length > 0)
+    .slice(0, 3)
 
-  // Warnings
-  const warnings: { message: string; severity: 'high' | 'medium' | 'low' }[] = []
+  // --- Warnungen ---
+  const warnings: { message: string; detail?: string; severity: 'high' | 'medium' | 'low' }[] = []
   const unklar = costs.filter(c => c.costType === 'unklar')
   if (unklar.length > 0) {
-    warnings.push({ message: `${unklar.length} Kostenposition(en) mit unklarem Betrag (${fmtEur(unklar.reduce((s, c) => s + c.projected, 0))})`, severity: 'medium' })
+    warnings.push({ message: `${unklar.length} Kostenposition(en) unklar`, detail: fmtEur(unklar.reduce((s, c) => s + c.projected, 0)), severity: 'medium' })
   }
   const sponsorsOpen = sponsors.filter(sp => !sp.received && sp.amount > 0).length
   if (sponsorsOpen > 0) {
-    warnings.push({ message: `${sponsorsOpen} Sponsor(en) ausstehend`, severity: 'low' })
+    warnings.push({ message: `${sponsorsOpen} Sponsor(en) ausstehend`, detail: fmtEur(totalSponsoring - totalSponsoringReceived), severity: 'low' })
   }
-  const activeProducts = data.products.filter(p => p.isActive).length
-  if (activeProducts === 0) {
-    warnings.push({ message: 'Noch keine Produkte angelegt. Produkte sind Grundlage für die Prognose.', severity: 'high' })
+  if (openTasks.filter(t => t.priority === 'high').length > 0) {
+    warnings.push({ message: `${openTasks.filter(t => t.priority === 'high').length} Aufgabe(n) mit hoher Priorität`, severity: 'high' })
   }
-  if (forecasts.length === 0) {
-    warnings.push({ message: 'Noch keine Prognose-Daten erfasst.', severity: 'medium' })
+
+  const prioBg: Record<string, string> = {
+    high: 'bg-red-100 text-red-700',
+    medium: 'bg-amber-100 text-amber-700',
+    low: 'bg-gray-100 text-gray-600',
   }
+  const prioLabel: Record<string, string> = { high: 'HOCH', medium: 'MITTEL', low: 'NIEDRIG' }
 
   return (
-    <div className="space-y-6">
-      {/* Header mit Countdown */}
-      <div className="bg-gray-900 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <p className="text-yellow-500 text-xs font-semibold tracking-widest uppercase mb-1">DJK Ottenhofen e.V.</p>
-          <h1 className="text-2xl font-bold text-white">70-Jahre Jubiläumsfest</h1>
-          <p className="text-gray-400 text-sm mt-1">09. – 12. Juli 2026</p>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="bg-gray-900 rounded-2xl p-5">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-yellow-500 text-xs font-semibold tracking-widest uppercase mb-1">DJK Ottenhofen e.V.</p>
+            <h1 className="text-2xl font-bold text-white">70-Jahre Jubiläumsfest</h1>
+            <p className="text-gray-400 text-sm mt-1">09. – 12. Juli 2026</p>
+          </div>
+          <div className="bg-gray-800 rounded-xl px-4 py-2">
+            <Countdown />
+          </div>
         </div>
-        <div className="bg-gray-800 rounded-xl px-6 py-3">
-          <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Countdown</div>
-          <Countdown />
+
+        {/* Event-Tage Mini-Karten */}
+        <div className="flex gap-2 mt-4 overflow-x-auto pb-1">
+          {EVENT_DAYS.map(day => (
+            <div key={day.key} className="bg-gray-800 rounded-lg px-3 py-2 min-w-[80px] text-center shrink-0">
+              <div className="text-xs text-gray-500">{day.label} {day.date}</div>
+              <div className="text-sm font-semibold text-white">{day.icon}</div>
+              <div className="text-[10px] text-gray-400">{day.event}</div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Erwartetes Ergebnis - 3 Szenarien */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {scenarioResults.map(sr => {
-          const isRealistic = sr.key === 'realistic'
-          return (
-            <div key={sr.key} className={`bg-white rounded-xl border-2 p-5 ${isRealistic ? 'border-blue-300 shadow-lg shadow-blue-100' : 'border-gray-200'}`}>
-              <div className="flex items-center justify-between mb-2">
-                <span className={`text-sm font-semibold ${sr.color}`}>{sr.label}</span>
-                {isRealistic && <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">Empfohlen</span>}
-              </div>
-              <div className={`text-3xl font-bold mb-1 ${sr.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {sr.profit >= 0 ? '+' : ''}{fmtEur(sr.profit)}
-              </div>
-              <div className="text-xs text-gray-500">
-                Einnahmen {fmtEur(sr.totalRevenue)} – Ausgaben {fmtEur(sr.totalExpenses)}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Kosten & Sponsoring nebeneinander */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Kostenübersicht */}
-        <div className="bg-white rounded-lg shadow border p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900">Kostenübersicht</h3>
-            <Link href="/finanzen" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Details →</Link>
+      {/* Erwarteter Gewinn */}
+      <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-xl p-5 text-white shadow-lg">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-indigo-200 mb-1">Erwarteter Gewinn</div>
+            <div className="text-3xl font-bold">{expectedProfit >= 0 ? '+' : ''}{fmtEur(expectedProfit)}</div>
+            <div className="text-xs text-indigo-200 mt-1">Realistisches Szenario</div>
           </div>
-          <div className="space-y-3">
-            {costTypeGroups.map(g => {
-              const meta = COST_TYPE_META[g.type]
-              const pct = totalCosts > 0 ? (g.total / totalCosts) * 100 : 0
-              return (
-                <div key={g.type}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-medium text-gray-800">{meta.icon} {meta.label}</span>
-                    <span className="font-bold" style={{ color: meta.color }}>{fmtEur(g.total)}</span>
-                  </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: meta.color }} />
-                  </div>
-                </div>
-              )
-            })}
-            <div className="border-t pt-3 space-y-1">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Bezahlt</span>
-                <span className="font-medium text-green-600">{fmtEur(totalCostsPaid)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Offen</span>
-                <span className="font-medium text-red-600">{fmtEur(totalCosts - totalCostsPaid)}</span>
-              </div>
-              <div className="flex justify-between font-bold text-gray-900 border-t pt-2">
-                <span>Gesamt</span>
-                <span>{fmtEur(totalCosts)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Sponsoring */}
-        <div className="bg-white rounded-lg shadow border p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900">Sponsoring</h3>
-            <Link href="/finanzen" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Details →</Link>
-          </div>
-          <div className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-700">Zugesagt</span>
-              <span className="font-bold text-gray-900">{fmtEur(totalSponsoring)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-700">Erhalten</span>
-              <span className="font-bold text-green-600">{fmtEur(totalSponsoringReceived)}</span>
-            </div>
-            {totalSponsoring > 0 && (
-              <div>
-                <div className="flex justify-between text-xs text-gray-500 mb-1">
-                  <span>Fortschritt</span>
-                  <span>{Math.round((totalSponsoringReceived / totalSponsoring) * 100)}%</span>
-                </div>
-                <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-green-500 rounded-full transition-all"
-                    style={{ width: `${(totalSponsoringReceived / totalSponsoring) * 100}%` }} />
-                </div>
-              </div>
-            )}
+          <div className="text-right space-y-1">
+            <div className="text-xs text-indigo-200">Einnahmen: <span className="text-white font-semibold">{fmtEur(grossRevenue)}</span></div>
+            <div className="text-xs text-indigo-200">Ausgaben: <span className="text-white font-semibold">{fmtEur(grossExpenses)}</span></div>
+            <Link href="/finanzen" className="text-xs text-indigo-200 underline hover:text-white">Finanzplanung →</Link>
           </div>
         </div>
       </div>
 
-      {/* Umsatz pro Tag (realistisch) */}
-      <div className="bg-white rounded-lg shadow border p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-gray-900">Umsatz pro Tag (realistisch)</h3>
-          <Link href="/prognose" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Prognose →</Link>
+      {/* Planungsfortschritt */}
+      <div className="bg-white rounded-xl shadow-sm border p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-gray-900 text-sm">Planungsfortschritt</h3>
+          <Link href="/protokolle" className="text-xs text-indigo-600 font-medium">Protokolle →</Link>
         </div>
         <div className="space-y-3">
-          {dayBreakdown.map(day => {
-            const pct = maxDayRevenue > 0 ? (day.revenue / maxDayRevenue) * 100 : 0
+          {bereicheStats.map(b => {
+            const barColor = b.pct >= 80 ? 'bg-green-500' : b.pct >= 50 ? 'bg-amber-500' : 'bg-red-400'
+            const textColor = b.pct >= 80 ? 'text-green-600' : b.pct >= 50 ? 'text-amber-600' : 'text-red-500'
             return (
-              <div key={day.key} className="flex items-center gap-3">
-                <div className="w-6 text-center text-lg">{day.icon}</div>
-                <div className="w-20 shrink-0">
-                  <div className="font-semibold text-gray-900 text-sm">{day.label}</div>
-                  <div className="text-xs text-gray-500">{day.date}</div>
-                </div>
-                <div className="flex-1">
-                  <div className="h-7 bg-gray-100 rounded-full overflow-hidden relative">
-                    <div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
-                      style={{ width: `${pct}%` }} />
-                    <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-800">
-                      {fmtEur(day.revenue)}
-                    </span>
+              <div key={b.id}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{b.icon}</span>
+                    <span className="text-xs font-medium text-gray-800">{b.name}</span>
                   </div>
+                  <span className={`text-xs font-bold ${textColor}`}>{b.pct}%</span>
                 </div>
-                <div className="w-20 text-right text-xs text-gray-500 shrink-0">
-                  ~{day.visitors} Besucher
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className={`h-full ${barColor} rounded-full transition-all`} style={{ width: `${b.pct}%` }} />
                 </div>
+                {b.stats.allAufgaben.length > 0 && (
+                  <div className="text-[10px] text-amber-600 mt-0.5 font-medium">
+                    {b.stats.allAufgaben.length} offene Punkte
+                  </div>
+                )}
               </div>
             )
           })}
-          <div className="border-t pt-2 flex justify-between font-bold text-gray-900">
-            <span>Gesamt</span>
-            <span>{fmtEur(dayBreakdown.reduce((s, d) => s + d.revenue, 0))}</span>
+          {/* Gesamt */}
+          <div className="border-t mt-3 pt-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-bold text-gray-900">Gesamt</span>
+              <span className="text-xs font-bold text-indigo-600">{overallPct}%</span>
+            </div>
+            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-full bg-indigo-600 rounded-full transition-all" style={{ width: `${overallPct}%` }} />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Hinweise */}
+      {/* Finanzen kompakt */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-white rounded-xl shadow-sm border p-4">
+          <div className="text-[10px] text-gray-500 font-medium uppercase mb-2">Kosten</div>
+          <div className="text-lg font-bold text-gray-900 mb-1">{fmtEur(totalCosts)}</div>
+          <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-1">
+            <div className="h-full bg-green-500 rounded-full" style={{ width: `${totalCosts > 0 ? (totalCostsPaid / totalCosts) * 100 : 0}%` }} />
+          </div>
+          <div className="flex justify-between text-[10px]">
+            <span className="text-green-600 font-medium">{fmtEur(totalCostsPaid)} bezahlt</span>
+            <span className="text-red-500">{fmtEur(totalCosts - totalCostsPaid)} offen</span>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border p-4">
+          <div className="text-[10px] text-gray-500 font-medium uppercase mb-2">Sponsoring</div>
+          <div className="text-lg font-bold text-gray-900 mb-1">{fmtEur(totalSponsoring)}</div>
+          <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-1">
+            <div className="h-full bg-green-500 rounded-full" style={{ width: `${totalSponsoring > 0 ? (totalSponsoringReceived / totalSponsoring) * 100 : 0}%` }} />
+          </div>
+          <div className="flex justify-between text-[10px]">
+            <span className="text-green-600 font-medium">{fmtEur(totalSponsoringReceived)} erhalten</span>
+            <span className="text-amber-500">{fmtEur(totalSponsoring - totalSponsoringReceived)} offen</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Offene Aufgaben */}
+      <div className="bg-white rounded-xl shadow-sm border p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-gray-900 text-sm">Offene Aufgaben</h3>
+            {openTasks.length > 0 && (
+              <span className="bg-red-100 text-red-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{openTasks.length}</span>
+            )}
+          </div>
+          <Link href="/aufgaben" className="text-xs text-indigo-600 font-medium">Alle →</Link>
+        </div>
+        {highPrioTasks.length > 0 ? (
+          <div className="space-y-2">
+            {highPrioTasks.map(task => (
+              <div key={task.id} className={`flex items-start gap-3 p-2.5 rounded-lg ${task.priority === 'high' ? 'bg-red-50 border border-red-100' : 'hover:bg-gray-50'}`}>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded mt-0.5 shrink-0 ${prioBg[task.priority] || prioBg.low}`}>
+                  {prioLabel[task.priority] || 'NIEDRIG'}
+                </span>
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-gray-900">{task.title}</div>
+                  <div className="text-xs text-gray-500">
+                    {task.deadline && `Fällig: ${new Date(task.deadline).toLocaleDateString('de-DE')}`}
+                    {task.category && ` · ${task.category}`}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500 italic">Keine offenen Aufgaben</p>
+        )}
+        {/* Aufgaben-Zusammenfassung */}
+        <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t">
+          <div className="text-center">
+            <div className="text-lg font-bold text-red-600">{openTasks.length}</div>
+            <div className="text-[10px] text-gray-500 font-medium">Offen</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold text-amber-600">{inProgressTasks.length}</div>
+            <div className="text-[10px] text-gray-500 font-medium">In Arbeit</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold text-green-600">{doneTasks.length}</div>
+            <div className="text-[10px] text-gray-500 font-medium">Erledigt</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Beschlüsse & offene Protokoll-Punkte */}
+      <div className="bg-white rounded-xl shadow-sm border p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-gray-900 text-sm">Aktuelle Beschlüsse & Offene Punkte</h3>
+          <Link href="/protokolle" className="text-xs text-indigo-600 font-medium">Protokolle →</Link>
+        </div>
+        <div className="space-y-3">
+          {recentBeschluesse.map((entry, idx) => (
+            <div key={`b-${idx}`} className="flex gap-3">
+              <div className="flex flex-col items-center shrink-0">
+                <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5" />
+                {idx < recentBeschluesse.length - 1 || openProtokollAufgaben.length > 0 ? (
+                  <div className="w-0.5 flex-1 bg-gray-200" />
+                ) : null}
+              </div>
+              <div className="pb-3 min-w-0">
+                <div className="text-xs text-gray-400">{entry.eintrag.datum} · {entry.bereich.icon} {entry.bereich.name}</div>
+                <div className="text-sm font-medium text-gray-900 mt-0.5">
+                  {entry.eintrag.beschluesse?.[0]}
+                  {(entry.eintrag.beschluesse?.length || 0) > 1 && (
+                    <span className="text-xs text-gray-400 ml-1">+{(entry.eintrag.beschluesse?.length || 0) - 1} weitere</span>
+                  )}
+                </div>
+                <div className="text-xs text-green-600 font-medium mt-0.5">✓ Beschluss</div>
+              </div>
+            </div>
+          ))}
+          {openProtokollAufgaben.map((entry, idx) => (
+            <div key={`a-${idx}`} className="flex gap-3">
+              <div className="flex flex-col items-center shrink-0">
+                <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5" />
+                {idx < openProtokollAufgaben.length - 1 ? (
+                  <div className="w-0.5 flex-1 bg-gray-200" />
+                ) : null}
+              </div>
+              <div className="pb-3 min-w-0">
+                <div className="text-xs text-gray-400">{entry.eintrag.datum} · {entry.bereich.icon} {entry.bereich.name}</div>
+                <div className="text-sm font-medium text-gray-900 mt-0.5">{entry.eintrag.aufgaben?.[0]}</div>
+                <div className="text-xs text-amber-600 font-medium mt-0.5">⬤ Offen</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Handlungsbedarf */}
       {warnings.length > 0 && (
-        <div className="bg-white rounded-lg shadow border p-5">
-          <h3 className="font-semibold text-gray-900 mb-3">Hinweise</h3>
+        <div className="bg-white rounded-xl shadow-sm border p-4">
+          <h3 className="font-semibold text-gray-900 text-sm mb-3">Handlungsbedarf</h3>
           <div className="space-y-2">
             {warnings.map((w, i) => {
               const cfg = w.severity === 'high'
                 ? { bg: 'bg-red-50', border: 'border-red-200', icon: '🔴', text: 'text-red-800' }
                 : w.severity === 'medium'
-                  ? { bg: 'bg-yellow-50', border: 'border-yellow-200', icon: '🟡', text: 'text-yellow-800' }
+                  ? { bg: 'bg-amber-50', border: 'border-amber-200', icon: '🟡', text: 'text-amber-800' }
                   : { bg: 'bg-blue-50', border: 'border-blue-200', icon: '🔵', text: 'text-blue-800' }
               return (
                 <div key={i} className={`flex items-start gap-2 p-2.5 rounded-lg ${cfg.bg} ${cfg.border} border`}>
                   <span className="shrink-0 text-sm">{cfg.icon}</span>
-                  <span className={`text-sm ${cfg.text}`}>{w.message}</span>
+                  <div>
+                    <span className={`text-sm font-medium ${cfg.text}`}>{w.message}</span>
+                    {w.detail && <span className={`text-xs ${cfg.text} ml-1 opacity-75`}>({w.detail})</span>}
+                  </div>
                 </div>
               )
             })}
