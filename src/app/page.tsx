@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { BEREICHE, getBereichStats } from '@/data/protokolle'
+import { BEREICHE, getBereichStats, getGlobalStats, getDringendeAufgaben } from '@/data/protokolle'
 
 interface SimpleForecast {
   eventDay: string
@@ -152,32 +152,19 @@ export default function Dashboard() {
   // --- Protokoll-Fortschritt ---
   const bereicheStats = BEREICHE.map(b => {
     const stats = getBereichStats(b)
-    const total = stats.allBeschluesse.length + stats.allAufgaben.length
-    const done = stats.allBeschluesse.length
-    const pct = total > 0 ? Math.round((done / total) * 100) : 100
-    return { ...b, stats, total, done, pct }
+    const pct = stats.total > 0 ? Math.round((stats.erledigt / stats.total) * 100) : 100
+    return { ...b, stats, pct }
   }).sort((a, b) => b.pct - a.pct)
 
-  const totalBeschluesse = bereicheStats.reduce((s, b) => s + b.stats.allBeschluesse.length, 0)
-  const totalAufgaben = bereicheStats.reduce((s, b) => s + b.stats.allAufgaben.length, 0)
-  const overallTotal = totalBeschluesse + totalAufgaben
-  const overallPct = overallTotal > 0 ? Math.round((totalBeschluesse / overallTotal) * 100) : 0
+  const protokollGlobal = getGlobalStats()
+  const overallPct = protokollGlobal.total > 0 ? Math.round((protokollGlobal.erledigt / protokollGlobal.total) * 100) : 0
 
-  // --- Neueste Beschlüsse & offene Aufgaben aus Protokollen ---
-  const allEntries = BEREICHE.flatMap(b =>
-    b.eintraege.map(e => ({ bereich: b, eintrag: e }))
-  ).sort((a, b) => {
-    const parseD = (d: string) => { const [day, month, year] = d.split('.').map(Number); return new Date(year, month - 1, day).getTime() }
-    return parseD(b.eintrag.datum) - parseD(a.eintrag.datum)
-  })
-
-  const recentBeschluesse = allEntries
-    .filter(e => e.eintrag.beschluesse && e.eintrag.beschluesse.length > 0)
-    .slice(0, 4)
-
-  const openProtokollAufgaben = allEntries
-    .filter(e => e.eintrag.aufgaben && e.eintrag.aufgaben.length > 0)
-    .slice(0, 3)
+  // --- Dringende Aufgaben & Beschlüsse aus Protokollen ---
+  const dringend = getDringendeAufgaben()
+  const recentBeschluesse = BEREICHE.filter(b => b.beschluesse.length > 0).slice(0, 4)
+  const offeneProtokollAufgaben = BEREICHE.flatMap(b =>
+    b.aufgaben.filter(a => a.status === 'offen').map(a => ({ bereich: b, aufgabe: a }))
+  ).slice(0, 3)
 
   // --- Warnungen ---
   const warnings: { message: string; detail?: string; severity: 'high' | 'medium' | 'low' }[] = []
@@ -191,6 +178,9 @@ export default function Dashboard() {
   }
   if (openTasks.filter(t => t.priority === 'high').length > 0) {
     warnings.push({ message: `${openTasks.filter(t => t.priority === 'high').length} Aufgabe(n) mit hoher Priorität`, severity: 'high' })
+  }
+  if (dringend.length > 0) {
+    warnings.push({ message: `${dringend.length} Protokoll-Aufgabe(n) ohne Verantwortlichen`, severity: 'high' })
   }
 
   const prioBg: Record<string, string> = {
@@ -265,9 +255,9 @@ export default function Dashboard() {
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div className={`h-full ${barColor} rounded-full transition-all`} style={{ width: `${b.pct}%` }} />
                 </div>
-                {b.stats.allAufgaben.length > 0 && (
+                {b.stats.offen > 0 && (
                   <div className="text-[10px] text-amber-600 mt-0.5 font-medium">
-                    {b.stats.allAufgaben.length} offene Punkte
+                    {b.stats.offen} offen · {b.stats.inArbeit} in Arbeit
                   </div>
                 )}
               </div>
@@ -367,38 +357,38 @@ export default function Dashboard() {
           <Link href="/protokolle" className="text-xs text-indigo-600 font-medium">Protokolle →</Link>
         </div>
         <div className="space-y-3">
-          {recentBeschluesse.map((entry, idx) => (
+          {recentBeschluesse.map((bereich, idx) => (
             <div key={`b-${idx}`} className="flex gap-3">
               <div className="flex flex-col items-center shrink-0">
                 <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5" />
-                {idx < recentBeschluesse.length - 1 || openProtokollAufgaben.length > 0 ? (
+                {idx < recentBeschluesse.length - 1 || offeneProtokollAufgaben.length > 0 ? (
                   <div className="w-0.5 flex-1 bg-gray-200" />
                 ) : null}
               </div>
               <div className="pb-3 min-w-0">
-                <div className="text-xs text-gray-400">{entry.eintrag.datum} · {entry.bereich.icon} {entry.bereich.name}</div>
+                <div className="text-xs text-gray-400">{bereich.icon} {bereich.name}</div>
                 <div className="text-sm font-medium text-gray-900 mt-0.5">
-                  {entry.eintrag.beschluesse?.[0]}
-                  {(entry.eintrag.beschluesse?.length || 0) > 1 && (
-                    <span className="text-xs text-gray-400 ml-1">+{(entry.eintrag.beschluesse?.length || 0) - 1} weitere</span>
+                  {bereich.beschluesse[0]}
+                  {bereich.beschluesse.length > 1 && (
+                    <span className="text-xs text-gray-400 ml-1">+{bereich.beschluesse.length - 1} weitere</span>
                   )}
                 </div>
                 <div className="text-xs text-green-600 font-medium mt-0.5">✓ Beschluss</div>
               </div>
             </div>
           ))}
-          {openProtokollAufgaben.map((entry, idx) => (
+          {offeneProtokollAufgaben.map((entry, idx) => (
             <div key={`a-${idx}`} className="flex gap-3">
               <div className="flex flex-col items-center shrink-0">
                 <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5" />
-                {idx < openProtokollAufgaben.length - 1 ? (
+                {idx < offeneProtokollAufgaben.length - 1 ? (
                   <div className="w-0.5 flex-1 bg-gray-200" />
                 ) : null}
               </div>
               <div className="pb-3 min-w-0">
-                <div className="text-xs text-gray-400">{entry.eintrag.datum} · {entry.bereich.icon} {entry.bereich.name}</div>
-                <div className="text-sm font-medium text-gray-900 mt-0.5">{entry.eintrag.aufgaben?.[0]}</div>
-                <div className="text-xs text-amber-600 font-medium mt-0.5">⬤ Offen</div>
+                <div className="text-xs text-gray-400">{entry.bereich.icon} {entry.bereich.name}</div>
+                <div className="text-sm font-medium text-gray-900 mt-0.5">{entry.aufgabe.titel}</div>
+                <div className="text-xs text-amber-600 font-medium mt-0.5">⬤ Offen{entry.aufgabe.verantwortlich ? ` · ${entry.aufgabe.verantwortlich}` : ''}</div>
               </div>
             </div>
           ))}

@@ -1,281 +1,286 @@
 // Shared Protokoll-Daten — verwendet von /protokolle und Dashboard
 
-export interface BereichEintrag {
-  sitzungNr: number
-  datum: string
-  themenTitel: string
-  inhalt: string
-  beschluesse?: string[]
-  aufgaben?: string[]
+export interface Aufgabe {
+  titel: string
+  verantwortlich?: string
+  status: 'offen' | 'in_arbeit' | 'erledigt'
+  detail?: string
 }
 
 export interface Bereich {
   id: string
   name: string
   icon: string
-  eintraege: BereichEintrag[]
+  verantwortliche: string
+  beschluesse: string[]
+  aufgaben: Aufgabe[]
 }
 
 export const BEREICHE: Bereich[] = [
   {
     id: "musik",
-    name: "Musik",
+    name: "Musik & Programm",
     icon: "🎺",
-    eintraege: [
-      {
-        sitzungNr: 1, datum: "10.02.2026",
-        themenTitel: "Blaskapelle / Musik am Festsonntag",
-        inhalt: "Kontakt zur Stadtkapelle Erding (Ansprechpartner: Christoph Träger) hergestellt. Spielzeit am Festsonntag ca. 11:30–16:00 Uhr. Bezahlung: freies Essen und Getränke, keine finanzielle Vergütung. Ehrungen erst gegen 13:00 Uhr beim Mittagessen. Ablauf mit Pausenzeiten, Kindertanzgruppe (Verena) und Ehrungen wird beim nächsten Treffen finalisiert.",
-        beschluesse: ["Blaskapelle spielt So 11:30–16:00 Uhr", "Ehrungen gegen 13:00 Uhr beim Mittagessen"],
-        aufgaben: ["Ablauf Festsonntag beim nächsten Treffen finalisieren"]
-      },
-      {
-        sitzungNr: 2, datum: "09.03.2026",
-        themenTitel: "Musik & DJs",
-        inhalt: "Samstag: Live-Band 'Drunter und Drüber' ab 18:00 Uhr (zugesagt), danach DJ. Sonntag: Simon nach Blaskapelle ab ~16:00 Uhr. GEMA bei 500 Gästen und 5 € Eintritt: ca. 200–307 €. Vereine haben 2 Veranstaltungen/Jahr GEMA-frei — wird geprüft.",
-        beschluesse: ["Band 'Drunter und Drüber' fix für Samstag"],
-        aufgaben: ["Simon für Sonntag offiziell anfragen", "GEMA-Befreiung prüfen"]
-      }
-    ]
-  },
-  {
-    id: "security",
-    name: "Security",
-    icon: "🛡️",
-    eintraege: [
-      {
-        sitzungNr: 1, datum: "10.02.2026",
-        themenTitel: "Security",
-        inhalt: "Grundlegend zugesagt. Zwei Personen für Freitag und Samstag. Geschätzte Kosten: ca. 1.000 € fürs Wochenende. Bezahlung auf Rechnung (Kleingewerbe § 22 UStG, keine MwSt). Security übernimmt Alterskontrolle: Ausweiskontrolle, unterschiedliche Armbänder, UV-Stempel für Minderjährige. Wichtig: Strenge Kontrolle wegen Bußgeld-Risiko (12.500 € bei den Burschen). Muttizettel für 16-Jährige erforderlich.",
-        beschluesse: ["2 Security-Personen für Fr + Sa", "Strikte Alterskontrolle mit UV-Stempeln und Armbändern", "Muttizettel-Pflicht für Minderjährige ab 16"]
-      }
-    ]
-  },
-  {
-    id: "eintrittspreise",
-    name: "Eintrittspreise & Karten",
-    icon: "🎫",
-    eintraege: [
-      {
-        sitzungNr: 1, datum: "10.02.2026",
-        themenTitel: "Eintrittspreise & Kartenvorverkauf",
-        inhalt: "Freitag: 5 € oder frei? Tendenz Freibetrieb (Bude muss voll werden). Samstag: 10 € Konsens, ggf. 8 € Vorverkauf. Kombiticket Fr+Sa: 15 €. Konkurrenz: Hundi-Fest Poing (kostenlos). Vorverkauf über Helferliste.de (Ticket-Modul mit QR-Code-Scan). Physische Vorverkaufsstellen (Schmerberei, Fußball).",
-        beschluesse: ["Tendenz: Freitag 5 €, Samstag 10 €", "Kombiticket 15 € als Option"],
-        aufgaben: ["Finale Entscheidung auf nächste Sitzung vertagt", "Vorverkauf-Tool (Helferliste.de) einrichten"]
-      },
-      {
-        sitzungNr: 2, datum: "09.03.2026",
-        themenTitel: "Eintrittspreise (Fortsetzung)",
-        inhalt: "Freitag: Tendenz kein Eintritt (Konkurrenz Poing). Samstag: VVK 8 €, AK 10 €. Bei 300 verkauften Karten wird VVK gestoppt.",
-        beschluesse: ["Samstag: VVK 8 €, AK 10 €"],
-        aufgaben: ["Finale Entscheidung auf Vorstandssitzung"]
-      }
-    ]
-  },
-  {
-    id: "sponsoring",
-    name: "Sponsoring & Einladungen",
-    icon: "🤝",
-    eintraege: [
-      {
-        sitzungNr: 1, datum: "10.02.2026",
-        themenTitel: "Sponsoring & Einladungen",
-        inhalt: "Sponsorenliste angelegt. Firmen per Brief einladen (DJK-Logo-Umschläge, ca. 50 Stück). Vereine per E-Mail/persönlich — als Gäste + Helfer-Hinweis. Ehrengäste: ehemalige Vorstände, Bürgermeisterin, Landrat, Pfarrer, Georg-K.-Verband (500 € Zuschuss), Bayerischer Fußballverband. Gegenleistung: Bauzaun-Banner (Sparkasse 50 €/Banner). BLSV und TS Team Hummel (Trikots) anfragen.",
-        beschluesse: ["Firmen per Brief, Vereine per E-Mail einladen", "Bauzaun-Banner als Sponsoring-Gegenleistung"],
-        aufgaben: ["Sponsorenliste finalisieren und rumschicken", "Briefe an Sponsoren verschicken", "TS Team Hummel wegen Trikots anfragen"]
-      },
-      {
-        sitzungNr: 2, datum: "09.03.2026",
-        themenTitel: "Bewirtung Ehrengäste / Gastvereine",
-        inhalt: "Vereine als Gäste eingeladen, aber keine geschenkten Getränke/Essen. 1–2 reservierte Tische für besondere Gäste (Pfarrer, Bürgermeisterin).",
-        beschluesse: ["Keine Gratis-Bewirtung für Gastvereine", "1–2 Ehrentische reservieren"]
-      },
-      {
-        sitzungNr: 2, datum: "09.03.2026",
-        themenTitel: "Sponsorenliste & Banner",
-        inhalt: "Liste in der Cloud. Jedes Mitglied soll sie durchsehen und ergänzen. Ab 100 € Spende: Einladung zum Festsonntag mit Essen und Getränk. Spendenquittungen bis 300 € über Verwendungszweck, darüber offiziell. Bisher: 370 € von 3 Spendern.",
-        beschluesse: ["Ab 100 € Spende → Einladung Festsonntag"],
-        aufgaben: ["Sponsorenliste vervollständigen", "Briefe zeitnah verschicken"]
-      },
-      {
-        sitzungNr: 2, datum: "09.03.2026",
-        themenTitel: "Vereins-Einladungen & Tischplanung",
-        inhalt: "28 Tische im Zelt. Nur die 5 größten Vereine bekommen reservierten Tisch (Feuerwehr, Bayern-Fanclub etc.). Kleinere einladen ohne festen Tisch. Böllerschützen: mind. 2 Tische.",
-        beschluesse: ["Top-5-Vereine: reservierter Tisch", "Böllerschützen: 2 Tische"]
-      }
-    ]
+    verantwortliche: "Hundi, Mäx, Festausschuss",
+    beschluesse: [
+      "Blaskapelle spielt So 11:30–16:00 Uhr",
+      "Ehrungen gegen 13:00 Uhr beim Mittagessen",
+      "Band 'Drunter und Drüber' fix für Samstag",
+      "DJ Josh für Freitag fix",
+      "Externer DJ für Samstag bevorzugt",
+      "Festprogramm für alle 4 Tage festgelegt",
+    ],
+    aufgaben: [
+      { titel: "Blaskapelle gebucht (Stadtkapelle Erding)", status: "erledigt", verantwortlich: "Hundi + Mäx" },
+      { titel: "Band 'Drunter und Drüber' gebucht", status: "erledigt", verantwortlich: "Festausschuss" },
+      { titel: "DJ Josh für Freitag zugesagt", status: "erledigt", verantwortlich: "Festausschuss" },
+      { titel: "DJs für Sa & So buchen", status: "in_arbeit", verantwortlich: "Festausschuss", detail: "Sa → DJ Adriano, So → DJ Simon (Kehraus)" },
+      { titel: "Blaskapelle Details klären (Tische, Pausen)", status: "in_arbeit", verantwortlich: "Hundi", detail: "Spielzeit 11:30–15:30, Details offen" },
+      { titel: "GEMA beantragen", status: "offen", detail: "Auf April-Sitzung vertagt" },
+      { titel: "GEMA-Befreiung prüfen", status: "offen", verantwortlich: "Marco" },
+      { titel: "Ablauf Festsonntag finalisieren", status: "offen", verantwortlich: "Festausschuss" },
+    ],
   },
   {
     id: "getraenke",
     name: "Getränke & Lieferanten",
     icon: "🍺",
-    eintraege: [
-      {
-        sitzungNr: 1, datum: "10.02.2026",
-        themenTitel: "Getränke & Lieferanten",
-        inhalt: "Drei Lieferanten: Schweiger (Preisliste vorhanden), Kratzer (noch anfragen), Daberger Getränke (Empfehlung der Burschen — Kühlbrücken, Cocktailmaschinen, alles inklusive). Faustformel Schweiger: 1,6 Liter Bier pro Kopf pro Tag. Bei 400 Gästen = ca. 640 Liter/Tag.",
-        aufgaben: ["Tommy: Preise bei Schweiger, Kratzer und Daberger anfragen und vergleichen"]
-      },
-      {
-        sitzungNr: 1, datum: "10.02.2026",
-        themenTitel: "Gießkannen-Aktion",
-        inhalt: "Gelbe 3-Liter-Gießkannen als Partygetränk (Rüscher/Kuba). DJK-Logo bedruckt/beklebt. EK ca. 2,95 €, Pfand 10–15 €. Social-Media-Reels zur Bewerbung.",
-        aufgaben: ["Bis Anfang April bestellen (6 Wochen Lieferzeit)", "Instagram-Reels mit Gießkannen produzieren"]
-      },
-      {
-        sitzungNr: 2, datum: "09.03.2026",
-        themenTitel: "Getränkekarte",
-        inhalt: "Fass (Sa/So): Bier, Radler, Weißbier, Russ. Do/Fr: Flaschenbier. Alkoholfrei: Spezi, Weiße Limo, Apfelschorle, Wasser. Cocktails: Wodka Lemon/Bull, Kuba, Rüscher, Weinschorle, Aperol, Prosecco. Gestrichen: Gelbe Limo, Gin Tonic, offener Wein. Prosecco aus dem Fass für Aperol.",
-        beschluesse: ["Getränkekarte festgelegt", "Gin Tonic und offener Wein gestrichen"]
-      },
-      {
-        sitzungNr: 2, datum: "09.03.2026",
-        themenTitel: "Eiswürfel",
-        inhalt: "Keine Eiswürfelmaschine (zu langsam, Hygiene). 300 kg fertiges Eis bestellen (Daniel Meinel). Lagerung in Styroporboxen mit Trockeneis. Notfall: Edeka, Kaufland, Metro.",
-        aufgaben: ["300 kg Eis bei Daniel Meinel bestellen"]
-      }
-    ]
+    verantwortliche: "Thommy, Dane, Seb",
+    beschluesse: [
+      "Getränkekarte festgelegt",
+      "Gin Tonic und offener Wein gestrichen",
+      "Prosecco aus dem Fass für Aperol",
+    ],
+    aufgaben: [
+      { titel: "Kühlwagen bei Schweiger reserviert", status: "erledigt", verantwortlich: "Thommy + Marco" },
+      { titel: "Schweiger-Treffen & Angebot abgestimmt", status: "erledigt", verantwortlich: "Seb + Thommy" },
+      { titel: "Getränkekarte festgelegt", status: "erledigt", verantwortlich: "Festausschuss" },
+      { titel: "Preise & Mengen festlegen", status: "in_arbeit", verantwortlich: "Thommy", detail: "Schweiger liegt vor, Kratzer/Daberger ausstehend" },
+      { titel: "Eiswürfel bestellen (~300 kg)", status: "in_arbeit", verantwortlich: "Dane + Seb", detail: "Daniel Meine hat zugesagt, tägliche Nachbestellung möglich" },
+      { titel: "Gießkannen + Aufkleber", status: "in_arbeit", verantwortlich: "Dane + Valentin", detail: "Hundi bestellt Aufkleber" },
+      { titel: "Getränke-Sortiment Mengen klären", status: "in_arbeit", verantwortlich: "Dane + Thommy", detail: "Daniel klärt Mengen mit Thommy" },
+      { titel: "Spülen für Schänke anfragen", status: "offen", verantwortlich: "Max, Valentin" },
+    ],
   },
   {
-    id: "djs",
-    name: "DJs für Freitag & Samstag",
-    icon: "🎧",
-    eintraege: [
-      {
-        sitzungNr: 1, datum: "10.02.2026",
-        themenTitel: "DJs für Freitag/Samstag",
-        inhalt: "Freitag: DJ Josh (kostenlos, zugesagt). Samstag nach Live-Band: Völky Killi oder Adrian (100–300 €), Tendenz: Externen bezahlen. Sonntag: Deitinger für leise Hintergrundmusik.",
-        beschluesse: ["DJ Josh für Freitag fix", "Externer DJ für Samstag bevorzugt"]
-      }
-    ]
-  },
-  {
-    id: "zeltaufbau",
-    name: "Zeltaufbau & Lageplan",
+    id: "zelt",
+    name: "Zeltaufbau & Infrastruktur",
     icon: "⛺",
-    eintraege: [
-      {
-        sitzungNr: 1, datum: "10.02.2026",
-        themenTitel: "Zeltaufstellung & Geländeplan",
-        inhalt: "Variante 2 bevorzugt: Zelt in Längsrichtung, Eingang von der Herwergerstraße. Vorteile: beeindruckender Anblick, mehr Platz für Kühlwagen, Biergarten vorne, Grillstation zugänglich. Bar hinten ums Eck, Küche mittig. Klo-Wagen hinterm Zelt. Backstage/Festbüro: Baucontainer gesucht.",
-        beschluesse: ["Zelt in Längsrichtung (Variante 2)"],
-        aufgaben: ["Uwe wegen Baucontainer in Vorstandssitzung fragen"]
-      },
-      {
-        sitzungNr: 2, datum: "09.03.2026",
-        themenTitel: "Sanitäranlagen / Klo-Wagen",
-        inhalt: "Anbieter 1 zu teuer (1.800 €), Anbieter 2 zu klein. Lösung: Klo-Wagen der Burschen (4 Damen, 2 Herren, Pissrinne). IBC-Tanks (1.000 L) als Abwassertanks vom Luftner. Thalheimer Max pumpt bei Bedarf. Verbindung über Gefälle.",
-        beschluesse: ["Klo-Wagen der Burschen nutzen", "Teuren Anbieter absagen"],
-        aufgaben: ["IBC-Tanks beim Luftner anfragen", "Thalheimer Max für Auspumpen einplanen"]
-      },
-      {
-        sitzungNr: 2, datum: "09.03.2026",
-        themenTitel: "Festbüro / Backstage-Container",
-        inhalt: "Arbeits-/Bürocontainer hinter dem Zelt gesucht (Tresor, Organisationsmaterial). Muss Fenster haben und abschließbar sein.",
-        aufgaben: ["Fischer und Baufirmen anfragen", "Uwe in Vorstandssitzung fragen"]
-      },
-      {
-        sitzungNr: 2, datum: "09.03.2026",
-        themenTitel: "Bauzäune",
-        inhalt: "Wirgens (Baufirma, Jonas) stellt Bauzäune bereit. Geschätzt 50–100 Meter benötigt. Kosten ca. 25 €/Element. Sparkasse zahlt 50 €/beworbenen Bauzaun.",
-        aufgaben: ["Jonas organisiert Bauzäune bei Wirgens"]
-      }
-    ]
+    verantwortliche: "Seb, Valentin, Hundi",
+    beschluesse: [
+      "Zelt in Längsrichtung (Variante 2)",
+      "Klo-Wagen der Burschen nutzen",
+      "Teuren Klo-Anbieter absagen",
+    ],
+    aufgaben: [
+      { titel: "Zeltplan erstellt & finalisiert", status: "erledigt", verantwortlich: "Seb" },
+      { titel: "Zelt-Upgrade auf 12×30m", status: "erledigt", verantwortlich: "Seb" },
+      { titel: "Holzboden Küchenzelt bestätigt", status: "erledigt", verantwortlich: "Seb" },
+      { titel: "Platz vermessen (Drohne)", status: "erledigt", verantwortlich: "Festausschuss" },
+      { titel: "Veranstaltungstechnik organisiert", status: "erledigt", verantwortlich: "Valentin" },
+      { titel: "Klowagen mit Tank organisieren", status: "in_arbeit", verantwortlich: "Valentin + Seb", detail: "Zwei Angebote liegen vor, Uwe prüft Container" },
+      { titel: "Bauzaun organisieren", status: "in_arbeit", verantwortlich: "Hundi", detail: "Seb rechnet Zaunlänge, Wirgens liefert" },
+      { titel: "Müllcontainer", status: "in_arbeit", verantwortlich: "Hundi + Valentin", detail: "Luthner liefert Container" },
+      { titel: "Bühne – finale Größe festlegen", status: "in_arbeit", verantwortlich: "Valentin", detail: "Felder genügend vorhanden" },
+      { titel: "Parkplatz Voglrieder-Wiese", status: "in_arbeit", verantwortlich: "Hundi", detail: "Wiese freigegeben, Hundi meldet sich kurz vorm Fest" },
+      { titel: "Bar & Klowagen Lieferung klären", status: "offen", detail: "Noch nicht bearbeitet" },
+      { titel: "Stromverteilung klären", status: "offen", verantwortlich: "Oef, Valentin", detail: "Erdung, FI-Schutzschalter, Anforderungen" },
+      { titel: "Laubbläser für Zeltbelüftung", status: "offen" },
+      { titel: "WC-Service festlegen", status: "offen" },
+      { titel: "Wachdienst Weiher (Patrouille)", status: "offen", detail: "Patrouille geplant, keine Personen zugewiesen" },
+    ],
   },
   {
-    id: "parken",
-    name: "Parken",
-    icon: "🅿️",
-    eintraege: [
-      {
-        sitzungNr: 1, datum: "10.02.2026",
-        themenTitel: "Parkplatz",
-        inhalt: "Wiesen links und rechts des Sportplatzes als Parkfläche. Pächter Vogelräder muss um Erlaubnis gefragt werden.",
-        aufgaben: ["Vogelräder wegen Parkplatz-Nutzung anfragen", "Beleuchtung klären"]
-      }
-    ]
+    id: "security",
+    name: "Security & Genehmigungen",
+    icon: "🛡️",
+    verantwortliche: "Valentin, Hundi, Marco",
+    beschluesse: [
+      "2 Security-Personen für Fr + Sa",
+      "Strikte Alterskontrolle mit UV-Stempeln und Armbändern",
+      "Muttizettel-Pflicht für Minderjährige ab 16",
+      "Veranstaltungszeiten definiert",
+    ],
+    aufgaben: [
+      { titel: "Security organisiert (Anton Bowinzki)", status: "erledigt", verantwortlich: "Valentin + Dane", detail: "~1.000 € Wochenende auf Rechnung" },
+      { titel: "4.000 Einlassbänder bestellt", status: "erledigt", verantwortlich: "Valentin", detail: "Sponsor: Luthner" },
+      { titel: "Jugendschutzbeauftragter bestimmt", status: "erledigt", verantwortlich: "Thommy" },
+      { titel: "Gemeinde-Auflagen geklärt", status: "erledigt", verantwortlich: "Hundi" },
+      { titel: "Elektroabnahme geklärt", status: "erledigt", verantwortlich: "Valentin + Hundi", detail: "Nicht erforderlich" },
+      { titel: "Landratsamt – Dokumente abschicken", status: "in_arbeit", verantwortlich: "Hundi", detail: "Dokumente wurden/werden abgeschickt" },
+      { titel: "Genehmigungen / Gestattung", status: "in_arbeit", verantwortlich: "Hundi", detail: "Zeiten werden der Gemeinde mitgeteilt" },
+      { titel: "Warnwesten beschaffen", status: "offen", verantwortlich: "Valentin", detail: "Noch zu klären ob nötig" },
+      { titel: "Feuerlöscher – finale Bestätigung FFO", status: "offen", verantwortlich: "Valentin", detail: "2-3 Stück von Feuerwehr" },
+    ],
   },
   {
-    id: "sicherheit",
-    name: "Sicherheit",
-    icon: "🔒",
-    eintraege: [
-      {
-        sitzungNr: 1, datum: "10.02.2026",
-        themenTitel: "Sicherheitskonzept & Weiher",
-        inhalt: "Sicherheitskonzept wird fertiggestellt. Landratsamt empfiehlt: Weiher nicht mit Bauzaun (zu teuer), stattdessen 2 Personen Patrouille. Festgelände Richtung Straße mit Bauzaun. Rettungszufahrt und Sammelplätze im Geländeplan.",
-        aufgaben: ["Sicherheitskonzept an Gemeinde schicken", "Geländeplan mit Fluchtwegen erstellen"]
-      },
-      {
-        sitzungNr: 2, datum: "09.03.2026",
-        themenTitel: "Landratsamt & Genehmigungen",
-        inhalt: "Geländeplan ans Landratsamt (inkl. Rettungszufahrt). Veranstaltungszeiten: Do 16:00–00:00, Fr 19:00–03:00, Sa 07:00–03:00, So 10:00–20:00.",
-        beschluesse: ["Veranstaltungszeiten definiert"],
-        aufgaben: ["Geländeplan einreichen"]
-      }
-    ]
+    id: "sponsoring",
+    name: "Sponsoring & Einladungen",
+    icon: "🤝",
+    verantwortliche: "Seb, Marco, Dane",
+    beschluesse: [
+      "Firmen per Brief, Vereine per E-Mail einladen",
+      "Bauzaun-Banner als Sponsoring-Gegenleistung",
+      "Ab 100 € Spende → Einladung Festsonntag",
+      "Keine Gratis-Bewirtung für Gastvereine",
+      "1–2 Ehrentische reservieren",
+      "Top-5-Vereine: reservierter Tisch",
+    ],
+    aufgaben: [
+      { titel: "Winz sponsert Bauzaunbanner", status: "erledigt", verantwortlich: "Dane" },
+      { titel: "Einladung DJK Verband", status: "erledigt", verantwortlich: "Marco" },
+      { titel: "Einladung Bürgermeisterin/Ehrenvorsitzende", status: "erledigt", verantwortlich: "Marco" },
+      { titel: "Einladung ins DJK Amtsblatt", status: "erledigt", verantwortlich: "Mirjam" },
+      { titel: "Sponsorenliste finalisieren", status: "in_arbeit", verantwortlich: "Seb", detail: "Persönlicher Kontakt bei großen, Rest per Mail" },
+      { titel: "Sponsoren kontaktieren", status: "in_arbeit", verantwortlich: "Seb" },
+      { titel: "Bauzaunbanner bestellen (3 Stk à 50 €)", status: "in_arbeit", verantwortlich: "Hundi" },
+      { titel: "Einladung Vereine per Mail/WhatsApp", status: "in_arbeit", verantwortlich: "Seb" },
+      { titel: "Einladungen Ehrengäste verschicken", status: "offen", detail: "Liste steht, kein Verantwortlicher zugewiesen" },
+    ],
+  },
+  {
+    id: "eintritt",
+    name: "Eintrittspreise & Karten",
+    icon: "🎫",
+    verantwortliche: "Hundi, Festausschuss",
+    beschluesse: [
+      "Samstag: VVK 8 €, AK 10 €",
+      "Kombiticket 15 € als Option",
+    ],
+    aufgaben: [
+      { titel: "1.500 Becher bestellt (0,4l DJK/AXA)", status: "erledigt", verantwortlich: "Valentin" },
+      { titel: "Kartenvorverkauf vorbereiten", status: "in_arbeit", verantwortlich: "Hundi", detail: "Hundi bestellt VVK-Tickets" },
+      { titel: "Eintritt Freitag: finale Entscheidung", status: "offen", verantwortlich: "Festausschuss", detail: "Tendenz: kein Eintritt (Konkurrenz Poing)" },
+    ],
+  },
+  {
+    id: "personal",
+    name: "Personal & Helfer",
+    icon: "👥",
+    verantwortliche: "Petra, Mirjam, Valentin, Hundi",
+    beschluesse: [
+      "Wertmarken-System beschlossen",
+      "Mindestlohn für So-Servicekräfte",
+      "Trinkgeld So für Bedienungen, Fr/Sa für Vereinskasse",
+      "Keine Kartenzahlung, nur Bargeld",
+    ],
+    aufgaben: [
+      { titel: "Personalplanung Festsonntag → Petra & Mirjam", status: "erledigt", verantwortlich: "Seb" },
+      { titel: "Wertmarken checken/nachdrucken", status: "erledigt", verantwortlich: "Marco" },
+      { titel: "Reinigungspersonal organisiert", status: "erledigt", verantwortlich: "Vorstand" },
+      { titel: "Personal Festsonntag (22-25 Pers.)", status: "in_arbeit", verantwortlich: "Petra + Mirjam", detail: "Petra kontaktiert Personen, Schichtaufsicht nötig" },
+      { titel: "Helferliste.de einrichten", status: "in_arbeit", verantwortlich: "Valentin", detail: "System wird genutzt, Einrichtung läuft" },
+      { titel: "Ablaufplan (Tagesablauf Do–So)", status: "in_arbeit", verantwortlich: "Hundi + Seb", detail: "Hundi erstellt das Festprogramm" },
+      { titel: "Bedienungen für Festsonntag (Lengdorf)", status: "offen", verantwortlich: "Hundi", detail: "Simon Wiethaus anfragen" },
+      { titel: "Helferliste Uhrzeiten festlegen", status: "offen" },
+      { titel: "Kassenpersonal (12–24 Uhr)", status: "offen", verantwortlich: "Bepp" },
+      { titel: "Küche/Cocktails Personal (17–24 Uhr)", status: "offen", verantwortlich: "Karin, Mirjam" },
+    ],
+  },
+  {
+    id: "essen",
+    name: "Essen & Küche",
+    icon: "🍖",
+    verantwortliche: "Mäx, Valentin",
+    beschluesse: [
+      "Essensplan für alle 4 Tage festgelegt",
+      "So: Schweinebraten + Käsespätzle",
+      "Kaffee & Kuchen über Helferliste (50+ Kuchen)",
+    ],
+    aufgaben: [
+      { titel: "Grobe Essensplanung erledigt", status: "erledigt", verantwortlich: "Mäx" },
+      { titel: "500 Gedecke bei Ernst Rappold reserviert", status: "erledigt", verantwortlich: "Dane + Seb" },
+      { titel: "Küchenausstattung & Spülmaschinen", status: "in_arbeit", verantwortlich: "Valentin + Mäx", detail: "2 Spülmaschinen gewünscht, Angebote werden eingeholt" },
+      { titel: "Backwaren bestellen", status: "in_arbeit", detail: "Beck z'Reithof liefert fürs Fest, Schmerber für Arbeitsdienste" },
+      { titel: "Kuchenspenden über Helferliste sammeln", status: "in_arbeit", verantwortlich: "Helferliste" },
+      { titel: "Teller/Geschirr – Mengen Festsonntag", status: "offen", verantwortlich: "Mäx" },
+      { titel: "Griller organisieren", status: "offen", detail: "Settles, Reiser, Knauer angefragt" },
+    ],
+  },
+  {
+    id: "turnier",
+    name: "Turnier & Verein",
+    icon: "⚽",
+    verantwortliche: "Jugendleitung, Daniel, Marco",
+    beschluesse: [],
+    aufgaben: [
+      { titel: "Turnierpläne erstellt", status: "erledigt", verantwortlich: "Jugendleitung" },
+      { titel: "Give-Aways beschafft (VR Bank, Sparkasse)", status: "erledigt", verantwortlich: "Halle + Mirjam" },
+      { titel: "Kinderbetreuung organisiert", status: "erledigt", verantwortlich: "Halle" },
+      { titel: "Give-Aways vom DJK Verband", status: "erledigt", verantwortlich: "Vorstand" },
+      { titel: "Auftritt Teamgirls organisiert", status: "erledigt", verantwortlich: "Halle + Karin" },
+      { titel: "Plakate Soccer 5 erstellt", status: "erledigt", verantwortlich: "Soccer 5" },
+      { titel: "Plakatieren genehmigt", status: "erledigt", verantwortlich: "Marco" },
+      { titel: "Preise bestellen (Medaillen, Bälle)", status: "in_arbeit", verantwortlich: "Jugendleitung" },
+      { titel: "Bambini-Einlagenspiel", status: "in_arbeit", verantwortlich: "Andreas Haas" },
+      { titel: "Plakate Sommerfest/Jugendturnier", status: "in_arbeit", verantwortlich: "Vorstand + Bepp" },
+      { titel: "GEMA beantragen", status: "in_arbeit", verantwortlich: "Marco" },
+      { titel: "Gestattung bei Gemeinde", status: "in_arbeit", verantwortlich: "Marco + Bepp" },
+      { titel: "Turnierpläne verschicken", status: "offen", verantwortlich: "Jugendleitung" },
+      { titel: "Schiris organisieren", status: "offen", verantwortlich: "Holbinger" },
+      { titel: "Spielbälle organisieren", status: "offen", verantwortlich: "Jugendleitung" },
+      { titel: "Mannschaften anrufen (Bestätigung)", status: "offen", verantwortlich: "Jugendleitung" },
+      { titel: "Kabinenpläne erstellen", status: "offen", verantwortlich: "Jugendleitung" },
+      { titel: "Quittungen/Spielplan drucken (10×)", status: "offen", verantwortlich: "Jugendleitung" },
+      { titel: "Gutscheine drucken", status: "offen", verantwortlich: "Jugendleitung" },
+      { titel: "Absperrungen organisieren", status: "offen", verantwortlich: "Bepp" },
+      { titel: "15 Plakate DIN A3 aufhängen", status: "offen", verantwortlich: "Jugendleitung" },
+      { titel: "Veranstaltungen im Internet anzeigen", status: "offen", verantwortlich: "Hundi" },
+      { titel: "Preisliste erstellen und einschweißen", status: "offen", verantwortlich: "Marco" },
+      { titel: "Pfandmarken bereitstellen", status: "offen", verantwortlich: "Jugendleitung" },
+    ],
   },
   {
     id: "sonstiges",
     name: "Sonstiges",
     icon: "📋",
-    eintraege: [
-      {
-        sitzungNr: 1, datum: "10.02.2026",
-        themenTitel: "Sonstiges",
-        inhalt: "GEMA: Komplex, Setlisten nötig — Agenda für März. Club-WM 2026: Viertelfinals 9.–12. Juli, ggf. Übertragung im Biergarten. Bauzaun-Banner: 3–5 Stück nachbestellen (ca. 29 €/Stück). Helferliste.de für Helfer-Koordination. Tommy baut Finanzübersicht/Dashboard. Müllcontainer über Gemeinde/Bauhof. Elektroabnahme: Landratsamt kommt vorbei.",
-        aufgaben: ["GEMA für März auf Agenda", "Bauzaun-Banner bestellen", "Helferliste.de einrichten", "Finanzübersicht erstellen", "Müllcontainer über Gemeinde organisieren"]
-      },
-      {
-        sitzungNr: 2, datum: "09.03.2026",
-        themenTitel: "Essen",
-        inhalt: "Do (Wattturnier): Wurstsalat, Brezen, Obatzda (200–250 Brezen). Fr: Leberkässemmeln (300–350 Stk). Sa: Pommes, Grill, abends Obatzda/Wurstsalat (500–750 Semmeln). So: Schweinebraten mit Kartoffel-/Kraut-/Karottensalat + Käsespätzle (in Gaspfanne). Kaffee & Kuchen am Sonntagnachmittag: 50+ Kuchen über Helferliste. Küchenequipment kostenlos aus Moosburg.",
-        aufgaben: ["Bäcker anfragen (Reithof, Kreitmaier, Hasi)", "Kuchenspenden über Helferliste sammeln"]
-      },
-      {
-        sitzungNr: 2, datum: "09.03.2026",
-        themenTitel: "Helferliste & Helfergruppe",
-        inhalt: "WhatsApp-Helfergruppe: 100 Mitglieder. Helferliste.de für Koordination (Posten: Aufbau, Zeltaufbau, Deko, Service, Abbau, Kuchenspende, Sachspenden).",
-        aufgaben: ["Begrüßungsnachricht in WhatsApp-Gruppe posten", "Posten auf Helferliste.de erstellen"]
-      },
-      {
-        sitzungNr: 2, datum: "09.03.2026",
-        themenTitel: "Festprogramm",
-        inhalt: "Do: 16:00 Eröffnung, Brotzeit, 19:00 Wattturnier. Fr: 19:00 Discoparty mit DJ Josh. Sa: 09:00 Jugendturnier, 12:00 Stockschützen, 14:00 Fußballturnier & Kindernachmittag, 18:00 Festzeltparty 'Drunter und Drüber'. So: 10:00 Gottesdienst + Böllerschützen, 11:30 Mittagstisch + Blasmusik, 13:00 Ehrungen, 14:30 Kaffee/Kuchen + Kindertanzgruppe.",
-        beschluesse: ["Festprogramm für alle 4 Tage festgelegt"]
-      },
-      {
-        sitzungNr: 2, datum: "09.03.2026",
-        themenTitel: "Service-Planung Festsonntag",
-        inhalt: "25+ Servicekräfte + 10 Backup für 5 Tischreihen. Pro Gang 4 Personen: 1 nimmt Bestellung auf/kassiert, 1 holt Essen, 1 holt Getränke, 1 trägt Schlitten. Wertmarken-System: Farbige Chips pro Getränk (z.B. Rot=Bier, Weiß=Weißbier, Orange=Spezi). 250 Stk/Farbe à 10 €, gesamt ~100 €. Bezahlung: Mindestlohn 12,90 €/Std für ~4–5h = ~1.390 € gesamt. Trinkgeld am Sonntag für Bedienungen. Fr/Sa ehrenamtlich. Einweisung 1–2 Wochen vorher durch Petra.",
-        beschluesse: ["Wertmarken-System beschlossen", "Mindestlohn für So-Servicekräfte", "Trinkgeld So für Bedienungen, Fr/Sa für Vereinskasse"],
-        aufgaben: ["Petra: Bedienungen akquirieren", "Petra: Einweisung 1–2 Wochen vor Fest", "Alex: Steuerliche Abwicklung klären", "Wertmarken bestellen (~100 €)"]
-      },
-      {
-        sitzungNr: 2, datum: "09.03.2026",
-        themenTitel: "Sonstiges",
-        inhalt: "Social Media: 800 Mitglieder sollen Flyer teilen, Instagram-Reels. Kartenzahlung: nur Bargeld, Notlösung: Vereins-Kartenterminal. Ministranten (12 Stk) versorgen. Besteck: 500 + 200 Reserve + 1.000 vom Ernst. Nächster Termin: 30.03.2026, ab April alle 2 Wochen, ab Mai wöchentlich.",
-        beschluesse: ["Keine Kartenzahlung, nur Bargeld"],
-        aufgaben: ["Instagram-Reels produzieren", "Nächste Sitzung: 30.03.2026"]
-      }
-    ]
-  }
+    verantwortliche: "Diverse",
+    beschluesse: [
+      "Keine Kartenzahlung, nur Bargeld",
+    ],
+    aufgaben: [
+      { titel: "Werbung gestaltet (Banner, Plakate)", status: "erledigt", verantwortlich: "Hundi" },
+      { titel: "Sitzungsprotokoll eingeführt", status: "erledigt", verantwortlich: "Seb" },
+      { titel: "Festausschuss zusammengestellt", status: "erledigt", verantwortlich: "Seb + Hundi" },
+      { titel: "Marco als beratende Funktion dabei", status: "erledigt", verantwortlich: "Seb + Thommy" },
+      { titel: "Finanzübersicht erstellen", status: "in_arbeit", verantwortlich: "Thommy", detail: "Abstimmung mit Alex Reisner läuft" },
+      { titel: "Gottesdienst – Gestaltung", status: "in_arbeit", verantwortlich: "Hundi", detail: "Gemeindepfarrer hält, Bettina gestaltet, Details im April" },
+      { titel: "WM-Übertragung (Viertelfinal)", status: "offen", verantwortlich: "Marco", detail: "Falls Deutschland spielt → Rudi Rauch kontaktieren" },
+      { titel: "Happy Hour planen", status: "offen" },
+      { titel: "Instagram-Reels produzieren", status: "offen" },
+    ],
+  },
 ]
 
+// Hilfsfunktionen
+
 export function getBereichStats(bereich: Bereich) {
-  const allBeschluesse = bereich.eintraege.flatMap(e => e.beschluesse || [])
-  const allAufgaben = bereich.eintraege.flatMap(e => e.aufgaben || [])
-  const letztesDatum = bereich.eintraege[bereich.eintraege.length - 1].datum
-  return { allBeschluesse, allAufgaben, letztesDatum }
+  const offen = bereich.aufgaben.filter(a => a.status === 'offen').length
+  const inArbeit = bereich.aufgaben.filter(a => a.status === 'in_arbeit').length
+  const erledigt = bereich.aufgaben.filter(a => a.status === 'erledigt').length
+  return { offen, inArbeit, erledigt, total: offen + inArbeit + erledigt }
 }
 
-export function getStatusColor(aufgabenCount: number) {
-  if (aufgabenCount === 0) return { bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700", dot: "bg-emerald-500", label: "Abgeschlossen" }
-  if (aufgabenCount <= 2) return { bg: "bg-amber-50 border-amber-200", text: "text-amber-700", dot: "bg-amber-500", label: `${aufgabenCount} offen` }
-  return { bg: "bg-red-50 border-red-200", text: "text-red-700", dot: "bg-red-500", label: `${aufgabenCount} offen` }
+export function getGlobalStats() {
+  let offen = 0, inArbeit = 0, erledigt = 0
+  for (const b of BEREICHE) {
+    const s = getBereichStats(b)
+    offen += s.offen
+    inArbeit += s.inArbeit
+    erledigt += s.erledigt
+  }
+  const total = offen + inArbeit + erledigt
+  return { offen, inArbeit, erledigt, total }
 }
 
-export function parseDatum(datum: string): number {
-  const [day, month, year] = datum.split('.').map(Number)
-  return new Date(year, month - 1, day).getTime()
+export function getDringendeAufgaben() {
+  const dringend: { bereich: Bereich; aufgabe: Aufgabe }[] = []
+  for (const b of BEREICHE) {
+    for (const a of b.aufgaben) {
+      if (a.status === 'offen' && !a.verantwortlich) {
+        dringend.push({ bereich: b, aufgabe: a })
+      }
+    }
+  }
+  return dringend
 }
