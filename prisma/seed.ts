@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import 'dotenv/config'
+import { BEREICHE, PERSONEN } from '../src/data/protokolle'
 
 const prisma = new PrismaClient()
 
@@ -7,6 +8,8 @@ async function main() {
   console.log('Seeding database...')
 
   // Clean up existing data in correct order (respecting foreign keys)
+  await prisma.taskAssignment.deleteMany()
+  await prisma.beschluss.deleteMany()
   await prisma.shiftAssignment.deleteMany()
   await prisma.shift.deleteMany()
   await prisma.station.deleteMany()
@@ -14,6 +17,8 @@ async function main() {
   await prisma.salesEntry.deleteMany()
   await prisma.salesEstimate.deleteMany()
   await prisma.task.deleteMany()
+  await prisma.bereich.deleteMany()
+  await prisma.person.deleteMany()
   await prisma.participant.deleteMany()
   await prisma.team.deleteMany()
   await prisma.product.deleteMany()
@@ -427,7 +432,97 @@ async function main() {
   ])
   console.log('Created participants')
 
-  // ─── TASKS ───────────────────────────────────────────────────────────────────
+  // ─── PERSONEN (Festausschuss) ───────────────────────────────────────────────
+
+  const personMap = new Map<string, { id: string; keywords: string[]; isCatchAll: boolean }>()
+  for (let i = 0; i < PERSONEN.length; i++) {
+    const p = PERSONEN[i]
+    const isCatchAll = p.id === 'helferx'
+    const created = await prisma.person.create({
+      data: {
+        name: p.name,
+        initials: p.initials,
+        color: p.color,
+        ordering: i,
+        isCatchAll,
+      },
+    })
+    personMap.set(p.id, { id: created.id, keywords: p.keywords, isCatchAll })
+  }
+  console.log(`Created ${personMap.size} persons`)
+
+  // ─── BEREICHE + BESCHLÜSSE + PROTOKOLL-AUFGABEN ─────────────────────────────
+
+  // Match-Logik (identisch zu src/data/protokolle.ts → matchesPerson)
+  function matchingPersonIds(verantwortlich: string | undefined): string[] {
+    const matches: string[] = []
+    let anyNamedMatched = false
+    for (const p of PERSONEN) {
+      if (p.id === 'helferx') continue
+      if (!verantwortlich) continue
+      const v = verantwortlich.toLowerCase()
+      if (p.keywords.some(k => v.includes(k.toLowerCase()))) {
+        matches.push(personMap.get(p.id)!.id)
+        anyNamedMatched = true
+      }
+    }
+    // Catchall: Helfer x bekommt alles ohne Verantwortlichen oder ohne namentlichen Match
+    if (!verantwortlich || !anyNamedMatched) {
+      matches.push(personMap.get('helferx')!.id)
+    }
+    return matches
+  }
+
+  let bereichCount = 0
+  let beschlussCount = 0
+  let protokollTaskCount = 0
+  let assignmentCount = 0
+
+  for (let bIdx = 0; bIdx < BEREICHE.length; bIdx++) {
+    const b = BEREICHE[bIdx]
+    const bereich = await prisma.bereich.create({
+      data: {
+        name: b.name,
+        icon: b.icon,
+        verantwortliche: b.verantwortliche,
+        ordering: bIdx,
+      },
+    })
+    bereichCount++
+
+    // Beschlüsse
+    for (let i = 0; i < b.beschluesse.length; i++) {
+      await prisma.beschluss.create({
+        data: { text: b.beschluesse[i], bereichId: bereich.id, ordering: i },
+      })
+      beschlussCount++
+    }
+
+    // Aufgaben mit Person-Zuweisungen
+    for (const a of b.aufgaben) {
+      const task = await prisma.task.create({
+        data: {
+          title: a.titel,
+          detail: a.detail || null,
+          status: a.status, // schon offen|in_arbeit|erledigt
+          bereichId: bereich.id,
+          priority: 'medium',
+        },
+      })
+      protokollTaskCount++
+
+      const personIds = matchingPersonIds(a.verantwortlich)
+      if (personIds.length > 0) {
+        await prisma.taskAssignment.createMany({
+          data: personIds.map(personId => ({ taskId: task.id, personId })),
+        })
+        assignmentCount += personIds.length
+      }
+    }
+  }
+  console.log(`Created ${bereichCount} bereiche, ${beschlussCount} beschlüsse, ${protokollTaskCount} protokoll-tasks, ${assignmentCount} assignments`)
+
+  // ─── LEGACY HELFER-TASKS (für /aufgaben Kanban) ──────────────────────────────
 
   const lucaId = userId('Luca Raacke')
   const andreasId = userId('Andreas Lippacher')
@@ -435,11 +530,11 @@ async function main() {
   await Promise.all([
     prisma.task.create({ data: { title: 'Bierzeltgarnituren aufstellen', description: '20 Garnituren aus Lager holen', eventDay: 'thursday', category: 'Aufbau', priority: 'high', assigneeId: lucaId } }),
     prisma.task.create({ data: { title: 'Getränke bestellen', description: 'Bestellung bei Getränkemarkt aufgeben', category: 'Einkauf', priority: 'high', deadline: new Date('2025-03-01') } }),
-    prisma.task.create({ data: { title: 'DJ organisieren', description: 'DJ für Freitag Disco buchen', eventDay: 'friday', category: 'Organisation', priority: 'medium', status: 'done' } }),
+    prisma.task.create({ data: { title: 'DJ organisieren', description: 'DJ für Freitag Disco buchen', eventDay: 'friday', category: 'Organisation', priority: 'medium', status: 'erledigt' } }),
     prisma.task.create({ data: { title: 'Deko einkaufen', description: 'Luftballons, Banner, Tischdecken', category: 'Einkauf', priority: 'low' } }),
-    prisma.task.create({ data: { title: 'Musikanlage testen', eventDay: 'friday', category: 'Technik', priority: 'medium', status: 'in_progress', assigneeId: andreasId } }),
+    prisma.task.create({ data: { title: 'Musikanlage testen', eventDay: 'friday', category: 'Technik', priority: 'medium', status: 'in_arbeit', assigneeId: andreasId } }),
   ])
-  console.log('Created tasks')
+  console.log('Created legacy helper tasks')
 
   // ─── INVENTORY ───────────────────────────────────────────────────────────────
 

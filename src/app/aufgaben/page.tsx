@@ -42,7 +42,7 @@ export default function AufgabenPage() {
     description: '',
     assigneeId: '',
     deadline: '',
-    status: 'open',
+    status: 'offen',
     eventDay: '',
     category: '',
     priority: 'medium',
@@ -88,7 +88,7 @@ export default function AufgabenPage() {
         description: '',
         assigneeId: '',
         deadline: '',
-        status: 'open',
+        status: 'offen',
         eventDay: '',
         category: '',
         priority: 'medium',
@@ -136,9 +136,9 @@ export default function AufgabenPage() {
   }
 
   const statusVariants: Record<string, 'default' | 'info' | 'success'> = {
-    open: 'default',
-    in_progress: 'info',
-    done: 'success',
+    offen: 'default',
+    in_arbeit: 'info',
+    erledigt: 'success',
   }
 
   const priorityVariants: Record<string, 'default' | 'warning' | 'danger'> = {
@@ -148,9 +148,9 @@ export default function AufgabenPage() {
   }
 
   const groupedTasks = {
-    open: tasks.filter((t) => t.status === 'open'),
-    in_progress: tasks.filter((t) => t.status === 'in_progress'),
-    done: tasks.filter((t) => t.status === 'done'),
+    offen: tasks.filter((t) => t.status === 'offen'),
+    in_arbeit: tasks.filter((t) => t.status === 'in_arbeit'),
+    erledigt: tasks.filter((t) => t.status === 'erledigt'),
   }
 
   return (
@@ -201,7 +201,7 @@ export default function AufgabenPage() {
 
       {/* Kanban-Style Übersicht */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {(['open', 'in_progress', 'done'] as const).map((status) => (
+        {(['offen', 'in_arbeit', 'erledigt'] as const).map((status) => (
           <div key={status}>
             <div className="flex items-center gap-2 mb-4">
               <h2 className="text-lg font-semibold text-gray-900">{TASK_STATUS_LABELS[status]}</h2>
@@ -230,7 +230,7 @@ export default function AufgabenPage() {
                       )}
                       {task.category && <Badge variant="default">{task.category}</Badge>}
                       {task.deadline && (
-                        <Badge variant={new Date(task.deadline) < new Date() && task.status !== 'done' ? 'danger' : 'default'}>
+                        <Badge variant={new Date(task.deadline) < new Date() && task.status !== 'erledigt' ? 'danger' : 'default'}>
                           Fällig: {new Date(task.deadline).toLocaleDateString('de-DE')}
                         </Badge>
                       )}
@@ -244,20 +244,20 @@ export default function AufgabenPage() {
 
                     <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                       <div className="flex gap-1">
-                        {status !== 'open' && (
+                        {status !== 'offen' && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => updateStatus(task, status === 'done' ? 'in_progress' : 'open')}
+                            onClick={() => updateStatus(task, status === 'erledigt' ? 'in_arbeit' : 'offen')}
                           >
                             ←
                           </Button>
                         )}
-                        {status !== 'done' && (
+                        {status !== 'erledigt' && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => updateStatus(task, status === 'open' ? 'in_progress' : 'done')}
+                            onClick={() => updateStatus(task, status === 'offen' ? 'in_arbeit' : 'erledigt')}
                           >
                             →
                           </Button>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { BEREICHE, getBereichStats, getGlobalStats, getDringendeAufgaben } from '@/data/protokolle'
+import { bereichStats, globalStats, type BereichDTO } from '@/types/protokolle'
 
 interface SimpleForecast {
   eventDay: string
@@ -39,6 +39,7 @@ interface Task {
   deadline: string | null
   eventDay: string | null
   category: string | null
+  bereichId: string | null
 }
 
 const EVENT_START = new Date('2026-07-09T00:00:00')
@@ -77,27 +78,31 @@ export default function Dashboard() {
   const [costs, setCosts] = useState<CostItem[]>([])
   const [sponsors, setSponsors] = useState<Sponsor[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
+  const [bereiche, setBereiche] = useState<BereichDTO[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function loadAll() {
       try {
-        const [forecastRes, costsRes, sponsorsRes, tasksRes] = await Promise.all([
+        const [forecastRes, costsRes, sponsorsRes, tasksRes, bereicheRes] = await Promise.all([
           fetch('/api/simple-forecast'),
           fetch('/api/costs'),
           fetch('/api/sponsors'),
           fetch('/api/tasks'),
+          fetch('/api/bereiche'),
         ])
-        const [forecastData, costsData, sponsorsData, tasksData] = await Promise.all([
+        const [forecastData, costsData, sponsorsData, tasksData, bereicheData] = await Promise.all([
           forecastRes.json(),
           costsRes.json(),
           sponsorsRes.json(),
           tasksRes.json(),
+          bereicheRes.json(),
         ])
         setForecasts(forecastData)
         setCosts(costsData)
         setSponsors(sponsorsData)
         setTasks(tasksData)
+        setBereiche(bereicheData)
       } catch {
         // ignore
       }
@@ -138,10 +143,11 @@ export default function Dashboard() {
   const grossExpenses = totalCosts + totalEntryCost
   const expectedProfit = grossRevenue - grossExpenses
 
-  // --- Aufgaben ---
-  const openTasks = tasks.filter(t => t.status === 'open')
-  const inProgressTasks = tasks.filter(t => t.status === 'in_progress')
-  const doneTasks = tasks.filter(t => t.status === 'done')
+  // --- Helfer-Aufgaben (legacy /aufgaben Tasks ohne bereichId) ---
+  const helperTasks = tasks.filter(t => !t.bereichId)
+  const openTasks = helperTasks.filter(t => t.status === 'offen')
+  const inProgressTasks = helperTasks.filter(t => t.status === 'in_arbeit')
+  const doneTasks = helperTasks.filter(t => t.status === 'erledigt')
   const highPrioTasks = openTasks
     .sort((a, b) => {
       const prioPriority: Record<string, number> = { high: 0, medium: 1, low: 2 }
@@ -150,20 +156,24 @@ export default function Dashboard() {
     .slice(0, 5)
 
   // --- Protokoll-Fortschritt ---
-  const bereicheStats = BEREICHE.map(b => {
-    const stats = getBereichStats(b)
+  const bereicheWithStats = bereiche.map(b => {
+    const stats = bereichStats(b)
     const pct = stats.total > 0 ? Math.round((stats.erledigt / stats.total) * 100) : 100
     return { ...b, stats, pct }
   }).sort((a, b) => b.pct - a.pct)
 
-  const protokollGlobal = getGlobalStats()
+  const protokollGlobal = globalStats(bereiche)
   const overallPct = protokollGlobal.total > 0 ? Math.round((protokollGlobal.erledigt / protokollGlobal.total) * 100) : 0
 
   // --- Dringende Aufgaben & Beschlüsse aus Protokollen ---
-  const dringend = getDringendeAufgaben()
-  const recentBeschluesse = BEREICHE.filter(b => b.beschluesse.length > 0).slice(0, 4)
-  const offeneProtokollAufgaben = BEREICHE.flatMap(b =>
-    b.aufgaben.filter(a => a.status === 'offen').map(a => ({ bereich: b, aufgabe: a }))
+  const dringend = bereiche.flatMap(b =>
+    b.tasks
+      .filter(t => t.status === 'offen' && t.assignments.filter(a => !a.person.isCatchAll).length === 0)
+      .map(t => ({ bereich: b, task: t }))
+  )
+  const recentBeschluesse = bereiche.filter(b => b.beschluesse.length > 0).slice(0, 4)
+  const offeneProtokollAufgaben = bereiche.flatMap(b =>
+    b.tasks.filter(t => t.status === 'offen').map(t => ({ bereich: b, task: t }))
   ).slice(0, 3)
 
   // --- Warnungen ---
@@ -240,7 +250,7 @@ export default function Dashboard() {
           <Link href="/protokolle" className="text-xs text-indigo-600 font-medium">Protokolle →</Link>
         </div>
         <div className="space-y-3">
-          {bereicheStats.map(b => {
+          {bereicheWithStats.map(b => {
             const barColor = b.pct >= 80 ? 'bg-green-500' : b.pct >= 50 ? 'bg-amber-500' : 'bg-red-400'
             const textColor = b.pct >= 80 ? 'text-green-600' : b.pct >= 50 ? 'text-amber-600' : 'text-red-500'
             return (
@@ -368,7 +378,7 @@ export default function Dashboard() {
               <div className="pb-3 min-w-0">
                 <div className="text-xs text-gray-400">{bereich.icon} {bereich.name}</div>
                 <div className="text-sm font-medium text-gray-900 mt-0.5">
-                  {bereich.beschluesse[0]}
+                  {bereich.beschluesse[0]?.text}
                   {bereich.beschluesse.length > 1 && (
                     <span className="text-xs text-gray-400 ml-1">+{bereich.beschluesse.length - 1} weitere</span>
                   )}
@@ -377,21 +387,24 @@ export default function Dashboard() {
               </div>
             </div>
           ))}
-          {offeneProtokollAufgaben.map((entry, idx) => (
-            <div key={`a-${idx}`} className="flex gap-3">
-              <div className="flex flex-col items-center shrink-0">
-                <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5" />
-                {idx < offeneProtokollAufgaben.length - 1 ? (
-                  <div className="w-0.5 flex-1 bg-gray-200" />
-                ) : null}
+          {offeneProtokollAufgaben.map((entry, idx) => {
+            const owners = entry.task.assignments.filter(a => !a.person.isCatchAll).map(a => a.person.name).join(', ')
+            return (
+              <div key={`a-${entry.task.id}`} className="flex gap-3">
+                <div className="flex flex-col items-center shrink-0">
+                  <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5" />
+                  {idx < offeneProtokollAufgaben.length - 1 ? (
+                    <div className="w-0.5 flex-1 bg-gray-200" />
+                  ) : null}
+                </div>
+                <div className="pb-3 min-w-0">
+                  <div className="text-xs text-gray-400">{entry.bereich.icon} {entry.bereich.name}</div>
+                  <div className="text-sm font-medium text-gray-900 mt-0.5">{entry.task.title}</div>
+                  <div className="text-xs text-amber-600 font-medium mt-0.5">⬤ Offen{owners ? ` · ${owners}` : ''}</div>
+                </div>
               </div>
-              <div className="pb-3 min-w-0">
-                <div className="text-xs text-gray-400">{entry.bereich.icon} {entry.bereich.name}</div>
-                <div className="text-sm font-medium text-gray-900 mt-0.5">{entry.aufgabe.titel}</div>
-                <div className="text-xs text-amber-600 font-medium mt-0.5">⬤ Offen{entry.aufgabe.verantwortlich ? ` · ${entry.aufgabe.verantwortlich}` : ''}</div>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 

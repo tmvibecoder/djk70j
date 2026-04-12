@@ -36,6 +36,14 @@ echo "[3/8] Generiere Prisma Client..."
 npx prisma generate
 
 echo ""
+echo "[3b/8] Synchronisiere DB-Schema (prisma db push)..."
+npx prisma db push --skip-generate
+
+echo ""
+echo "[3c/8] Migriere Task-Status-Werte (open→offen, …) — idempotent..."
+npx tsx prisma/migrate-status.ts
+
+echo ""
 echo "[4/8] Baue Next.js Production-Build..."
 npm run build
 

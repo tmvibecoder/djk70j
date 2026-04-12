@@ -42,13 +42,13 @@ export const PRODUCT_CATEGORIES = [
   'Snacks',
 ] as const
 
-export const TASK_STATUSES = ['open', 'in_progress', 'done'] as const
+export const TASK_STATUSES = ['offen', 'in_arbeit', 'erledigt'] as const
 export type TaskStatus = typeof TASK_STATUSES[number]
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
-  open: 'Offen',
-  in_progress: 'In Bearbeitung',
-  done: 'Erledigt',
+  offen: 'Offen',
+  in_arbeit: 'In Arbeit',
+  erledigt: 'Erledigt',
 }
 
 export const USER_ROLES = ['admin', 'orga', 'shiftleader', 'helper'] as const

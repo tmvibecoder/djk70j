@@ -1,53 +1,119 @@
 'use client'
 
-import { useState, useMemo } from "react"
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import ProtokollAufgabeModal from '@/components/ProtokollAufgabeModal'
 import {
-  BEREICHE,
-  PERSONEN,
-  getBereichStats,
-  getGlobalStats,
-  getDringendeAufgaben,
-  getAufgabenForPerson,
-  getPersonStats,
-  type AufgabeMitBereich,
-} from '@/data/protokolle'
+  bereichStats,
+  globalStats,
+  type BereichDTO,
+  type PersonDTO,
+  type TaskDTO,
+} from '@/types/protokolle'
 
 type StatusFilter = 'alle' | 'offen' | 'in_arbeit' | 'erledigt'
 type ViewMode = 'bereiche' | 'personen'
 
 export default function ProtokollePage() {
+  const [bereiche, setBereiche] = useState<BereichDTO[]>([])
+  const [personen, setPersonen] = useState<PersonDTO[]>([])
+  const [loading, setLoading] = useState(true)
   const [view, setView] = useState<ViewMode>('bereiche')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('alle')
   const [bereichFilter, setBereichFilter] = useState<string>('alle')
-  const [activePerson, setActivePerson] = useState<string>('hundi')
+  const [activePerson, setActivePerson] = useState<string>('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  const globalStats = useMemo(() => getGlobalStats(), [])
-  const dringend = useMemo(() => getDringendeAufgaben(), [])
+  // Modal-State
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editingTask, setEditingTask] = useState<TaskDTO | null>(null)
+  const [defaultBereichId, setDefaultBereichId] = useState<string | undefined>()
+
+  const loadData = useCallback(async () => {
+    const [bRes, pRes] = await Promise.all([
+      fetch('/api/bereiche'),
+      fetch('/api/personen'),
+    ])
+    const [bData, pData] = await Promise.all([bRes.json(), pRes.json()])
+    setBereiche(bData)
+    setPersonen(pData)
+    if (!activePerson && pData.length > 0) {
+      setActivePerson(pData[0].id)
+    }
+    setLoading(false)
+  }, [activePerson])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  const allTasks: TaskDTO[] = useMemo(
+    () => bereiche.flatMap(b => b.tasks),
+    [bereiche]
+  )
+
+  const dringend = useMemo(
+    () =>
+      bereiche.flatMap(b =>
+        b.tasks
+          .filter(t => t.status === 'offen' && t.assignments.filter(a => !a.person.isCatchAll).length === 0)
+          .map(t => ({ bereich: b, task: t }))
+      ),
+    [bereiche]
+  )
+
+  const gStats = useMemo(() => globalStats(bereiche), [bereiche])
 
   const toggle = (id: string) => {
-    setExpandedId(prev => prev === id ? null : id)
+    setExpandedId(prev => (prev === id ? null : id))
   }
 
-  // Filter Bereiche
+  const openCreate = (bereichId?: string) => {
+    setEditingTask(null)
+    setDefaultBereichId(bereichId)
+    setModalOpen(true)
+  }
+
+  const openEdit = (task: TaskDTO) => {
+    setEditingTask(task)
+    setDefaultBereichId(undefined)
+    setModalOpen(true)
+  }
+
+  const deleteTask = async (task: TaskDTO) => {
+    if (!confirm(`Aufgabe „${task.title}" wirklich löschen?`)) return
+    await fetch(`/api/tasks/${task.id}`, { method: 'DELETE' })
+    loadData()
+  }
+
   const filteredBereiche = useMemo(() => {
-    return BEREICHE.filter(b => {
+    return bereiche.filter(b => {
       if (bereichFilter !== 'alle' && b.id !== bereichFilter) return false
       if (statusFilter === 'alle') return true
-      const stats = getBereichStats(b)
+      const stats = bereichStats(b)
       if (statusFilter === 'offen') return stats.offen > 0
       if (statusFilter === 'in_arbeit') return stats.inArbeit > 0
       if (statusFilter === 'erledigt') return stats.erledigt > 0
       return true
     })
-  }, [statusFilter, bereichFilter])
+  }, [bereiche, statusFilter, bereichFilter])
 
   const statusChips: { key: StatusFilter; label: string; count: number }[] = [
-    { key: 'alle', label: 'Alle', count: globalStats.total },
-    { key: 'offen', label: 'Offen', count: globalStats.offen },
-    { key: 'in_arbeit', label: 'In Arbeit', count: globalStats.inArbeit },
-    { key: 'erledigt', label: 'Erledigt', count: globalStats.erledigt },
+    { key: 'alle', label: 'Alle', count: gStats.total },
+    { key: 'offen', label: 'Offen', count: gStats.offen },
+    { key: 'in_arbeit', label: 'In Arbeit', count: gStats.inArbeit },
+    { key: 'erledigt', label: 'Erledigt', count: gStats.erledigt },
   ]
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-pulse flex flex-col items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-gray-200" />
+          <div className="h-4 w-32 bg-gray-200 rounded" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -55,7 +121,7 @@ export default function ProtokollePage() {
       <div className="bg-gray-900 -mx-4 -mt-16 lg:-mt-6 px-4 pt-16 lg:pt-6 pb-4 mb-0">
         <p className="text-yellow-500 text-xs font-semibold tracking-widest uppercase">DJK Ottenhofen e.V.</p>
         <h1 className="text-2xl font-bold text-white">Protokolle & Aufgaben</h1>
-        <p className="text-gray-400 text-sm mt-1">Stand 11.04.2026</p>
+        <p className="text-gray-400 text-sm mt-1">{gStats.total} Aufgaben · {gStats.offen} offen · {gStats.inArbeit} in Arbeit</p>
       </div>
 
       {/* View Tabs */}
@@ -106,16 +172,24 @@ export default function ProtokollePage() {
                 ))}
               </div>
               {/* Bereich Dropdown */}
-              <select
-                value={bereichFilter}
-                onChange={(e) => setBereichFilter(e.target.value)}
-                className="w-full text-xs border border-gray-300 rounded-lg px-3 py-2 text-gray-700 bg-white"
-              >
-                <option value="alle">Alle Bereiche</option>
-                {BEREICHE.map(b => (
-                  <option key={b.id} value={b.id}>{b.icon} {b.name}</option>
-                ))}
-              </select>
+              <div className="flex gap-2">
+                <select
+                  value={bereichFilter}
+                  onChange={e => setBereichFilter(e.target.value)}
+                  className="flex-1 text-xs border border-gray-300 rounded-lg px-3 py-2 text-gray-700 bg-white"
+                >
+                  <option value="alle">Alle Bereiche</option>
+                  {bereiche.map(b => (
+                    <option key={b.id} value={b.id}>{b.icon} {b.name}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => openCreate()}
+                  className="px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 whitespace-nowrap"
+                >
+                  + Neue Aufgabe
+                </button>
+              </div>
             </div>
           </div>
 
@@ -128,47 +202,51 @@ export default function ProtokollePage() {
                   <span className="text-xs text-red-700 font-semibold">Kein Verantwortlicher zugewiesen</span>
                 </div>
                 <div className="space-y-2">
-                  {dringend.map((d, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
+                  {dringend.map(d => (
+                    <button
+                      key={d.task.id}
+                      onClick={() => openEdit(d.task)}
+                      className="w-full flex items-center justify-between text-sm hover:bg-red-100 -mx-1 px-1 py-1 rounded"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
                         <span>{d.bereich.icon}</span>
-                        <span className="text-red-800 font-medium">{d.aufgabe.titel}</span>
+                        <span className="text-red-800 font-medium truncate text-left">{d.task.title}</span>
                       </div>
-                      <span className="text-red-500 text-xs font-medium shrink-0">Kein Owner</span>
-                    </div>
+                      <span className="text-red-500 text-xs font-medium shrink-0">Zuweisen →</span>
+                    </button>
                   ))}
                 </div>
               </div>
             )}
 
             {/* Fortschritt Gesamt */}
-            {bereichFilter === 'alle' && statusFilter === 'alle' && (
+            {bereichFilter === 'alle' && statusFilter === 'alle' && gStats.total > 0 && (
               <div className="bg-white rounded-xl shadow-sm border p-4">
                 <div className="grid grid-cols-3 gap-3 mb-3">
                   <div className="text-center">
-                    <div className="text-xl font-bold text-red-600">{globalStats.offen}</div>
+                    <div className="text-xl font-bold text-red-600">{gStats.offen}</div>
                     <div className="text-[10px] text-gray-500 font-medium">Offen</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-xl font-bold text-amber-600">{globalStats.inArbeit}</div>
+                    <div className="text-xl font-bold text-amber-600">{gStats.inArbeit}</div>
                     <div className="text-[10px] text-gray-500 font-medium">In Arbeit</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-xl font-bold text-green-600">{globalStats.erledigt}</div>
+                    <div className="text-xl font-bold text-green-600">{gStats.erledigt}</div>
                     <div className="text-[10px] text-gray-500 font-medium">Erledigt</div>
                   </div>
                 </div>
                 <div className="h-3 bg-gray-100 rounded-full overflow-hidden flex">
-                  <div className="h-full bg-green-500" style={{ width: `${(globalStats.erledigt / globalStats.total) * 100}%` }} />
-                  <div className="h-full bg-amber-400" style={{ width: `${(globalStats.inArbeit / globalStats.total) * 100}%` }} />
-                  <div className="h-full bg-red-300" style={{ width: `${(globalStats.offen / globalStats.total) * 100}%` }} />
+                  <div className="h-full bg-green-500" style={{ width: `${(gStats.erledigt / gStats.total) * 100}%` }} />
+                  <div className="h-full bg-amber-400" style={{ width: `${(gStats.inArbeit / gStats.total) * 100}%` }} />
+                  <div className="h-full bg-red-300" style={{ width: `${(gStats.offen / gStats.total) * 100}%` }} />
                 </div>
               </div>
             )}
 
             {/* Bereichs-Karten */}
             {filteredBereiche.map(bereich => {
-              const stats = getBereichStats(bereich)
+              const stats = bereichStats(bereich)
               const isExpanded = expandedId === bereich.id
               const badgeText = stats.offen > 0
                 ? `${stats.offen} offen`
@@ -187,9 +265,9 @@ export default function ProtokollePage() {
               const showArbeit = statusFilter === 'alle' || statusFilter === 'in_arbeit'
               const showErledigt = statusFilter === 'alle' || statusFilter === 'erledigt'
 
-              const offeneAufgaben = bereich.aufgaben.filter(a => a.status === 'offen')
-              const arbeitAufgaben = bereich.aufgaben.filter(a => a.status === 'in_arbeit')
-              const erledigteAufgaben = bereich.aufgaben.filter(a => a.status === 'erledigt')
+              const offeneAufgaben = bereich.tasks.filter(a => a.status === 'offen')
+              const arbeitAufgaben = bereich.tasks.filter(a => a.status === 'in_arbeit')
+              const erledigteAufgaben = bereich.tasks.filter(a => a.status === 'erledigt')
 
               return (
                 <div key={bereich.id} className="bg-white rounded-xl shadow-sm border overflow-hidden">
@@ -214,64 +292,45 @@ export default function ProtokollePage() {
 
                   {isExpanded && (
                     <div className="border-t px-4 py-3 space-y-3">
+                      {/* + Neue Aufgabe */}
+                      <button
+                        onClick={() => openCreate(bereich.id)}
+                        className="w-full text-xs font-semibold text-indigo-600 border border-dashed border-indigo-300 rounded-lg py-1.5 hover:bg-indigo-50"
+                      >
+                        + Neue Aufgabe in {bereich.name}
+                      </button>
+
                       {/* Erledigt */}
                       {showErledigt && erledigteAufgaben.length > 0 && (
-                        <div className="space-y-1.5">
-                          <div className="text-[10px] font-bold text-green-700 uppercase tracking-wider">Erledigt ({erledigteAufgaben.length})</div>
-                          {erledigteAufgaben.map((a, i) => (
-                            <div key={i} className="flex items-start gap-2 text-sm text-gray-400">
-                              <span className="text-green-500 text-xs mt-0.5 shrink-0">✓</span>
-                              <div>
-                                <span className="line-through">{a.titel}</span>
-                                {a.verantwortlich && <span className="text-xs ml-1">· {a.verantwortlich}</span>}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                        <TaskGroup
+                          title={`Erledigt (${erledigteAufgaben.length})`}
+                          color="text-green-700"
+                          tasks={erledigteAufgaben}
+                          onEdit={openEdit}
+                          onDelete={deleteTask}
+                        />
                       )}
 
                       {/* In Arbeit */}
                       {showArbeit && arbeitAufgaben.length > 0 && (
-                        <div className="space-y-1.5">
-                          <div className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">In Arbeit ({arbeitAufgaben.length})</div>
-                          {arbeitAufgaben.map((a, i) => (
-                            <div key={i} className="flex items-start gap-2 text-sm">
-                              <span className="text-amber-500 text-xs mt-0.5 shrink-0">→</span>
-                              <div>
-                                <span className="text-gray-900">{a.titel}</span>
-                                {(a.verantwortlich || a.detail) && (
-                                  <div className="text-xs text-gray-400">
-                                    {a.verantwortlich && <span>{a.verantwortlich}</span>}
-                                    {a.verantwortlich && a.detail && <span> · </span>}
-                                    {a.detail && <span>{a.detail}</span>}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                        <TaskGroup
+                          title={`In Arbeit (${arbeitAufgaben.length})`}
+                          color="text-amber-700"
+                          tasks={arbeitAufgaben}
+                          onEdit={openEdit}
+                          onDelete={deleteTask}
+                        />
                       )}
 
                       {/* Offen */}
                       {showOffen && offeneAufgaben.length > 0 && (
-                        <div className="space-y-1.5">
-                          <div className="text-[10px] font-bold text-red-600 uppercase tracking-wider">Offen ({offeneAufgaben.length})</div>
-                          {offeneAufgaben.map((a, i) => (
-                            <div key={i} className="flex items-start gap-2 text-sm">
-                              <span className="text-red-400 text-xs mt-0.5 shrink-0">⬤</span>
-                              <div>
-                                <span className={`text-gray-900 ${!a.verantwortlich ? 'font-medium' : ''}`}>{a.titel}</span>
-                                <div className="text-xs">
-                                  {a.verantwortlich ? (
-                                    <span className="text-gray-400">{a.verantwortlich}{a.detail ? ` · ${a.detail}` : ''}</span>
-                                  ) : (
-                                    <span className="text-red-500">{a.detail ? `Kein Verantwortlicher · ${a.detail}` : 'Kein Verantwortlicher'}</span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                        <TaskGroup
+                          title={`Offen (${offeneAufgaben.length})`}
+                          color="text-red-600"
+                          tasks={offeneAufgaben}
+                          onEdit={openEdit}
+                          onDelete={deleteTask}
+                        />
                       )}
 
                       {/* Beschlüsse */}
@@ -279,10 +338,10 @@ export default function ProtokollePage() {
                         <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
                           <div className="text-[10px] font-bold text-emerald-700 uppercase mb-1.5">Beschlüsse ({bereich.beschluesse.length})</div>
                           <div className="space-y-1 text-sm text-emerald-800">
-                            {bereich.beschluesse.map((b, i) => (
-                              <div key={i} className="flex items-start gap-2">
+                            {bereich.beschluesse.map(b => (
+                              <div key={b.id} className="flex items-start gap-2">
                                 <span className="text-emerald-500 mt-0.5 shrink-0 text-xs">✓</span>
-                                {b}
+                                {b.text}
                               </div>
                             ))}
                           </div>
@@ -305,32 +364,164 @@ export default function ProtokollePage() {
 
       {view === 'personen' && (
         <PersonenView
+          personen={personen}
+          allTasks={allTasks}
+          bereiche={bereiche}
           activePerson={activePerson}
           setActivePerson={setActivePerson}
           statusFilter={statusFilter}
           setStatusFilter={setStatusFilter}
+          onEdit={openEdit}
+          onDelete={deleteTask}
         />
       )}
+
+      <ProtokollAufgabeModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSaved={loadData}
+        task={editingTask}
+        bereiche={bereiche}
+        personen={personen}
+        defaultBereichId={defaultBereichId}
+      />
     </div>
   )
 }
 
-// ─── Personen-Ansicht (Variante 1: Tab-Switcher) ────────────────────────────
+// ─── Sub-Komponenten ────────────────────────────────────────────────────────
+
+function TaskGroup({
+  title,
+  color,
+  tasks,
+  onEdit,
+  onDelete,
+}: {
+  title: string
+  color: string
+  tasks: TaskDTO[]
+  onEdit: (t: TaskDTO) => void
+  onDelete: (t: TaskDTO) => void
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className={`text-[10px] font-bold ${color} uppercase tracking-wider`}>{title}</div>
+      {tasks.map(t => (
+        <TaskRow key={t.id} task={t} onEdit={onEdit} onDelete={onDelete} />
+      ))}
+    </div>
+  )
+}
+
+function TaskRow({
+  task,
+  onEdit,
+  onDelete,
+}: {
+  task: TaskDTO
+  onEdit: (t: TaskDTO) => void
+  onDelete: (t: TaskDTO) => void
+}) {
+  const persons = task.assignments.filter(a => !a.person.isCatchAll).map(a => a.person)
+  const hasOwner = persons.length > 0
+  const isDone = task.status === 'erledigt'
+
+  const icon = task.status === 'offen' ? '⬤' : task.status === 'in_arbeit' ? '→' : '✓'
+  const iconColor =
+    task.status === 'offen' ? 'text-red-400' : task.status === 'in_arbeit' ? 'text-amber-500' : 'text-green-500'
+
+  return (
+    <div className="flex items-start gap-2 group hover:bg-gray-50 -mx-1 px-1 py-1 rounded">
+      <span className={`${iconColor} text-xs mt-1 shrink-0`}>{icon}</span>
+      <div className="min-w-0 flex-1">
+        <div className={`text-sm ${isDone ? 'text-gray-400 line-through' : 'text-gray-900'} ${!hasOwner && !isDone ? 'font-medium' : ''}`}>
+          {task.title}
+        </div>
+        <div className="text-xs">
+          {hasOwner ? (
+            <span className="inline-flex items-center gap-1 flex-wrap">
+              {persons.map(p => (
+                <span
+                  key={p.id}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold text-white"
+                  style={{ background: p.color }}
+                >
+                  {p.name}
+                </span>
+              ))}
+              {task.detail && <span className="text-gray-400">· {task.detail}</span>}
+            </span>
+          ) : (
+            <span className="text-red-500">
+              {task.detail ? `Kein Verantwortlicher · ${task.detail}` : task.status === 'erledigt' ? '' : 'Kein Verantwortlicher'}
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <button
+          onClick={() => onEdit(task)}
+          className="text-[11px] px-2 py-1 rounded bg-white border border-gray-200 text-gray-600 hover:bg-gray-100"
+        >
+          Bearbeiten
+        </button>
+        <button
+          onClick={() => onDelete(task)}
+          className="text-[11px] px-2 py-1 rounded bg-white border border-gray-200 text-red-600 hover:bg-red-50"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Personen-Ansicht ───────────────────────────────────────────────────────
 
 function PersonenView({
+  personen,
+  allTasks,
+  bereiche,
   activePerson,
   setActivePerson,
   statusFilter,
   setStatusFilter,
+  onEdit,
+  onDelete,
 }: {
+  personen: PersonDTO[]
+  allTasks: TaskDTO[]
+  bereiche: BereichDTO[]
   activePerson: string
   setActivePerson: (id: string) => void
   statusFilter: StatusFilter
   setStatusFilter: (s: StatusFilter) => void
+  onEdit: (t: TaskDTO) => void
+  onDelete: (t: TaskDTO) => void
 }) {
-  const aufgaben = useMemo(() => getAufgabenForPerson(activePerson), [activePerson])
-  const stats = useMemo(() => getPersonStats(activePerson), [activePerson])
-  const person = PERSONEN.find(p => p.id === activePerson)!
+  const bereichLookup = useMemo(() => {
+    const m = new Map<string, BereichDTO>()
+    for (const b of bereiche) m.set(b.id, b)
+    return m
+  }, [bereiche])
+
+  const tasksForPerson = (personId: string) =>
+    allTasks.filter(t => t.assignments.some(a => a.personId === personId))
+
+  const personStats = (personId: string) => {
+    const tasks = tasksForPerson(personId)
+    const offen = tasks.filter(t => t.status === 'offen').length
+    const inArbeit = tasks.filter(t => t.status === 'in_arbeit').length
+    const erledigt = tasks.filter(t => t.status === 'erledigt').length
+    return { offen, inArbeit, erledigt, total: offen + inArbeit + erledigt }
+  }
+
+  const person = personen.find(p => p.id === activePerson) || personen[0]
+  if (!person) return null
+
+  const aufgaben = tasksForPerson(person.id)
+  const stats = personStats(person.id)
 
   const offen = aufgaben.filter(a => a.status === 'offen')
   const inArbeit = aufgaben.filter(a => a.status === 'in_arbeit')
@@ -354,8 +545,8 @@ function PersonenView({
         <div className="space-y-2">
           {/* Personen Pills */}
           <div className="flex gap-2 overflow-x-auto pb-1">
-            {PERSONEN.map(p => {
-              const pStats = getPersonStats(p.id)
+            {personen.map(p => {
+              const pStats = personStats(p.id)
               const isActive = activePerson === p.id
               return (
                 <button
@@ -439,19 +630,14 @@ function PersonenView({
           </div>
         </div>
 
-        {/* Offen */}
         {showOffen && offen.length > 0 && (
-          <TaskSection title="Offen" tone="red" tasks={offen} />
+          <PersonTaskSection title="Offen" tone="red" tasks={offen} bereichLookup={bereichLookup} onEdit={onEdit} onDelete={onDelete} />
         )}
-
-        {/* In Arbeit */}
         {showArbeit && inArbeit.length > 0 && (
-          <TaskSection title="In Arbeit" tone="amber" tasks={inArbeit} />
+          <PersonTaskSection title="In Arbeit" tone="amber" tasks={inArbeit} bereichLookup={bereichLookup} onEdit={onEdit} onDelete={onDelete} />
         )}
-
-        {/* Erledigt */}
         {showErledigt && erledigt.length > 0 && (
-          <TaskSection title="Erledigt" tone="green" tasks={erledigt} />
+          <PersonTaskSection title="Erledigt" tone="green" tasks={erledigt} bereichLookup={bereichLookup} onEdit={onEdit} onDelete={onDelete} />
         )}
 
         {aufgaben.length === 0 && (
@@ -459,31 +645,30 @@ function PersonenView({
             <p className="text-gray-500 text-sm">Keine Aufgaben für {person.name}.</p>
           </div>
         )}
-
-        {/* Hinweis: Lese-Ansicht */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mt-2">
-          <div className="text-[11px] text-blue-700 leading-relaxed">
-            💡 Lese-Ansicht. Bearbeiten und Personen-Zuweisen folgt nach DB-Migration.
-          </div>
-        </div>
       </div>
     </>
   )
 }
 
-function TaskSection({
+function PersonTaskSection({
   title,
   tone,
   tasks,
+  bereichLookup,
+  onEdit,
+  onDelete,
 }: {
   title: string
   tone: 'red' | 'amber' | 'green'
-  tasks: AufgabeMitBereich[]
+  tasks: TaskDTO[]
+  bereichLookup: Map<string, BereichDTO>
+  onEdit: (t: TaskDTO) => void
+  onDelete: (t: TaskDTO) => void
 }) {
   const tones = {
-    red:   { bg: 'bg-red-50',   border: 'border-red-100',   text: 'text-red-700',   icon: '⬤', iconColor: 'text-red-400' },
-    amber: { bg: 'bg-amber-50', border: 'border-amber-100', text: 'text-amber-700', icon: '→', iconColor: 'text-amber-500' },
-    green: { bg: 'bg-green-50', border: 'border-green-100', text: 'text-green-700', icon: '✓', iconColor: 'text-green-500' },
+    red: { bg: 'bg-red-50', border: 'border-red-100', text: 'text-red-700' },
+    amber: { bg: 'bg-amber-50', border: 'border-amber-100', text: 'text-amber-700' },
+    green: { bg: 'bg-green-50', border: 'border-green-100', text: 'text-green-700' },
   }[tone]
 
   return (
@@ -494,21 +679,38 @@ function TaskSection({
         </div>
       </div>
       <div className="px-4 py-3 space-y-3">
-        {tasks.map((a, i) => (
-          <div key={i} className="flex items-start gap-2">
-            <span className="text-base shrink-0">{a.bereich.icon}</span>
-            <div className="min-w-0 flex-1">
-              <div className={`text-sm font-medium ${tone === 'green' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
-                {a.titel}
+        {tasks.map(t => {
+          const bereich = t.bereichId ? bereichLookup.get(t.bereichId) : null
+          const isDone = t.status === 'erledigt'
+          return (
+            <div key={t.id} className="flex items-start gap-2 group">
+              <span className="text-base shrink-0">{bereich?.icon ?? '·'}</span>
+              <div className="min-w-0 flex-1">
+                <div className={`text-sm font-medium ${isDone ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                  {t.title}
+                </div>
+                <div className="text-[11px] text-gray-500">
+                  {bereich?.name ?? 'Ohne Bereich'}
+                  {t.detail ? ` · ${t.detail}` : ''}
+                </div>
               </div>
-              <div className="text-[11px] text-gray-500">
-                {a.bereich.name}
-                {a.verantwortlich ? ` · ${a.verantwortlich}` : ''}
-                {a.detail ? ` · ${a.detail}` : ''}
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <button
+                  onClick={() => onEdit(t)}
+                  className="text-[11px] px-2 py-1 rounded bg-white border border-gray-200 text-gray-600 hover:bg-gray-100"
+                >
+                  Bearbeiten
+                </button>
+                <button
+                  onClick={() => onDelete(t)}
+                  className="text-[11px] px-2 py-1 rounded bg-white border border-gray-200 text-red-600 hover:bg-red-50"
+                >
+                  ×
+                </button>
               </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
