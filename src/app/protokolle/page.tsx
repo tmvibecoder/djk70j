@@ -120,7 +120,7 @@ export default function ProtokollePage() {
       {/* Header */}
       <div className="bg-gray-900 -mx-4 -mt-16 lg:-mt-6 px-4 pt-16 lg:pt-6 pb-4 mb-0">
         <p className="text-yellow-500 text-xs font-semibold tracking-widest uppercase">DJK Ottenhofen e.V.</p>
-        <h1 className="text-2xl font-bold text-white">Protokolle & Aufgaben</h1>
+        <h1 className="text-2xl font-bold text-white">Festplanung</h1>
         <p className="text-gray-400 text-sm mt-1">{gStats.total} Aufgaben · {gStats.offen} offen · {gStats.inArbeit} in Arbeit</p>
       </div>
 

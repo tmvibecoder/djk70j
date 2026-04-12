@@ -166,7 +166,7 @@ export default function Dashboard() {
     warnings.push({ message: `${sponsorsOpen} Sponsor(en) ausstehend`, detail: fmtEur(totalSponsoring - totalSponsoringReceived), severity: 'low' })
   }
   if (dringend.length > 0) {
-    warnings.push({ message: `${dringend.length} Protokoll-Aufgabe(n) ohne Verantwortlichen`, severity: 'high' })
+    warnings.push({ message: `${dringend.length} Aufgabe(n) ohne Verantwortlichen`, severity: 'high' })
   }
 
   return (
@@ -216,7 +216,7 @@ export default function Dashboard() {
       <div className="bg-white rounded-xl shadow-sm border p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-gray-900 text-sm">Planungsfortschritt</h3>
-          <Link href="/protokolle" className="text-xs text-indigo-600 font-medium">Protokolle →</Link>
+          <Link href="/protokolle" className="text-xs text-indigo-600 font-medium">Festplanung →</Link>
         </div>
         <div className="space-y-3">
           {bereicheWithStats.map(b => {
@@ -334,7 +334,7 @@ export default function Dashboard() {
       <div className="bg-white rounded-xl shadow-sm border p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-gray-900 text-sm">Aktuelle Beschlüsse & Offene Punkte</h3>
-          <Link href="/protokolle" className="text-xs text-indigo-600 font-medium">Protokolle →</Link>
+          <Link href="/protokolle" className="text-xs text-indigo-600 font-medium">Festplanung →</Link>
         </div>
         <div className="space-y-3">
           {recentBeschluesse.map((bereich, idx) => (
