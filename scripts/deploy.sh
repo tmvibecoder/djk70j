@@ -54,7 +54,8 @@ echo ""
 echo "[6/8] Nginx-Config prüfen (Ziel: Port $PORT)..."
 if grep -q "proxy_pass http://127.0.0.1:3000" "$NGINX_CONF" 2>/dev/null; then
   echo "  → nginx zeigt noch auf 3000, patche auf $PORT..."
-  cp "$NGINX_CONF" "${NGINX_CONF}.bak.$(date +%s)"
+  # Wichtig: Backup NICHT in sites-enabled/ ablegen — sonst lädt nginx beide Configs!
+  cp "$NGINX_CONF" "/tmp/djk-nginx.bak.$(date +%s)"
   sed -i "s|proxy_pass http://127.0.0.1:3000|proxy_pass http://127.0.0.1:$PORT|g" "$NGINX_CONF"
   if nginx -t 2>&1 | tail -5; then
     systemctl reload nginx
