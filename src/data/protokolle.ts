@@ -284,3 +284,68 @@ export function getDringendeAufgaben() {
   }
   return dringend
 }
+
+// ─── PERSONEN ────────────────────────────────────────────────────────────────
+
+export interface Person {
+  id: string
+  name: string
+  initials: string
+  color: string
+  keywords: string[] // case-insensitive substrings to match in `verantwortlich`
+}
+
+export const PERSONEN: Person[] = [
+  { id: 'hundi',   name: 'Hundi',    initials: 'HU', color: '#6366f1', keywords: ['Hundi'] },
+  { id: 'sebi',    name: 'Sebi',     initials: 'SE', color: '#f59e0b', keywords: ['Seb'] },
+  { id: 'marco',   name: 'Marco',    initials: 'MA', color: '#10b981', keywords: ['Marco'] },
+  { id: 'valli',   name: 'Valli',    initials: 'VA', color: '#ec4899', keywords: ['Valentin', 'Valli'] },
+  { id: 'mexx',    name: 'Mexx',     initials: 'MX', color: '#a855f7', keywords: ['Mäx', 'Max'] },
+  { id: 'dani',    name: 'Dani',     initials: 'DA', color: '#06b6d4', keywords: ['Dane', 'Dani'] },
+  { id: 'tommy',   name: 'Tommy',    initials: 'TO', color: '#0ea5e9', keywords: ['Thommy', 'Tommy'] },
+  { id: 'helferx', name: 'Helfer x', initials: 'HX', color: '#6b7280', keywords: [] },
+]
+
+export interface AufgabeMitBereich extends Aufgabe {
+  bereich: Bereich
+}
+
+function matchesPerson(aufgabe: Aufgabe, person: Person): boolean {
+  if (person.id === 'helferx') {
+    // Catchall: alles, was zu keiner namentlichen Person passt
+    if (!aufgabe.verantwortlich) return true
+    const v = aufgabe.verantwortlich.toLowerCase()
+    for (const other of PERSONEN) {
+      if (other.id === 'helferx') continue
+      if (other.keywords.some(k => v.includes(k.toLowerCase()))) {
+        return false
+      }
+    }
+    return true
+  }
+  if (!aufgabe.verantwortlich) return false
+  const v = aufgabe.verantwortlich.toLowerCase()
+  return person.keywords.some(k => v.includes(k.toLowerCase()))
+}
+
+export function getAufgabenForPerson(personId: string): AufgabeMitBereich[] {
+  const person = PERSONEN.find(p => p.id === personId)
+  if (!person) return []
+  const result: AufgabeMitBereich[] = []
+  for (const bereich of BEREICHE) {
+    for (const aufgabe of bereich.aufgaben) {
+      if (matchesPerson(aufgabe, person)) {
+        result.push({ ...aufgabe, bereich })
+      }
+    }
+  }
+  return result
+}
+
+export function getPersonStats(personId: string) {
+  const aufgaben = getAufgabenForPerson(personId)
+  const offen = aufgaben.filter(a => a.status === 'offen').length
+  const inArbeit = aufgaben.filter(a => a.status === 'in_arbeit').length
+  const erledigt = aufgaben.filter(a => a.status === 'erledigt').length
+  return { offen, inArbeit, erledigt, total: offen + inArbeit + erledigt }
+}
