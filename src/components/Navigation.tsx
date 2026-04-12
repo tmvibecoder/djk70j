@@ -10,36 +10,11 @@ interface NavItem {
   icon: string
 }
 
-interface NavGroup {
-  title: string
-  items: NavItem[]
-}
-
-const navGroups: NavGroup[] = [
-  {
-    title: 'ÜBERSICHT',
-    items: [
-      { href: '/', label: 'Dashboard', icon: '📊' },
-    ],
-  },
-  {
-    title: 'PLANUNG',
-    items: [
-      { href: '/finanzen', label: 'Finanzplanung', icon: '💰' },
-    ],
-  },
-  {
-    title: 'FESTBETRIEB',
-    items: [
-      { href: '/waren', label: 'Warenwirtschaft', icon: '📦' },
-    ],
-  },
-  {
-    title: 'DOKUMENTATION',
-    items: [
-      { href: '/protokolle', label: 'Sitzungsprotokolle', icon: '📝' },
-    ],
-  },
+const navItems: NavItem[] = [
+  { href: '/', label: 'Dashboard', icon: '📊' },
+  { href: '/finanzen', label: 'Finanzplanung', icon: '💰' },
+  { href: '/waren', label: 'Warenwirtschaft', icon: '📦' },
+  { href: '/protokolle', label: 'Sitzungsprotokolle', icon: '📝' },
 ]
 
 export function Navigation() {
@@ -82,39 +57,30 @@ export function Navigation() {
         </Link>
       </div>
 
-      {/* Navigation groups */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
-        {navGroups.map((group) => (
-          <div key={group.title}>
-            {!collapsed && (
-              <h3 className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-                {group.title}
-              </h3>
-            )}
-            <ul className="space-y-1">
-              {group.items.map((item) => {
-                const active = isActive(item.href)
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      onClick={() => setMobileOpen(false)}
-                      title={collapsed ? item.label : undefined}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
-                        active
-                          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25'
-                          : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                      } ${collapsed ? 'justify-center' : ''}`}
-                    >
-                      <span className="text-lg shrink-0">{item.icon}</span>
-                      {!collapsed && <span className="truncate">{item.label}</span>}
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        ))}
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto py-4 px-3">
+        <ul className="space-y-1">
+          {navItems.map((item) => {
+            const active = isActive(item.href)
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  title={collapsed ? item.label : undefined}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+                    active
+                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25'
+                      : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                  } ${collapsed ? 'justify-center' : ''}`}
+                >
+                  <span className="text-lg shrink-0">{item.icon}</span>
+                  {!collapsed && <span className="truncate">{item.label}</span>}
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
       </nav>
 
       {/* Logout */}
