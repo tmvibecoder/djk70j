@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personen-Ansicht — Swimlanes (Variante 2)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; }
+  .chip-active { background: #4f46e5; color: white; }
+  .chip-inactive { background: white; color: #6b7280; border: 1px solid #e5e7eb; }
+  .avatar { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 9999px; font-weight: 700; font-size: 12px; color: white; flex-shrink: 0; }
+  .swimlane-scroll { scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+  .lane { scroll-snap-align: start; }
+</style>
+</head>
+<body class="min-h-screen pb-12">
+
+<!-- Header -->
+<div class="bg-gray-900 px-4 pt-12 pb-4">
+  <div class="max-w-6xl mx-auto">
+    <p class="text-yellow-500 text-xs font-semibold tracking-widest uppercase">DJK Ottenhofen e.V.</p>
+    <h1 class="text-2xl font-bold text-white">Aufgaben nach Person</h1>
+    <p class="text-gray-400 text-sm mt-1">Workload-Spalten · Variante 2</p>
+  </div>
+</div>
+
+<!-- Tab-Switcher -->
+<div class="bg-white border-b">
+  <div class="max-w-6xl mx-auto px-4 flex gap-1">
+    <a href="protokolle-final.html" class="px-4 py-3 text-sm font-semibold text-gray-500 hover:text-gray-700">Bereiche</a>
+    <button class="px-4 py-3 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600">Personen</button>
+  </div>
+</div>
+
+<!-- Sticky Filter -->
+<div class="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b shadow-sm px-4 py-3">
+  <div class="max-w-6xl mx-auto flex items-center justify-between gap-3 flex-wrap">
+    <div class="flex gap-2 overflow-x-auto pb-0.5">
+      <button class="chip-active px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap">Alle Status</button>
+      <button class="chip-inactive px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap">⬤ Offen</button>
+      <button class="chip-inactive px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap">→ In Arbeit</button>
+      <button class="chip-inactive px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap">✓ Erledigt</button>
+    </div>
+    <span class="text-[11px] text-gray-500">← horizontal wischen →</span>
+  </div>
+</div>
+
+<!-- Swimlanes -->
+<div class="px-4 py-4">
+  <div class="swimlane-scroll flex gap-3 overflow-x-auto pb-4 -mx-4 px-4">
+
+    <!-- Lane: Kein Owner (rot, immer ganz links) -->
+    <div class="lane shrink-0 w-72 bg-red-50 border border-red-200 rounded-xl overflow-hidden">
+      <div class="px-3 py-3 border-b border-red-200 bg-red-100/50 sticky top-0">
+        <div class="flex items-center gap-2">
+          <div class="avatar bg-red-500">!</div>
+          <div class="flex-1">
+            <div class="font-bold text-red-800 text-sm">Kein Verantwortlicher</div>
+            <div class="text-[11px] text-red-600">7 Aufgaben</div>
+          </div>
+        </div>
+      </div>
+      <div class="p-2 space-y-2">
+        <div class="bg-white rounded-lg p-2 border border-red-100 text-xs">
+          <div class="flex items-start gap-1.5">
+            <span class="text-red-500 mt-0.5">⬤</span>
+            <div class="min-w-0 flex-1">
+              <div class="text-gray-900 font-medium">GEMA beantragen</div>
+              <div class="text-[10px] text-gray-500 mt-0.5">🎺 Musik</div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg p-2 border border-red-100 text-xs">
+          <div class="flex items-start gap-1.5">
+            <span class="text-red-500 mt-0.5">⬤</span>
+            <div class="min-w-0 flex-1">
+              <div class="text-gray-900 font-medium">Bar &amp; Klowagen Lieferung</div>
+              <div class="text-[10px] text-gray-500 mt-0.5">⛺ Zelt</div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg p-2 border border-red-100 text-xs">
+          <div class="flex items-start gap-1.5">
+            <span class="text-red-500 mt-0.5">⬤</span>
+            <div class="min-w-0 flex-1">
+              <div class="text-gray-900 font-medium">Laubbläser für Belüftung</div>
+              <div class="text-[10px] text-gray-500 mt-0.5">⛺ Zelt</div>
+            </div>
+          </div>
+        </div>
+        <button class="w-full text-[10px] text-red-600 font-semibold py-1">+ 4 weitere</button>
+      </div>
+    </div>
+
+    <!-- Lane: Hundi -->
+    <div class="lane shrink-0 w-72 bg-white border rounded-xl overflow-hidden shadow-sm">
+      <div class="px-3 py-3 border-b bg-gray-50 sticky top-0">
+        <div class="flex items-center gap-2">
+          <div class="avatar" style="background:#6366f1">HU</div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-gray-900 text-sm">Hundi</div>
+            <div class="flex items-center gap-1 mt-0.5">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">2</span>
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">7</span>
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="p-2 space-y-2">
+        <div class="bg-red-50 rounded-lg p-2 border border-red-100 text-xs">
+          <div class="flex items-start gap-1.5">
+            <span class="text-red-500 mt-0.5">⬤</span>
+            <div class="min-w-0 flex-1">
+              <div class="text-gray-900 font-medium">Bedienungen Festsonntag</div>
+              <div class="text-[10px] text-gray-500 mt-0.5">👥 Personal</div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-amber-50 rounded-lg p-2 border border-amber-100 text-xs">
+          <div class="flex items-start gap-1.5">
+            <span class="text-amber-500 mt-0.5">→</span>
+            <div class="min-w-0 flex-1">
+              <div class="text-gray-900 font-medium">Landratsamt Dokumente</div>
+              <div class="text-[10px] text-gray-500 mt-0.5">🛡️ Security</div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-amber-50 rounded-lg p-2 border border-amber-100 text-xs">
+          <div class="flex items-start gap-1.5">
+            <span class="text-amber-500 mt-0.5">→</span>
+            <div class="min-w-0 flex-1">
+              <div class="text-gray-900 font-medium">Kartenvorverkauf</div>
+              <div class="text-[10px] text-gray-500 mt-0.5">🎫 Eintritt</div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-amber-50 rounded-lg p-2 border border-amber-100 text-xs">
+          <div class="flex items-start gap-1.5">
+            <span class="text-amber-500 mt-0.5">→</span>
+            <div class="min-w-0 flex-1">
+              <div class="text-gray-900 font-medium">Bauzaun organisieren</div>
+              <div class="text-[10px] text-gray-500 mt-0.5">⛺ Zelt</div>
+            </div>
+          </div>
+        </div>
+        <button class="w-full text-[10px] text-indigo-600 font-semibold py-1">+ 8 weitere</button>
+      </div>
+    </div>
+
+    <!-- Lane: Valentin -->
+    <div class="lane shrink-0 w-72 bg-white border rounded-xl overflow-hidden shadow-sm">
+      <div class="px-3 py-3 border-b bg-gray-50 sticky top-0">
+        <div class="flex items-center gap-2">
+          <div class="avatar" style="background:#ec4899">VA</div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-gray-900 text-sm">Valentin</div>
+            <div class="flex items-center gap-1 mt-0.5">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">2</span>
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">3</span>
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">4</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="p-2 space-y-2">
+        <div class="bg-red-50 rounded-lg p-2 border border-red-100 text-xs">
+          <div class="flex items-start gap-1.5">
+            <span class="text-red-500 mt-0.5">⬤</span>
+            <div class="min-w-0 flex-1">
+              <div class="text-gray-900 font-medium">Warnwesten beschaffen</div>
+              <div class="text-[10px] text-gray-500 mt-0.5">🛡️ Security</div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-red-50 rounded-lg p-2 border border-red-100 text-xs">
+          <div class="flex items-start gap-1.5">
+            <span class="text-red-500 mt-0.5">⬤</span>
+            <div class="min-w-0 flex-1">
+              <div class="text-gray-900 font-medium">Feuerlöscher klären</div>
+              <div class="text-[10px] text-gray-500 mt-0.5">🛡️ Security</div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-amber-50 rounded-lg p-2 border border-amber-100 text-xs">
+          <div class="flex items-start gap-1.5">
+            <span class="text-amber-500 mt-0.5">→</span>
+            <div class="min-w-0 flex-1">
+              <div class="text-gray-900 font-medium">Bühne — finale Größe</div>
+              <div class="text-[10px] text-gray-500 mt-0.5">⛺ Zelt</div>
+            </div>
+          </div>
+        </div>
+        <button class="w-full text-[10px] text-indigo-600 font-semibold py-1">+ 6 weitere</button>
+      </div>
+    </div>
+
+    <!-- Lane: Marco -->
+    <div class="lane shrink-0 w-72 bg-white border rounded-xl overflow-hidden shadow-sm">
+      <div class="px-3 py-3 border-b bg-gray-50 sticky top-0">
+        <div class="flex items-center gap-2">
+          <div class="avatar" style="background:#10b981">MA</div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-gray-900 text-sm">Marco</div>
+            <div class="flex items-center gap-1 mt-0.5">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">3</span>
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">2</span>
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="p-2 space-y-2">
+        <div class="bg-red-50 rounded-lg p-2 border border-red-100 text-xs">
+          <div class="flex items-start gap-1.5">
+            <span class="text-red-500 mt-0.5">⬤</span>
+            <div class="min-w-0 flex-1">
+              <div class="text-gray-900 font-medium">GEMA-Befreiung prüfen</div>
+              <div class="text-[10px] text-gray-500 mt-0.5">🎺 Musik</div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-red-50 rounded-lg p-2 border border-red-100 text-xs">
+          <div class="flex items-start gap-1.5">
+            <span class="text-red-500 mt-0.5">⬤</span>
+            <div class="min-w-0 flex-1">
+              <div class="text-gray-900 font-medium">Preisliste einschweißen</div>
+              <div class="text-[10px] text-gray-500 mt-0.5">⚽ Turnier</div>
+            </div>
+          </div>
+        </div>
+        <button class="w-full text-[10px] text-indigo-600 font-semibold py-1">+ 6 weitere</button>
+      </div>
+    </div>
+
+    <!-- Lane: Seb -->
+    <div class="lane shrink-0 w-72 bg-white border rounded-xl overflow-hidden shadow-sm">
+      <div class="px-3 py-3 border-b bg-gray-50 sticky top-0">
+        <div class="flex items-center gap-2">
+          <div class="avatar" style="background:#f59e0b">SE</div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-gray-900 text-sm">Seb</div>
+            <div class="flex items-center gap-1 mt-0.5">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">3</span>
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="p-2">
+        <div class="bg-amber-50 rounded-lg p-2 border border-amber-100 text-xs">
+          <div class="flex items-start gap-1.5">
+            <span class="text-amber-500 mt-0.5">→</span>
+            <div class="min-w-0 flex-1">
+              <div class="text-gray-900 font-medium">Sponsorenliste finalisieren</div>
+              <div class="text-[10px] text-gray-500 mt-0.5">🤝 Sponsoring</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Hinweis-Box -->
+<div class="px-4 max-w-6xl mx-auto">
+  <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mt-2">
+    <div class="text-[11px] text-blue-800 font-semibold mb-1">💡 Bedienung</div>
+    <div class="text-[11px] text-blue-700 leading-relaxed">
+      Horizontal wischen → alle Personen nebeneinander. Workload-Vergleich auf einen Blick. Auf Mobile etwas eng, dafür auf Tablet/Desktop sehr stark. Status-Filter färbt Karten ein.
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personen-Ansicht — Vergleich der Varianten</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }</style>
+</head>
+<body class="bg-gray-100 min-h-screen pb-12">
+
+<div class="bg-gray-900 px-4 pt-12 pb-6 text-center">
+  <p class="text-yellow-500 text-xs font-semibold tracking-widest uppercase">DJK 70 Jahre · Personen-Mockups</p>
+  <h1 class="text-2xl font-bold text-white mt-1">Aufgaben nach Person — 3 Varianten</h1>
+  <p class="text-gray-400 text-sm mt-2">Filter nach Verantwortlichem · Status bleibt weiter filterbar</p>
+</div>
+
+<div class="px-4 py-6 max-w-lg mx-auto space-y-4">
+
+  <!-- Kontext-Box -->
+  <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+    <div class="flex items-center gap-2 mb-2">
+      <span class="text-amber-700 font-bold text-sm">⚠️ Wichtige Voraussetzung</span>
+    </div>
+    <div class="text-xs text-amber-900 space-y-1.5 leading-relaxed">
+      <p>Die Aufgaben liegen aktuell als <strong>statische TypeScript-Datei</strong> vor (<code class="bg-amber-100 px-1 rounded">src/data/protokolle.ts</code>). Deshalb sind sie heute <strong>nicht editierbar</strong>.</p>
+      <p>Bevor Bearbeiten / Löschen / Zuweisen funktioniert, müssen die Daten in die Datenbank wandern (Prisma-Model + API). Das ist Schritt&nbsp;2 nach Auswahl der Variante.</p>
+    </div>
+  </div>
+
+  <!-- Best-Practice Box -->
+  <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+    <div class="text-blue-800 font-bold text-sm mb-2">📚 Best-Practice (Linear, Asana, Notion, Trello)</div>
+    <div class="text-[11px] text-blue-900 space-y-1.5 leading-relaxed">
+      <p>• <strong>Workload zuerst:</strong> Wer hat zu viel offen? Sortierung nach offenen Tasks.</p>
+      <p>• <strong>Unassigned als Problemzustand:</strong> Eigene Karte ganz oben in Rot.</p>
+      <p>• <strong>Status innerhalb Person gruppiert:</strong> Offen first, Erledigt collapsed.</p>
+      <p>• <strong>Avatare + Initialen</strong> für schnelles Scannen.</p>
+      <p>• <strong>Kontext mitliefern:</strong> Welcher Bereich gehört zur Aufgabe (Icon).</p>
+      <p>• <strong>Mobile-First:</strong> Vertikale Listen schlagen Spalten am Handy.</p>
+    </div>
+  </div>
+
+  <!-- Vorschlag 1 -->
+  <a href="personen-1-tabs.html" class="block bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition">
+    <div class="bg-blue-50 border-b border-blue-100 px-5 py-3">
+      <div class="flex items-center gap-2">
+        <span class="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded">1</span>
+        <h2 class="font-bold text-gray-900">Tab-Switcher</h2>
+      </div>
+    </div>
+    <div class="px-5 py-4">
+      <p class="text-sm text-gray-600 mb-3">Person als Pille oben antippen → Detail-Ansicht mit allen ihren Aufgaben, gruppiert nach Status. Eine Person sichtbar zur Zeit.</p>
+      <div class="flex flex-wrap gap-2">
+        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Großzügiger Detail-Raum</span>
+        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Aus Asana / Notion bekannt</span>
+        <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">Kein Workload-Vergleich</span>
+        <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">Tippen nötig zum Wechsel</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- Vorschlag 2 -->
+  <a href="personen-2-swimlanes.html" class="block bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition">
+    <div class="bg-purple-50 border-b border-purple-100 px-5 py-3">
+      <div class="flex items-center gap-2">
+        <span class="bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded">2</span>
+        <h2 class="font-bold text-gray-900">Workload-Spalten</h2>
+      </div>
+    </div>
+    <div class="px-5 py-4">
+      <p class="text-sm text-gray-600 mb-3">Eine Spalte pro Person, horizontal scrollbar (Trello-Style). Workload-Vergleich auf einen Blick. Karten zeigen Status-Farbe.</p>
+      <div class="flex flex-wrap gap-2">
+        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Bester Vergleich</span>
+        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Stark auf Tablet/Desktop</span>
+        <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">Mobile-Wischen ungewohnt</span>
+        <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">Wenig Detail pro Karte</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- Vorschlag 3 (Empfehlung) -->
+  <a href="personen-3-akkordeon.html" class="block bg-white rounded-xl shadow-md border-2 border-green-500 overflow-hidden hover:shadow-lg transition relative">
+    <div class="absolute top-3 right-3">
+      <span class="bg-green-600 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Empfehlung</span>
+    </div>
+    <div class="bg-green-50 border-b border-green-100 px-5 py-3">
+      <div class="flex items-center gap-2">
+        <span class="bg-green-600 text-white text-xs font-bold px-2 py-0.5 rounded">3</span>
+        <h2 class="font-bold text-gray-900">Personen-Akkordeon</h2>
+      </div>
+    </div>
+    <div class="px-5 py-4">
+      <p class="text-sm text-gray-600 mb-3">Jede Person als aufklappbare Karte (wie heute die Bereiche). Sortiert nach offenem Workload — Überlastete oben. „Kein Verantwortlicher" als rote Karte oben mit „Zuweisen"-Button.</p>
+      <div class="flex flex-wrap gap-2">
+        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Konsistent zur Bereichs-Seite</span>
+        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Mobile-First</span>
+        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Workload sichtbar</span>
+        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Unassigned als Problem</span>
+        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Wenig neue UI-Elemente</span>
+      </div>
+    </div>
+  </a>
+
+  <!-- Begründung -->
+  <div class="bg-white rounded-xl shadow-sm border p-5 mt-2">
+    <h3 class="font-bold text-gray-900 text-sm mb-2">Warum Variante 3?</h3>
+    <ul class="text-xs text-gray-600 space-y-1.5 list-disc list-inside leading-relaxed">
+      <li>Du hast bereits ein Akkordeon-Pattern auf der Bereichs-Seite — die Personen-Seite fühlt sich sofort vertraut an, kein neuer Lerntyp.</li>
+      <li>Mobile ist die wichtigste Zielplattform (Festplanung am Handy). Vertikale Liste schlägt horizontale Spalten.</li>
+      <li>Workload-Sortierung macht das eigentlich Wichtige sofort sichtbar: <em>Wer ist überlastet? Wer hat Kapazität?</em></li>
+      <li>„Kein Verantwortlicher" als rote Karte oben hat dasselbe Muster wie der heutige Dringend-Banner — visuelle Konsistenz.</li>
+      <li>Das ✏️-Symbol pro Aufgabe ist die natürliche Stelle für „Bearbeiten / Status ändern / Person wechseln" — sobald die DB-Migration steht.</li>
+    </ul>
+  </div>
+
+  <!-- Nächste Schritte -->
+  <div class="bg-white rounded-xl shadow-sm border p-5">
+    <h3 class="font-bold text-gray-900 text-sm mb-2">Nach Auswahl der Variante</h3>
+    <ol class="text-xs text-gray-600 space-y-1.5 list-decimal list-inside leading-relaxed">
+      <li><strong>Daten in DB:</strong> <code class="bg-gray-100 px-1 rounded">Bereich</code>, <code class="bg-gray-100 px-1 rounded">Aufgabe</code>, <code class="bg-gray-100 px-1 rounded">Beschluss</code> als Prisma-Models. Migration aus <code class="bg-gray-100 px-1 rounded">protokolle.ts</code> als Seed.</li>
+      <li><strong>Personen-Liste:</strong> Verantwortliche aus Strings parsen → echte <code class="bg-gray-100 px-1 rounded">User</code>-Verknüpfung mit Mehrfach-Zuweisung (M:N).</li>
+      <li><strong>API-Endpoints:</strong> GET / PUT / DELETE für Aufgaben, plus Zuweisung.</li>
+      <li><strong>UI als Tab-Switch:</strong> „Bereiche" und „Personen" als Tabs auf <code class="bg-gray-100 px-1 rounded">/protokolle</code> — beide Sichten teilen sich dieselbe Datenquelle.</li>
+      <li><strong>Dashboard:</strong> dieselbe Edit-/Zuweisungs-Logik dort einbinden.</li>
+    </ol>
+  </div>
+
+</div>
+</body>
+</html>

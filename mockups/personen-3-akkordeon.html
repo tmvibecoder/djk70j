@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personen-Ansicht — Akkordeon (Variante 3, Empfehlung)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; }
+  .fade-in { animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .chip-active { background: #4f46e5; color: white; }
+  .chip-inactive { background: white; color: #6b7280; border: 1px solid #e5e7eb; }
+  .avatar { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 9999px; font-weight: 700; font-size: 13px; color: white; flex-shrink: 0; }
+</style>
+</head>
+<body class="min-h-screen pb-12">
+
+<!-- Header -->
+<div class="bg-gray-900 px-4 pt-12 pb-4">
+  <div class="max-w-2xl mx-auto">
+    <p class="text-yellow-500 text-xs font-semibold tracking-widest uppercase">DJK Ottenhofen e.V.</p>
+    <h1 class="text-2xl font-bold text-white">Aufgaben nach Person</h1>
+    <p class="text-gray-400 text-sm mt-1">Workload-Sicht · Variante 3 (Empfehlung)</p>
+  </div>
+</div>
+
+<!-- Tab-Switcher: Bereiche / Personen -->
+<div class="bg-white border-b">
+  <div class="max-w-2xl mx-auto px-4 flex gap-1">
+    <a href="protokolle-final.html" class="px-4 py-3 text-sm font-semibold text-gray-500 hover:text-gray-700">Bereiche</a>
+    <button class="px-4 py-3 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600">Personen</button>
+  </div>
+</div>
+
+<!-- Sticky Filter Bar -->
+<div class="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b shadow-sm px-4 py-3">
+  <div class="max-w-2xl mx-auto space-y-2">
+    <!-- Status Filter Chips -->
+    <div class="flex gap-2 overflow-x-auto pb-0.5">
+      <button class="chip-active px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap">Alle (56)</button>
+      <button class="chip-inactive px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap">Offen (10)</button>
+      <button class="chip-inactive px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap">In Arbeit (22)</button>
+      <button class="chip-inactive px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap">Erledigt (24)</button>
+    </div>
+    <!-- Sortierung -->
+    <div class="flex items-center justify-between text-xs">
+      <span class="text-gray-500">Sortiert nach: <span class="font-semibold text-gray-700">Workload (offen)</span></span>
+      <button class="text-indigo-600 font-semibold">Sortierung ändern</button>
+    </div>
+  </div>
+</div>
+
+<div class="px-4 py-4 max-w-2xl mx-auto space-y-3 fade-in">
+
+  <!-- ⚠️ KEIN VERANTWORTLICHER (immer oben) -->
+  <div class="bg-red-50 border border-red-200 rounded-xl overflow-hidden">
+    <button class="w-full px-4 py-3 flex items-center justify-between hover:bg-red-100/60">
+      <div class="flex items-center gap-3">
+        <div class="avatar bg-red-500">!</div>
+        <div class="text-left">
+          <div class="font-semibold text-red-800 text-sm">Kein Verantwortlicher</div>
+          <div class="text-xs text-red-600">7 Aufgaben — bitte zuweisen</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">7 offen</span>
+        <svg class="w-4 h-4 text-red-400 rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </div>
+    </button>
+    <div class="border-t border-red-200 px-4 py-3 space-y-2">
+      <div class="flex items-start justify-between gap-2 text-sm bg-white rounded-lg px-3 py-2 border border-red-100">
+        <div class="flex items-start gap-2 min-w-0">
+          <span class="text-base">🎺</span>
+          <div class="min-w-0">
+            <div class="text-gray-900 font-medium truncate">GEMA beantragen</div>
+            <div class="text-[11px] text-gray-500">Musik · Auf April-Sitzung vertagt</div>
+          </div>
+        </div>
+        <button class="text-[11px] text-indigo-600 font-semibold whitespace-nowrap">+ Zuweisen</button>
+      </div>
+      <div class="flex items-start justify-between gap-2 text-sm bg-white rounded-lg px-3 py-2 border border-red-100">
+        <div class="flex items-start gap-2 min-w-0">
+          <span class="text-base">⛺</span>
+          <div class="min-w-0">
+            <div class="text-gray-900 font-medium truncate">Bar &amp; Klowagen Lieferung klären</div>
+            <div class="text-[11px] text-gray-500">Zelt · Noch nicht bearbeitet</div>
+          </div>
+        </div>
+        <button class="text-[11px] text-indigo-600 font-semibold whitespace-nowrap">+ Zuweisen</button>
+      </div>
+      <div class="flex items-start justify-between gap-2 text-sm bg-white rounded-lg px-3 py-2 border border-red-100">
+        <div class="flex items-start gap-2 min-w-0">
+          <span class="text-base">⛺</span>
+          <div class="min-w-0">
+            <div class="text-gray-900 font-medium truncate">Laubbläser für Zeltbelüftung</div>
+            <div class="text-[11px] text-gray-500">Zelt</div>
+          </div>
+        </div>
+        <button class="text-[11px] text-indigo-600 font-semibold whitespace-nowrap">+ Zuweisen</button>
+      </div>
+      <div class="text-center pt-1">
+        <button class="text-[11px] text-red-600 font-semibold">+ 4 weitere ohne Verantwortlichen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HUNDI (höchste offene Last) -->
+  <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+    <button class="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+      <div class="flex items-center gap-3">
+        <div class="avatar" style="background:#6366f1">HU</div>
+        <div class="text-left">
+          <div class="font-semibold text-gray-900 text-sm">Hundi</div>
+          <div class="text-xs text-gray-500">12 Aufgaben gesamt</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">2 offen</span>
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">7 in Arbeit</span>
+        <svg class="w-4 h-4 text-gray-400 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </div>
+    </button>
+    <div class="border-t px-4 py-3 space-y-3">
+      <!-- Offen -->
+      <div>
+        <div class="text-[10px] font-bold text-red-600 uppercase tracking-wider mb-1.5">Offen (2)</div>
+        <div class="space-y-1.5">
+          <div class="flex items-start justify-between gap-2 text-sm">
+            <div class="flex items-start gap-2 min-w-0">
+              <span class="text-red-400 text-xs mt-0.5">⬤</span>
+              <div class="min-w-0">
+                <div class="text-gray-900">Bedienungen für Festsonntag (Lengdorf)</div>
+                <div class="text-[11px] text-gray-500">👥 Personal · Simon Wiethaus anfragen</div>
+              </div>
+            </div>
+            <button class="text-[11px] text-gray-400 hover:text-indigo-600">✏️</button>
+          </div>
+          <div class="flex items-start justify-between gap-2 text-sm">
+            <div class="flex items-start gap-2 min-w-0">
+              <span class="text-red-400 text-xs mt-0.5">⬤</span>
+              <div class="min-w-0">
+                <div class="text-gray-900">Veranstaltungen im Internet anzeigen</div>
+                <div class="text-[11px] text-gray-500">📋 Sonstiges</div>
+              </div>
+            </div>
+            <button class="text-[11px] text-gray-400 hover:text-indigo-600">✏️</button>
+          </div>
+        </div>
+      </div>
+      <!-- In Arbeit -->
+      <div>
+        <div class="text-[10px] font-bold text-amber-700 uppercase tracking-wider mb-1.5">In Arbeit (7)</div>
+        <div class="space-y-1.5">
+          <div class="flex items-start gap-2 text-sm">
+            <span class="text-amber-500 text-xs mt-0.5">→</span>
+            <div class="min-w-0 flex-1">
+              <div class="text-gray-900">Landratsamt — Dokumente abschicken</div>
+              <div class="text-[11px] text-gray-500">🛡️ Security</div>
+            </div>
+          </div>
+          <div class="flex items-start gap-2 text-sm">
+            <span class="text-amber-500 text-xs mt-0.5">→</span>
+            <div class="min-w-0 flex-1">
+              <div class="text-gray-900">Kartenvorverkauf vorbereiten</div>
+              <div class="text-[11px] text-gray-500">🎫 Eintritt · Hundi bestellt VVK-Tickets</div>
+            </div>
+          </div>
+          <div class="text-[11px] text-indigo-600 font-semibold pl-5">+ 5 weitere anzeigen</div>
+        </div>
+      </div>
+      <!-- Erledigt eingeklappt -->
+      <button class="w-full text-left text-[11px] text-gray-500 font-semibold hover:text-gray-700 pt-1">
+        ▸ Erledigt (3) anzeigen
+      </button>
+    </div>
+  </div>
+
+  <!-- VALENTIN -->
+  <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+    <button class="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+      <div class="flex items-center gap-3">
+        <div class="avatar" style="background:#ec4899">VA</div>
+        <div class="text-left">
+          <div class="font-semibold text-gray-900 text-sm">Valentin</div>
+          <div class="text-xs text-gray-500">9 Aufgaben gesamt</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">2 offen</span>
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">3 in Arbeit</span>
+        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </div>
+    </button>
+  </div>
+
+  <!-- MARCO -->
+  <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+    <button class="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+      <div class="flex items-center gap-3">
+        <div class="avatar" style="background:#10b981">MA</div>
+        <div class="text-left">
+          <div class="font-semibold text-gray-900 text-sm">Marco</div>
+          <div class="text-xs text-gray-500">8 Aufgaben gesamt</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">3 offen</span>
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">2 in Arbeit</span>
+        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </div>
+    </button>
+  </div>
+
+  <!-- SEB -->
+  <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+    <button class="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+      <div class="flex items-center gap-3">
+        <div class="avatar" style="background:#f59e0b">SE</div>
+        <div class="text-left">
+          <div class="font-semibold text-gray-900 text-sm">Seb</div>
+          <div class="text-xs text-gray-500">6 Aufgaben gesamt</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">3 in Arbeit</span>
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">3 erledigt</span>
+        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </div>
+    </button>
+  </div>
+
+  <!-- THOMMY -->
+  <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+    <button class="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+      <div class="flex items-center gap-3">
+        <div class="avatar" style="background:#0ea5e9">TH</div>
+        <div class="text-left">
+          <div class="font-semibold text-gray-900 text-sm">Thommy</div>
+          <div class="text-xs text-gray-500">4 Aufgaben gesamt</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">2 in Arbeit</span>
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">2 erledigt</span>
+        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </div>
+    </button>
+  </div>
+
+  <!-- Mehr-Personen-Indikator -->
+  <div class="text-center pt-2">
+    <button class="text-xs text-gray-500 font-semibold">▾ 8 weitere Personen anzeigen</button>
+  </div>
+
+  <!-- Hinweis-Box -->
+  <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mt-6">
+    <div class="text-[11px] text-blue-800 font-semibold mb-1">💡 Bedienung</div>
+    <div class="text-[11px] text-blue-700 leading-relaxed">
+      Tippen auf eine Person → Aufgaben aufklappen. Stift-Symbol → Bearbeiten/Status ändern. Personen sind nach <em>offenen</em> Aufgaben sortiert (Workload oben). Gruppen wie "Festausschuss" als eigene Karten.
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
