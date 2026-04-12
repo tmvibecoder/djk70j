@@ -506,8 +506,19 @@ function PersonenView({
     return m
   }, [bereiche])
 
-  const tasksForPerson = (personId: string) =>
-    allTasks.filter(t => t.assignments.some(a => a.personId === personId))
+  // Fuer "Nicht zugewiesen" (Catchall) zaehlen sowohl explizit zugewiesene
+  // Tasks als auch Tasks komplett ohne Personen-Zuweisung (z.B. neu angelegte
+  // ohne Pflicht-Auswahl). So sind sie sofort findbar.
+  const tasksForPerson = (personId: string) => {
+    const person = personen.find(p => p.id === personId)
+    if (person?.isCatchAll) {
+      return allTasks.filter(t =>
+        t.assignments.length === 0 ||
+        t.assignments.some(a => a.personId === personId)
+      )
+    }
+    return allTasks.filter(t => t.assignments.some(a => a.personId === personId))
+  }
 
   const personStats = (personId: string) => {
     const tasks = tasksForPerson(personId)

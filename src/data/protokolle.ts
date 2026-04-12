@@ -271,5 +271,5 @@ export const PERSONEN: Person[] = [
   { id: 'mexx',    name: 'Mexx',     initials: 'MX', color: '#a855f7', keywords: ['Mäx', 'Max'] },
   { id: 'dani',    name: 'Dani',     initials: 'DA', color: '#06b6d4', keywords: ['Dane', 'Dani'] },
   { id: 'tommy',   name: 'Tommy',    initials: 'TO', color: '#0ea5e9', keywords: ['Thommy', 'Tommy'] },
-  { id: 'helferx', name: 'Helfer x', initials: 'HX', color: '#6b7280', keywords: [] },
+  { id: 'helferx', name: 'Nicht zugewiesen', initials: 'NZ', color: '#6b7280', keywords: [] },
 ]

@@ -36,7 +36,9 @@ export default function ProtokollAufgabeModal({
       setDetail(task.detail || '')
       setStatus(task.status)
       setBereichId(task.bereichId || '')
-      setPersonIds(task.assignments.map(a => a.personId))
+      // Catchall ("Nicht zugewiesen") nicht ins Form uebernehmen — sonst wird
+      // sie beim Speichern wieder gesetzt und die Aufgabe gilt als zugewiesen.
+      setPersonIds(task.assignments.filter(a => !a.person.isCatchAll).map(a => a.personId))
     } else {
       setTitle('')
       setDetail('')
@@ -149,7 +151,7 @@ export default function ProtokollAufgabeModal({
               Verantwortliche Personen
             </label>
             <div className="flex flex-wrap gap-2">
-              {personen.map(p => {
+              {personen.filter(p => !p.isCatchAll).map(p => {
                 const active = personIds.includes(p.id)
                 return (
                   <button
@@ -177,7 +179,9 @@ export default function ProtokollAufgabeModal({
                 )
               })}
             </div>
-            <p className="text-[11px] text-gray-500 mt-1">Mehrfach-Auswahl möglich.</p>
+            <p className="text-[11px] text-gray-500 mt-1">
+              Mehrfach-Auswahl möglich. Wenn niemand ausgewählt ist, landet die Aufgabe automatisch unter {'„Nicht zugewiesen"'}.
+            </p>
           </div>
 
           {/* Detail */}

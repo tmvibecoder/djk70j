@@ -55,6 +55,10 @@ echo "[3d/8] Migriere Task-Status-Werte (open->offen, ...) -- idempotent..."
 npx tsx prisma/migrate-status.ts
 
 echo ""
+echo "[3d2/8] Catchall-Person umbenennen (Helfer x -> Nicht zugewiesen) -- idempotent..."
+npx tsx prisma/migrate-catchall-name.ts
+
+echo ""
 echo "[3e/8] Login-User anlegen (idempotent)..."
 npx tsx prisma/seed-user.ts
 
