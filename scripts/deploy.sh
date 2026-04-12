@@ -36,12 +36,27 @@ echo "[3/8] Generiere Prisma Client..."
 npx prisma generate
 
 echo ""
-echo "[3b/8] Synchronisiere DB-Schema (prisma db push)..."
-npx prisma db push --skip-generate
+echo "[3b/8] Pruefe AUTH_SECRET..."
+if ! grep -q '^AUTH_SECRET=' .env 2>/dev/null; then
+  SECRET=$(node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
+  echo "AUTH_SECRET=\"$SECRET\"" >> .env
+  echo "  -> AUTH_SECRET in .env neu erzeugt"
+else
+  echo "  -> AUTH_SECRET vorhanden"
+fi
 
 echo ""
-echo "[3c/8] Migriere Task-Status-Werte (open→offen, …) — idempotent..."
+echo "[3c/8] Synchronisiere DB-Schema (prisma db push)..."
+# --accept-data-loss noetig: Helfer/Schicht/Stations-Tabellen wurden entfernt
+npx prisma db push --accept-data-loss --skip-generate
+
+echo ""
+echo "[3d/8] Migriere Task-Status-Werte (open->offen, ...) -- idempotent..."
 npx tsx prisma/migrate-status.ts
+
+echo ""
+echo "[3e/8] Login-User anlegen (idempotent)..."
+npx tsx prisma/seed-user.ts
 
 echo ""
 echo "[4/8] Baue Next.js Production-Build..."

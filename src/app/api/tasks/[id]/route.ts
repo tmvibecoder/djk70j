@@ -14,7 +14,6 @@ export async function PUT(
       title: body.title,
       description: body.description,
       detail: body.detail ?? null,
-      assigneeId: body.assigneeId || null,
       bereichId: body.bereichId || null,
       deadline: body.deadline ? new Date(body.deadline) : null,
       status: body.status,
@@ -24,7 +23,6 @@ export async function PUT(
     },
   })
 
-  // Personen-Zuweisungen vollständig ersetzen, wenn personIds übergeben wurde
   if (Array.isArray(body.personIds)) {
     await prisma.taskAssignment.deleteMany({ where: { taskId: id } })
     if (body.personIds.length > 0) {
@@ -36,7 +34,7 @@ export async function PUT(
 
   const task = await prisma.task.findUnique({
     where: { id },
-    include: { assignee: true, bereich: true, assignments: { include: { person: true } } },
+    include: { bereich: true, assignments: { include: { person: true } } },
   })
 
   return NextResponse.json(task)

@@ -47,6 +47,11 @@ export function Navigation() {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    window.location.href = '/login'
+  }
+
   useEffect(() => {
     const stored = localStorage.getItem('sidebar-collapsed')
     if (stored !== null) {
@@ -112,6 +117,18 @@ export function Navigation() {
         ))}
       </nav>
 
+      {/* Logout */}
+      <div className="border-t border-gray-800 p-3 shrink-0">
+        <button
+          onClick={handleLogout}
+          title={collapsed ? 'Abmelden' : undefined}
+          className={`flex items-center w-full gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white transition-colors duration-150 ${collapsed ? 'justify-center' : ''}`}
+        >
+          <span className="text-lg shrink-0">🚪</span>
+          {!collapsed && <span>Abmelden</span>}
+        </button>
+      </div>
+
       {/* Collapse toggle (desktop only) */}
       <div className="hidden lg:block border-t border-gray-800 p-3 shrink-0">
         <button
@@ -134,6 +151,9 @@ export function Navigation() {
       </div>
     </div>
   )
+
+  // Auf der Login-Seite keine Sidebar
+  if (pathname === '/login') return null
 
   return (
     <>

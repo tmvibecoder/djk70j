@@ -10,18 +10,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Benutzer & Rollen
+// Benutzer (Login)
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String?  @unique
-  role      String   @default("helper") // admin, orga, shiftleader, helper
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  email        String?  @unique
+  username     String?  @unique
+  passwordHash String?
+  role         String   @default("admin") // admin, orga
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  tasks            Task[]
-  shiftAssignments ShiftAssignment[]
-  salesEntries     SalesEntry[]
+  salesEntries SalesEntry[]
 }
 
 // Produkte (Getränke & Speisen)
@@ -86,42 +86,6 @@ model SalesEstimate {
   @@unique([productId, eventDay])
 }
 
-// Stationen (Bar, Kasse, etc.)
-model Station {
-  id          String  @id @default(cuid())
-  name        String
-  description String?
-
-  shifts Shift[]
-}
-
-// Schichten
-model Shift {
-  id              String  @id @default(cuid())
-  stationId       String
-  station         Station @relation(fields: [stationId], references: [id], onDelete: Cascade)
-  eventDay        String
-  startTime       String  // z.B. "18:00"
-  endTime         String  // z.B. "22:00"
-  requiredHelpers Int     @default(1)
-
-  assignments ShiftAssignment[]
-
-  @@index([stationId])
-  @@index([eventDay])
-}
-
-// Schicht-Zuweisungen
-model ShiftAssignment {
-  id      String @id @default(cuid())
-  shiftId String
-  shift   Shift  @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  userId  String
-  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([shiftId, userId])
-}
-
 // Teams (für Watt-Turnier)
 model Team {
   id       String @id @default(cuid())
@@ -153,8 +117,6 @@ model Task {
   title       String
   description String?
   detail      String?
-  assigneeId  String?
-  assignee    User?     @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
   bereichId   String?
   bereich     Bereich?  @relation(fields: [bereichId], references: [id], onDelete: SetNull)
   deadline    DateTime?
@@ -167,7 +129,6 @@ model Task {
 
   assignments TaskAssignment[]
 
-  @@index([assigneeId])
   @@index([bereichId])
   @@index([status])
   @@index([eventDay])

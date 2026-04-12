@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { bereichStats, globalStats, type BereichDTO } from '@/types/protokolle'
+import { bereichStats, globalStats, type BereichDTO, type TaskDTO } from '@/types/protokolle'
 
 interface SimpleForecast {
   eventDay: string
@@ -28,18 +28,6 @@ interface Sponsor {
   name: string
   amount: number
   received: boolean
-}
-
-interface Task {
-  id: string
-  title: string
-  description: string | null
-  status: string
-  priority: string
-  deadline: string | null
-  eventDay: string | null
-  category: string | null
-  bereichId: string | null
 }
 
 const EVENT_START = new Date('2026-07-09T00:00:00')
@@ -77,31 +65,27 @@ export default function Dashboard() {
   const [forecasts, setForecasts] = useState<SimpleForecast[]>([])
   const [costs, setCosts] = useState<CostItem[]>([])
   const [sponsors, setSponsors] = useState<Sponsor[]>([])
-  const [tasks, setTasks] = useState<Task[]>([])
   const [bereiche, setBereiche] = useState<BereichDTO[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function loadAll() {
       try {
-        const [forecastRes, costsRes, sponsorsRes, tasksRes, bereicheRes] = await Promise.all([
+        const [forecastRes, costsRes, sponsorsRes, bereicheRes] = await Promise.all([
           fetch('/api/simple-forecast'),
           fetch('/api/costs'),
           fetch('/api/sponsors'),
-          fetch('/api/tasks'),
           fetch('/api/bereiche'),
         ])
-        const [forecastData, costsData, sponsorsData, tasksData, bereicheData] = await Promise.all([
+        const [forecastData, costsData, sponsorsData, bereicheData] = await Promise.all([
           forecastRes.json(),
           costsRes.json(),
           sponsorsRes.json(),
-          tasksRes.json(),
           bereicheRes.json(),
         ])
         setForecasts(forecastData)
         setCosts(costsData)
         setSponsors(sponsorsData)
-        setTasks(tasksData)
         setBereiche(bereicheData)
       } catch {
         // ignore
@@ -143,17 +127,12 @@ export default function Dashboard() {
   const grossExpenses = totalCosts + totalEntryCost
   const expectedProfit = grossRevenue - grossExpenses
 
-  // --- Helfer-Aufgaben (legacy /aufgaben Tasks ohne bereichId) ---
-  const helperTasks = tasks.filter(t => !t.bereichId)
-  const openTasks = helperTasks.filter(t => t.status === 'offen')
-  const inProgressTasks = helperTasks.filter(t => t.status === 'in_arbeit')
-  const doneTasks = helperTasks.filter(t => t.status === 'erledigt')
-  const highPrioTasks = openTasks
-    .sort((a, b) => {
-      const prioPriority: Record<string, number> = { high: 0, medium: 1, low: 2 }
-      return (prioPriority[a.priority] ?? 2) - (prioPriority[b.priority] ?? 2)
-    })
-    .slice(0, 5)
+  // --- Protokoll-Aufgaben aggregiert ---
+  const allTasks: TaskDTO[] = bereiche.flatMap(b => b.tasks)
+  const openTasks = allTasks.filter(t => t.status === 'offen')
+  const inProgressTasks = allTasks.filter(t => t.status === 'in_arbeit')
+  const doneTasks = allTasks.filter(t => t.status === 'erledigt')
+  const highPrioTasks = openTasks.slice(0, 5)
 
   // --- Protokoll-Fortschritt ---
   const bereicheWithStats = bereiche.map(b => {
@@ -186,19 +165,9 @@ export default function Dashboard() {
   if (sponsorsOpen > 0) {
     warnings.push({ message: `${sponsorsOpen} Sponsor(en) ausstehend`, detail: fmtEur(totalSponsoring - totalSponsoringReceived), severity: 'low' })
   }
-  if (openTasks.filter(t => t.priority === 'high').length > 0) {
-    warnings.push({ message: `${openTasks.filter(t => t.priority === 'high').length} Aufgabe(n) mit hoher Priorität`, severity: 'high' })
-  }
   if (dringend.length > 0) {
     warnings.push({ message: `${dringend.length} Protokoll-Aufgabe(n) ohne Verantwortlichen`, severity: 'high' })
   }
-
-  const prioBg: Record<string, string> = {
-    high: 'bg-red-100 text-red-700',
-    medium: 'bg-amber-100 text-amber-700',
-    low: 'bg-gray-100 text-gray-600',
-  }
-  const prioLabel: Record<string, string> = { high: 'HOCH', medium: 'MITTEL', low: 'NIEDRIG' }
 
   return (
     <div className="space-y-4">
@@ -321,24 +290,25 @@ export default function Dashboard() {
               <span className="bg-red-100 text-red-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{openTasks.length}</span>
             )}
           </div>
-          <Link href="/aufgaben" className="text-xs text-indigo-600 font-medium">Alle →</Link>
+          <Link href="/protokolle" className="text-xs text-indigo-600 font-medium">Alle →</Link>
         </div>
         {highPrioTasks.length > 0 ? (
           <div className="space-y-2">
-            {highPrioTasks.map(task => (
-              <div key={task.id} className={`flex items-start gap-3 p-2.5 rounded-lg ${task.priority === 'high' ? 'bg-red-50 border border-red-100' : 'hover:bg-gray-50'}`}>
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded mt-0.5 shrink-0 ${prioBg[task.priority] || prioBg.low}`}>
-                  {prioLabel[task.priority] || 'NIEDRIG'}
-                </span>
-                <div className="min-w-0">
-                  <div className="text-sm font-medium text-gray-900">{task.title}</div>
-                  <div className="text-xs text-gray-500">
-                    {task.deadline && `Fällig: ${new Date(task.deadline).toLocaleDateString('de-DE')}`}
-                    {task.category && ` · ${task.category}`}
+            {highPrioTasks.map(task => {
+              const owners = task.assignments.filter(a => !a.person.isCatchAll).map(a => a.person.name).join(', ')
+              return (
+                <div key={task.id} className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-gray-50">
+                  <span className="text-red-400 text-xs mt-1 shrink-0">⬤</span>
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-gray-900">{task.title}</div>
+                    <div className="text-xs text-gray-500">
+                      {owners || 'Kein Verantwortlicher'}
+                      {task.detail ? ` · ${task.detail}` : ''}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         ) : (
           <p className="text-sm text-gray-500 italic">Keine offenen Aufgaben</p>
