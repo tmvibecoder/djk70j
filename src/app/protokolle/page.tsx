@@ -384,6 +384,7 @@ export default function ProtokollePage() {
         bereiche={bereiche}
         personen={personen}
         defaultBereichId={defaultBereichId}
+        onDelete={deleteTask}
       />
     </div>
   )

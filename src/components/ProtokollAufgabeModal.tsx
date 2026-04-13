@@ -11,6 +11,7 @@ interface Props {
   bereiche: BereichDTO[]
   personen: PersonDTO[]
   defaultBereichId?: string // für „+ Neue Aufgabe" pro Bereich
+  onDelete?: (task: TaskDTO) => void
 }
 
 export default function ProtokollAufgabeModal({
@@ -21,6 +22,7 @@ export default function ProtokollAufgabeModal({
   bereiche,
   personen,
   defaultBereichId,
+  onDelete,
 }: Props) {
   const [title, setTitle] = useState('')
   const [detail, setDetail] = useState('')
@@ -198,22 +200,36 @@ export default function ProtokollAufgabeModal({
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-white border-t px-4 py-3 flex gap-2 justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
-          >
-            Abbrechen
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving || !title.trim()}
-            className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50"
-          >
-            {saving ? 'Speichern…' : task ? 'Speichern' : 'Anlegen'}
-          </button>
+        <div className="sticky bottom-0 bg-white border-t px-4 py-3 flex gap-2 items-center">
+          {task && onDelete && (
+            <button
+              type="button"
+              onClick={() => {
+                onDelete(task)
+                onClose()
+              }}
+              className="px-4 py-2 text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50 rounded-lg"
+            >
+              Löschen
+            </button>
+          )}
+          <div className="flex gap-2 ml-auto">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-lg"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || !title.trim()}
+              className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50"
+            >
+              {saving ? 'Speichern…' : task ? 'Speichern' : 'Anlegen'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
