@@ -459,7 +459,7 @@ function TaskRow({
           )}
         </div>
       </div>
-      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+      <div className="flex gap-1 shrink-0">
         <button
           onClick={() => onEdit(task)}
           className="text-[11px] px-2 py-1 rounded bg-white border border-gray-200 text-gray-600 hover:bg-gray-100"
@@ -468,7 +468,8 @@ function TaskRow({
         </button>
         <button
           onClick={() => onDelete(task)}
-          className="text-[11px] px-2 py-1 rounded bg-white border border-gray-200 text-red-600 hover:bg-red-50"
+          aria-label="Aufgabe löschen"
+          className="text-[11px] w-7 h-7 flex items-center justify-center rounded bg-white border border-gray-200 text-red-600 hover:bg-red-50"
         >
           ×
         </button>
@@ -705,7 +706,7 @@ function PersonTaskSection({
                   {t.detail ? ` · ${t.detail}` : ''}
                 </div>
               </div>
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+              <div className="flex gap-1 shrink-0">
                 <button
                   onClick={() => onEdit(t)}
                   className="text-[11px] px-2 py-1 rounded bg-white border border-gray-200 text-gray-600 hover:bg-gray-100"
@@ -714,7 +715,8 @@ function PersonTaskSection({
                 </button>
                 <button
                   onClick={() => onDelete(t)}
-                  className="text-[11px] px-2 py-1 rounded bg-white border border-gray-200 text-red-600 hover:bg-red-50"
+                  aria-label="Aufgabe löschen"
+                  className="text-[11px] w-7 h-7 flex items-center justify-center rounded bg-white border border-gray-200 text-red-600 hover:bg-red-50"
                 >
                   ×
                 </button>
