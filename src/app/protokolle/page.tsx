@@ -307,7 +307,6 @@ export default function ProtokollePage() {
                           color="text-green-700"
                           tasks={erledigteAufgaben}
                           onEdit={openEdit}
-                          onDelete={deleteTask}
                         />
                       )}
 
@@ -318,7 +317,6 @@ export default function ProtokollePage() {
                           color="text-amber-700"
                           tasks={arbeitAufgaben}
                           onEdit={openEdit}
-                          onDelete={deleteTask}
                         />
                       )}
 
@@ -329,7 +327,6 @@ export default function ProtokollePage() {
                           color="text-red-600"
                           tasks={offeneAufgaben}
                           onEdit={openEdit}
-                          onDelete={deleteTask}
                         />
                       )}
 
@@ -372,7 +369,6 @@ export default function ProtokollePage() {
           statusFilter={statusFilter}
           setStatusFilter={setStatusFilter}
           onEdit={openEdit}
-          onDelete={deleteTask}
         />
       )}
 
@@ -397,19 +393,17 @@ function TaskGroup({
   color,
   tasks,
   onEdit,
-  onDelete,
 }: {
   title: string
   color: string
   tasks: TaskDTO[]
   onEdit: (t: TaskDTO) => void
-  onDelete: (t: TaskDTO) => void
 }) {
   return (
     <div className="space-y-1.5">
       <div className={`text-[10px] font-bold ${color} uppercase tracking-wider`}>{title}</div>
       {tasks.map(t => (
-        <TaskRow key={t.id} task={t} onEdit={onEdit} onDelete={onDelete} />
+        <TaskRow key={t.id} task={t} onEdit={onEdit} />
       ))}
     </div>
   )
@@ -418,11 +412,9 @@ function TaskGroup({
 function TaskRow({
   task,
   onEdit,
-  onDelete,
 }: {
   task: TaskDTO
   onEdit: (t: TaskDTO) => void
-  onDelete: (t: TaskDTO) => void
 }) {
   const persons = task.assignments.filter(a => !a.person.isCatchAll).map(a => a.person)
   const hasOwner = persons.length > 0
@@ -433,7 +425,11 @@ function TaskRow({
     task.status === 'offen' ? 'text-red-400' : task.status === 'in_arbeit' ? 'text-amber-500' : 'text-green-500'
 
   return (
-    <div className="flex items-start gap-2 group hover:bg-gray-50 -mx-1 px-1 py-1 rounded">
+    <button
+      type="button"
+      onClick={() => onEdit(task)}
+      className="w-full flex items-start gap-2 text-left hover:bg-gray-50 -mx-1 px-1 py-1 rounded"
+    >
       <span className={`${iconColor} text-xs mt-1 shrink-0`}>{icon}</span>
       <div className="min-w-0 flex-1">
         <div className={`text-sm ${isDone ? 'text-gray-400 line-through' : 'text-gray-900'} ${!hasOwner && !isDone ? 'font-medium' : ''}`}>
@@ -460,22 +456,7 @@ function TaskRow({
           )}
         </div>
       </div>
-      <div className="flex gap-1 shrink-0">
-        <button
-          onClick={() => onEdit(task)}
-          className="text-[11px] px-2 py-1 rounded bg-white border border-gray-200 text-gray-600 hover:bg-gray-100"
-        >
-          Bearbeiten
-        </button>
-        <button
-          onClick={() => onDelete(task)}
-          aria-label="Aufgabe löschen"
-          className="text-[11px] w-7 h-7 flex items-center justify-center rounded bg-white border border-gray-200 text-red-600 hover:bg-red-50"
-        >
-          ×
-        </button>
-      </div>
-    </div>
+    </button>
   )
 }
 
@@ -490,7 +471,6 @@ function PersonenView({
   statusFilter,
   setStatusFilter,
   onEdit,
-  onDelete,
 }: {
   personen: PersonDTO[]
   allTasks: TaskDTO[]
@@ -500,7 +480,6 @@ function PersonenView({
   statusFilter: StatusFilter
   setStatusFilter: (s: StatusFilter) => void
   onEdit: (t: TaskDTO) => void
-  onDelete: (t: TaskDTO) => void
 }) {
   const bereichLookup = useMemo(() => {
     const m = new Map<string, BereichDTO>()
@@ -644,13 +623,13 @@ function PersonenView({
         </div>
 
         {showOffen && offen.length > 0 && (
-          <PersonTaskSection title="Offen" tone="red" tasks={offen} bereichLookup={bereichLookup} onEdit={onEdit} onDelete={onDelete} />
+          <PersonTaskSection title="Offen" tone="red" tasks={offen} bereichLookup={bereichLookup} onEdit={onEdit} />
         )}
         {showArbeit && inArbeit.length > 0 && (
-          <PersonTaskSection title="In Arbeit" tone="amber" tasks={inArbeit} bereichLookup={bereichLookup} onEdit={onEdit} onDelete={onDelete} />
+          <PersonTaskSection title="In Arbeit" tone="amber" tasks={inArbeit} bereichLookup={bereichLookup} onEdit={onEdit} />
         )}
         {showErledigt && erledigt.length > 0 && (
-          <PersonTaskSection title="Erledigt" tone="green" tasks={erledigt} bereichLookup={bereichLookup} onEdit={onEdit} onDelete={onDelete} />
+          <PersonTaskSection title="Erledigt" tone="green" tasks={erledigt} bereichLookup={bereichLookup} onEdit={onEdit} />
         )}
 
         {aufgaben.length === 0 && (
@@ -669,14 +648,12 @@ function PersonTaskSection({
   tasks,
   bereichLookup,
   onEdit,
-  onDelete,
 }: {
   title: string
   tone: 'red' | 'amber' | 'green'
   tasks: TaskDTO[]
   bereichLookup: Map<string, BereichDTO>
   onEdit: (t: TaskDTO) => void
-  onDelete: (t: TaskDTO) => void
 }) {
   const tones = {
     red: { bg: 'bg-red-50', border: 'border-red-100', text: 'text-red-700' },
@@ -691,12 +668,17 @@ function PersonTaskSection({
           {title} ({tasks.length})
         </div>
       </div>
-      <div className="px-4 py-3 space-y-3">
+      <div className="px-4 py-3 space-y-2">
         {tasks.map(t => {
           const bereich = t.bereichId ? bereichLookup.get(t.bereichId) : null
           const isDone = t.status === 'erledigt'
           return (
-            <div key={t.id} className="flex items-start gap-2 group">
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => onEdit(t)}
+              className="w-full flex items-start gap-2 text-left hover:bg-gray-50 -mx-1 px-1 py-1 rounded"
+            >
               <span className="text-base shrink-0">{bereich?.icon ?? '·'}</span>
               <div className="min-w-0 flex-1">
                 <div className={`text-sm font-medium ${isDone ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
@@ -707,22 +689,7 @@ function PersonTaskSection({
                   {t.detail ? ` · ${t.detail}` : ''}
                 </div>
               </div>
-              <div className="flex gap-1 shrink-0">
-                <button
-                  onClick={() => onEdit(t)}
-                  className="text-[11px] px-2 py-1 rounded bg-white border border-gray-200 text-gray-600 hover:bg-gray-100"
-                >
-                  Bearbeiten
-                </button>
-                <button
-                  onClick={() => onDelete(t)}
-                  aria-label="Aufgabe löschen"
-                  className="text-[11px] w-7 h-7 flex items-center justify-center rounded bg-white border border-gray-200 text-red-600 hover:bg-red-50"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
+            </button>
           )
         })}
       </div>
