@@ -66,7 +66,7 @@ export default function FestplanungPage() {
     setOpenBereich(prev => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id); else next.add(id)
-      try { localStorage.setItem(STORAGE_OPEN_BEREICH, JSON.stringify([...next])) } catch {}
+      try { localStorage.setItem(STORAGE_OPEN_BEREICH, JSON.stringify(Array.from(next))) } catch {}
       return next
     })
   }
@@ -75,7 +75,7 @@ export default function FestplanungPage() {
     setOpenPerson(prev => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id); else next.add(id)
-      try { localStorage.setItem(STORAGE_OPEN_PERSON, JSON.stringify([...next])) } catch {}
+      try { localStorage.setItem(STORAGE_OPEN_PERSON, JSON.stringify(Array.from(next))) } catch {}
       return next
     })
   }
