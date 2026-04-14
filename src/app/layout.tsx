@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Navigation } from "@/components/Navigation";
+import { AppHeader } from "@/components/AppHeader";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -31,9 +32,12 @@ export default function RootLayout({
       >
         <div className="flex min-h-screen">
           <Navigation />
-          <main className="flex-1 overflow-auto p-4 pt-16 lg:p-6 bg-gray-50">
-            {children}
-          </main>
+          <div className="flex-1 flex flex-col min-w-0 bg-gray-50">
+            <AppHeader />
+            <main className="flex-1 overflow-auto p-4 lg:p-6">
+              {children}
+            </main>
+          </div>
         </div>
       </body>
     </html>

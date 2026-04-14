@@ -11,10 +11,9 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: '/', label: 'Dashboard', icon: '📊' },
+  { href: '/', label: 'Festplanung', icon: '📝' },
   { href: '/finanzen', label: 'Finanzplanung', icon: '💰' },
   { href: '/waren', label: 'Warenwirtschaft', icon: '📦' },
-  { href: '/protokolle', label: 'Festplanung', icon: '📝' },
 ]
 
 export function Navigation() {
