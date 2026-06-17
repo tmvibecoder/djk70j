@@ -2,27 +2,23 @@ name: Deploy to Hetzner
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches: [ main ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Install sshpass
-        run: sudo apt-get update && sudo apt-get install -y sshpass
-
-      - name: Deploy via SSH
-        run: |
-          sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" '
-            cd /var/www/djk-ottenhofen-event/app/ &&
-            git pull origin main &&
-            npm run build &&
-            sudo systemctl restart djk-fest.service &&
-            echo "Deploy erfolgreich!"
-          '
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
-
+      - name: Deploy to Hetzner server (web01)
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/djk-ottenhofen-event/app
+            git pull origin main
+            npm install
+            npm run build
+            pm2 restart djk-ottenhofen-event || pm2 restart all
+            pm2 save
+            echo "Deployment completed at $(date)"
