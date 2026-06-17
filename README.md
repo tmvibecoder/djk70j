@@ -1,5 +1,15 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Deployment
+
+Auto-Deploy via GitHub Actions (`.github/workflows/deploy.yml`): Push auf `main` -> SSH (Key-basiert) zum Server **web01** -> `git pull` + `npm install` + `npm run build` + `pm2 restart djk-ottenhofen-event`.
+
+- Next.js-App, laeuft unter pm2 als `djk-ottenhofen-event` auf **Port 3010** (nginx proxyt dorthin). Server-Pfad `/var/www/djk-ottenhofen-event/app`.
+- Genutzte Secrets: `SERVER_IP`, `SERVER_USER`, `SSH_PRIVATE_KEY` (gemeinsamer Deploy-Key auf web01). Obsolete Secrets `SSH_HOST`/`SSH_USER`/`SSH_PASSWORD` wurden geloescht.
+- Der alte systemd-Dienst `djk-fest.service` (Port 3000) ist verwaist und wurde gestoppt + disabled (frueheres `sshpass`/`systemctl`-Deploy schlug seit April fehl).
+- Stolperfalle: `nginx sites-available/djk-ottenhofen-event` ist eine veraltete Kopie mit Port 3000; aktiv (sites-enabled) ist Port 3010.
+- Doku-Commits, die NICHT deployen sollen, mit `[skip ci]` versehen.
+
 ## Getting Started
 
 First, run the development server:
