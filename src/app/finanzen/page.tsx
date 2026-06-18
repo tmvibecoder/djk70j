@@ -315,9 +315,9 @@ export default function FinanzenPage() {
       <div className="bg-gray-900 -mx-4 -mt-16 lg:-mt-6 px-4 pt-16 lg:pt-6 pb-4 mb-6 rounded-b-lg">
         <div className="flex items-start justify-between gap-2">
           <p className="text-yellow-500 text-xs font-semibold tracking-widest uppercase">DJK Ottenhofen e.V.</p>
-          <button onClick={() => window.print()} title="Gesamte Finanzplanung als PDF (DIN A4) drucken"
+          <button onClick={() => window.print()} title="Aktuellen Reiter als PDF (DIN A4) drucken"
             className="px-3 py-1.5 rounded-lg border border-gray-600 bg-gray-800 text-white text-xs font-medium hover:bg-gray-700 whitespace-nowrap">
-            📄 Als PDF drucken
+            📄 Diesen Reiter als PDF
           </button>
         </div>
         <div className="flex items-end justify-between">
@@ -926,6 +926,8 @@ export default function FinanzenPage() {
       const dueLabel = (v: string) => DUE_DATE_OPTIONS.find(d => d.value === v)?.label ?? v
       const realisticRev = calcScenarioRevenue('realistic')
       const realisticProfit = realisticRev.rohertrag + totalSponsoring - totalCosts
+      const PDF_TITLES: Record<string, string> = { kosten: 'Kostenübersicht', ergebnis: 'Gewinn / Ergebnis', prognose: 'Rohertrag-Prognose', sponsoring: 'Spenden' }
+      const pdfTitle = PDF_TITLES[tab] ?? 'Finanzplanung'
 
       // Gemeinsame Tabellen-Styles
       const cTh = { border: '1px solid #374151', padding: '5px 8px', textAlign: 'left' as const, background: '#1f2937', color: '#fff', fontWeight: 600, fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: 0.3 }
@@ -951,195 +953,231 @@ export default function FinanzenPage() {
 
       return (
         <div className="hidden print:block" style={{ fontSize: '11px', color: '#1f2937' }}>
-          {/* Kopfband mit Gold-Akzent */}
+          {/* Kopfband mit Gold-Akzent – Titel je nach aktivem Reiter */}
           <div style={{ background: '#111827', borderRadius: 10, padding: '14px 18px', marginBottom: 16 }}>
             <div style={{ borderLeft: '4px solid #EAB308', paddingLeft: 14 }}>
               <p style={{ color: '#EAB308', fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', margin: 0 }}>DJK Ottenhofen e.V. · 70-Jahre-Jubiläumsfest</p>
-              <h1 style={{ color: '#fff', fontSize: 21, fontWeight: 800, margin: '3px 0 0' }}>Finanzplanung – Gesamtübersicht</h1>
+              <h1 style={{ color: '#fff', fontSize: 21, fontWeight: 800, margin: '3px 0 0' }}>{pdfTitle}</h1>
               <p style={{ color: '#9CA3AF', fontSize: 10, margin: '3px 0 0' }}>Stand: {today}</p>
             </div>
           </div>
 
-          {/* KPI-Karten */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: 18 }} className="print-avoid-break">
-            {kpiCard('Gesamtausgaben', fmtEur(totalCosts), '#DC2626', `${costs.length} Positionen`)}
-            {kpiCard('Spenden zugesagt', fmtEur(totalSponsoring), '#D97706', `davon erhalten ${fmtEur(totalSponsoringReceived)}`)}
-            {kpiCard('Ergebnis (realistisch)', `${realisticProfit >= 0 ? '+' : ''}${fmtEur(realisticProfit)}`, realisticProfit >= 0 ? '#16A34A' : '#DC2626', 'Einnahmen − Ausgaben')}
-          </div>
+          {/* ── KOSTEN ── */}
+          {tab === 'kosten' && (
+            <>
+              <div style={{ display: 'flex', gap: 10, marginBottom: 18 }} className="print-avoid-break">
+                {kpiCard('Gesamtausgaben', fmtEur(totalCosts), '#DC2626', `${costs.length} Positionen`)}
+                {kpiCard('Bestätigt (fix/zugesagt)', fmtEur(statusGroups.confirmed), '#16A34A', 'bereits gesichert')}
+                {kpiCard('Noch offen', fmtEur(statusGroups.open), '#D97706', 'ohne festen Status')}
+              </div>
 
-          {/* 1. Ergebnis je Szenario */}
-          <div className="print-avoid-break" style={{ marginBottom: 22 }}>
-            {sectionTitle('Ergebnis je Szenario', '#16A34A')}
-            <table className="w-full" style={{ borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={cTh}>Szenario</th>
-                  <th style={cThR}>Rohertrag</th>
-                  <th style={cThR}>Spenden</th>
-                  <th style={cThR}>Einnahmen</th>
-                  <th style={cThR}>Kosten</th>
-                  <th style={cThR}>Ergebnis</th>
-                </tr>
-              </thead>
-              <tbody>
-                {SCENARIOS.map(sc => {
-                  const rev = calcScenarioRevenue(sc.key)
-                  const einnahmen = rev.rohertrag + totalSponsoring
-                  const profit = einnahmen - totalCosts
-                  return (
-                    <tr key={sc.key}>
-                      <td style={cTd}><span className={`inline-block px-2 py-0.5 rounded font-bold ${sc.bg} ${sc.color}`}>{sc.label}</span></td>
-                      <td style={cTdR}>{fmtEur(rev.rohertrag)}</td>
-                      <td style={cTdR}>{fmtEur(totalSponsoring)}</td>
-                      <td style={cTdR}>{fmtEur(einnahmen)}</td>
-                      <td style={cTdR}>{fmtEur(totalCosts)}</td>
-                      <td style={{ ...cTdR, fontWeight: 700, color: profit >= 0 ? '#15803D' : '#DC2626' }}>{profit >= 0 ? '+' : ''}{fmtEur(profit)}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* 2. Kosten nach Zahlungszeitpunkt */}
-          <div className="print-avoid-break" style={{ marginBottom: 22 }}>
-            {sectionTitle('Kosten nach Zahlungszeitpunkt', '#DC2626')}
-            <table className="w-full" style={{ borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={cTh}>Zeitpunkt</th>
-                  <th style={cThR}>Positionen</th>
-                  <th style={cThR}>Summe</th>
-                </tr>
-              </thead>
-              <tbody>
-                {DUE_DATE_OPTIONS.map((dd, i) => {
-                  const items = costs.filter(c => c.dueDate === dd.value)
-                  const sum = items.reduce((s, c) => s + c.projected, 0)
-                  return (
-                    <tr key={dd.value} style={zebra(i)}>
-                      <td style={cTd}>{dd.icon} {dd.label}</td>
-                      <td style={cTdR}>{items.length}</td>
-                      <td style={cTdR}>{fmtEur(sum)}</td>
-                    </tr>
-                  )
-                })}
-                <tr style={{ background: '#FEF2F2', fontWeight: 700 }}>
-                  <td style={cTd}>Gesamt</td>
-                  <td style={cTdR}>{costs.length}</td>
-                  <td style={{ ...cTdR, color: '#DC2626' }}>{fmtEur(totalCosts)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* 3. Alle Kostenpositionen, nach Tag gruppiert */}
-          <div style={{ marginBottom: 6 }}>{sectionTitle('Kostenpositionen im Detail', '#DC2626')}</div>
-          {ACCORDION_DAYS.map(day => {
-            const dayCosts = costsForDay(day.key)
-            if (dayCosts.length === 0) return null
-            const daySum = dayCosts.reduce((s, c) => s + c.projected, 0)
-            return (
-              <div key={day.key === null ? 'allgemein' : day.key} className="print-avoid-break" style={{ marginBottom: 14 }}>
-                <div style={{ background: '#F3F4F6', borderLeft: '3px solid #6366F1', padding: '4px 9px', fontWeight: 700, fontSize: 11, borderRadius: 4, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
-                  <span>{day.icon} {day.label}{day.date ? ` · ${day.date}` : ''}</span>
-                  <span>{fmtEur(daySum)}</span>
-                </div>
+              <div className="print-avoid-break" style={{ marginBottom: 22 }}>
+                {sectionTitle('Kosten nach Zahlungszeitpunkt', '#DC2626')}
                 <table className="w-full" style={{ borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
-                      <th style={cTh}>Position</th>
-                      <th style={cTh}>Status</th>
                       <th style={cTh}>Zeitpunkt</th>
-                      <th style={cThR}>Betrag</th>
+                      <th style={cThR}>Positionen</th>
+                      <th style={cThR}>Summe</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {dayCosts.map((c, i) => (
-                      <tr key={c.id} style={zebra(i)}>
-                        <td style={cTd}>{c.name}{c.notes ? <span style={{ color: '#9CA3AF' }}> – {c.notes}</span> : ''}</td>
-                        <td style={cTd}><span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadge(c.status).color}`}>{getStatusBadge(c.status).label}</span></td>
-                        <td style={cTd}>{dueLabel(c.dueDate)}</td>
-                        <td style={cTdR}>{fmtEur(c.projected)}</td>
-                      </tr>
-                    ))}
-                    <tr style={{ background: '#F3F4F6', fontWeight: 700 }}>
-                      <td style={cTd} colSpan={3}>Summe {day.label}</td>
-                      <td style={cTdR}>{fmtEur(daySum)}</td>
+                    {DUE_DATE_OPTIONS.map((dd, i) => {
+                      const items = costs.filter(c => c.dueDate === dd.value)
+                      const sum = items.reduce((s, c) => s + c.projected, 0)
+                      return (
+                        <tr key={dd.value} style={zebra(i)}>
+                          <td style={cTd}>{dd.icon} {dd.label}</td>
+                          <td style={cTdR}>{items.length}</td>
+                          <td style={cTdR}>{fmtEur(sum)}</td>
+                        </tr>
+                      )
+                    })}
+                    <tr style={{ background: '#FEF2F2', fontWeight: 700 }}>
+                      <td style={cTd}>Gesamt</td>
+                      <td style={cTdR}>{costs.length}</td>
+                      <td style={{ ...cTdR, color: '#DC2626' }}>{fmtEur(totalCosts)}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
-            )
-          })}
-          <div style={{ background: '#111827', color: '#fff', borderRadius: 8, padding: '8px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }} className="print-avoid-break">
-            <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: '#EAB308', fontWeight: 700 }}>Gesamtkosten</span>
-            <span style={{ fontSize: 16, fontWeight: 800 }}>{fmtEur(totalCosts)}</span>
-          </div>
 
-          {/* 4. Rohertrag pro Tag & Szenario */}
-          {simpleForecasts.length > 0 && (
-            <div className="print-avoid-break" style={{ marginBottom: 22 }}>
-              {sectionTitle('Rohertrag pro Tag & Szenario', '#2563EB')}
-              <table className="w-full" style={{ borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th style={cTh}>Tag</th>
-                    {SCENARIOS.map(sc => <th key={sc.key} style={cThR}>{sc.label}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {EVENT_DAYS.map((day, i) => (
-                    <tr key={day.key} style={zebra(i)}>
-                      <td style={cTd}>{day.icon} {day.label}</td>
-                      {SCENARIOS.map(sc => (
-                        <td key={sc.key} style={cTdR}>{fmtEur(calcForecastDay(day.key, sc.key).rohertrag)}</td>
-                      ))}
-                    </tr>
-                  ))}
-                  <tr style={{ background: '#EFF6FF', fontWeight: 700 }}>
-                    <td style={cTd}>Gesamt</td>
-                    {SCENARIOS.map(sc => (
-                      <td key={sc.key} style={{ ...cTdR, color: '#2563EB' }}>{fmtEur(calcScenarioRevenue(sc.key).rohertrag)}</td>
-                    ))}
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+              <div style={{ marginBottom: 6 }}>{sectionTitle('Kostenpositionen im Detail', '#DC2626')}</div>
+              {ACCORDION_DAYS.map(day => {
+                const dayCosts = costsForDay(day.key)
+                if (dayCosts.length === 0) return null
+                const daySum = dayCosts.reduce((s, c) => s + c.projected, 0)
+                return (
+                  <div key={day.key === null ? 'allgemein' : day.key} className="print-avoid-break" style={{ marginBottom: 14 }}>
+                    <div style={{ background: '#F3F4F6', borderLeft: '3px solid #6366F1', padding: '4px 9px', fontWeight: 700, fontSize: 11, borderRadius: 4, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+                      <span>{day.icon} {day.label}{day.date ? ` · ${day.date}` : ''}</span>
+                      <span>{fmtEur(daySum)}</span>
+                    </div>
+                    <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr>
+                          <th style={cTh}>Position</th>
+                          <th style={cTh}>Status</th>
+                          <th style={cTh}>Zeitpunkt</th>
+                          <th style={cThR}>Betrag</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dayCosts.map((c, i) => (
+                          <tr key={c.id} style={zebra(i)}>
+                            <td style={cTd}>{c.name}{c.notes ? <span style={{ color: '#9CA3AF' }}> – {c.notes}</span> : ''}</td>
+                            <td style={cTd}><span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadge(c.status).color}`}>{getStatusBadge(c.status).label}</span></td>
+                            <td style={cTd}>{dueLabel(c.dueDate)}</td>
+                            <td style={cTdR}>{fmtEur(c.projected)}</td>
+                          </tr>
+                        ))}
+                        <tr style={{ background: '#F3F4F6', fontWeight: 700 }}>
+                          <td style={cTd} colSpan={3}>Summe {day.label}</td>
+                          <td style={cTdR}>{fmtEur(daySum)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              })}
+              <div style={{ background: '#111827', color: '#fff', borderRadius: 8, padding: '8px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }} className="print-avoid-break">
+                <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: '#EAB308', fontWeight: 700 }}>Gesamtkosten</span>
+                <span style={{ fontSize: 16, fontWeight: 800 }}>{fmtEur(totalCosts)}</span>
+              </div>
+            </>
           )}
 
-          {/* 5. Spenden */}
-          <div className="print-avoid-break">
-            {sectionTitle('Spenden', '#7C3AED')}
-            <table className="w-full" style={{ borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={cTh}>Spender</th>
-                  <th style={cTh}>Status</th>
-                  <th style={cThR}>Betrag</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sponsors.length === 0 ? (
-                  <tr><td style={{ ...cTd, color: '#9CA3AF' }} colSpan={3}>Noch keine Spenden eingetragen.</td></tr>
-                ) : sponsors.map((s, i) => (
-                  <tr key={s.id} style={zebra(i)}>
-                    <td style={cTd}>{s.name}{s.notes ? <span style={{ color: '#9CA3AF' }}> – {s.notes}</span> : ''}</td>
-                    <td style={cTd}><span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${s.received ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>{s.received ? 'Erhalten' : 'Ausstehend'}</span></td>
-                    <td style={cTdR}>{fmtEur(s.amount)}</td>
-                  </tr>
-                ))}
-                <tr style={{ background: '#F5F3FF', fontWeight: 700 }}>
-                  <td style={cTd}>Gesamt (davon erhalten: {fmtEur(totalSponsoringReceived)})</td>
-                  <td style={cTd}></td>
-                  <td style={{ ...cTdR, color: '#7C3AED' }}>{fmtEur(totalSponsoring)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          {/* ── GEWINN / ERGEBNIS ── */}
+          {tab === 'ergebnis' && (
+            <>
+              <div style={{ display: 'flex', gap: 10, marginBottom: 18 }} className="print-avoid-break">
+                {kpiCard('Einnahmen (realistisch)', fmtEur(realisticRev.rohertrag + totalSponsoring), '#2563EB', 'Rohertrag + Spenden')}
+                {kpiCard('Ausgaben', fmtEur(totalCosts), '#DC2626', `${costs.length} Positionen`)}
+                {kpiCard('Ergebnis (realistisch)', `${realisticProfit >= 0 ? '+' : ''}${fmtEur(realisticProfit)}`, realisticProfit >= 0 ? '#16A34A' : '#DC2626', 'Einnahmen − Ausgaben')}
+              </div>
+
+              <div className="print-avoid-break" style={{ marginBottom: 22 }}>
+                {sectionTitle('Ergebnis je Szenario', '#16A34A')}
+                <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={cTh}>Szenario</th>
+                      <th style={cThR}>Rohertrag</th>
+                      <th style={cThR}>Spenden</th>
+                      <th style={cThR}>Einnahmen</th>
+                      <th style={cThR}>Kosten</th>
+                      <th style={cThR}>Ergebnis</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {SCENARIOS.map(sc => {
+                      const rev = calcScenarioRevenue(sc.key)
+                      const einnahmen = rev.rohertrag + totalSponsoring
+                      const profit = einnahmen - totalCosts
+                      return (
+                        <tr key={sc.key}>
+                          <td style={cTd}><span className={`inline-block px-2 py-0.5 rounded font-bold ${sc.bg} ${sc.color}`}>{sc.label}</span></td>
+                          <td style={cTdR}>{fmtEur(rev.rohertrag)}</td>
+                          <td style={cTdR}>{fmtEur(totalSponsoring)}</td>
+                          <td style={cTdR}>{fmtEur(einnahmen)}</td>
+                          <td style={cTdR}>{fmtEur(totalCosts)}</td>
+                          <td style={{ ...cTdR, fontWeight: 700, color: profit >= 0 ? '#15803D' : '#DC2626' }}>{profit >= 0 ? '+' : ''}{fmtEur(profit)}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          {/* ── ROHERTRAG-PROGNOSE ── */}
+          {tab === 'prognose' && (
+            <>
+              <div style={{ display: 'flex', gap: 10, marginBottom: 18 }} className="print-avoid-break">
+                {SCENARIOS.map(sc => {
+                  const rev = calcScenarioRevenue(sc.key)
+                  const accent = sc.key === 'pessimistic' ? '#DC2626' : sc.key === 'optimistic' ? '#16A34A' : '#2563EB'
+                  return <div key={sc.key} style={{ flex: 1 }}>{kpiCard(`Rohertrag ${sc.label.toLowerCase()}`, fmtEur(rev.rohertrag), accent)}</div>
+                })}
+              </div>
+
+              {simpleForecasts.length > 0 ? (
+                <div className="print-avoid-break" style={{ marginBottom: 22 }}>
+                  {sectionTitle('Rohertrag pro Tag & Szenario', '#2563EB')}
+                  <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>
+                        <th style={cTh}>Tag</th>
+                        {SCENARIOS.map(sc => <th key={sc.key} style={cThR}>{sc.label}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {EVENT_DAYS.map((day, i) => (
+                        <tr key={day.key} style={zebra(i)}>
+                          <td style={cTd}>{day.icon} {day.label}</td>
+                          {SCENARIOS.map(sc => (
+                            <td key={sc.key} style={cTdR}>{fmtEur(calcForecastDay(day.key, sc.key).rohertrag)}</td>
+                          ))}
+                        </tr>
+                      ))}
+                      <tr style={{ background: '#EFF6FF', fontWeight: 700 }}>
+                        <td style={cTd}>Gesamt</td>
+                        {SCENARIOS.map(sc => (
+                          <td key={sc.key} style={{ ...cTdR, color: '#2563EB' }}>{fmtEur(calcScenarioRevenue(sc.key).rohertrag)}</td>
+                        ))}
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p style={{ color: '#9CA3AF' }}>Noch keine Prognosedaten erfasst.</p>
+              )}
+            </>
+          )}
+
+          {/* ── SPENDEN ── */}
+          {tab === 'sponsoring' && (
+            <>
+              <div style={{ display: 'flex', gap: 10, marginBottom: 18 }} className="print-avoid-break">
+                {kpiCard('Zugesagt', fmtEur(totalSponsoring), '#D97706', `${sponsors.length} Spenden`)}
+                {kpiCard('Erhalten', fmtEur(totalSponsoringReceived), '#16A34A')}
+                {kpiCard('Ausstehend', fmtEur(totalSponsoring - totalSponsoringReceived), '#DC2626')}
+              </div>
+
+              <div className="print-avoid-break">
+                {sectionTitle('Spenden', '#7C3AED')}
+                <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={cTh}>Spender</th>
+                      <th style={cTh}>Status</th>
+                      <th style={cThR}>Betrag</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sponsors.length === 0 ? (
+                      <tr><td style={{ ...cTd, color: '#9CA3AF' }} colSpan={3}>Noch keine Spenden eingetragen.</td></tr>
+                    ) : sponsors.map((s, i) => (
+                      <tr key={s.id} style={zebra(i)}>
+                        <td style={cTd}>{s.name}{s.notes ? <span style={{ color: '#9CA3AF' }}> – {s.notes}</span> : ''}</td>
+                        <td style={cTd}><span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${s.received ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>{s.received ? 'Erhalten' : 'Ausstehend'}</span></td>
+                        <td style={cTdR}>{fmtEur(s.amount)}</td>
+                      </tr>
+                    ))}
+                    <tr style={{ background: '#F5F3FF', fontWeight: 700 }}>
+                      <td style={cTd}>Gesamt (davon erhalten: {fmtEur(totalSponsoringReceived)})</td>
+                      <td style={cTd}></td>
+                      <td style={{ ...cTdR, color: '#7C3AED' }}>{fmtEur(totalSponsoring)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
 
           <div style={{ marginTop: 18, paddingTop: 8, borderTop: '1px solid #E5E7EB', fontSize: 9, color: '#9CA3AF', textAlign: 'center' }}>
-            DJK Ottenhofen e.V. · 70-Jahre-Jubiläumsfest · Finanzplanung · erstellt am {today}
+            DJK Ottenhofen e.V. · 70-Jahre-Jubiläumsfest · {pdfTitle} · erstellt am {today}
           </div>
         </div>
       )
