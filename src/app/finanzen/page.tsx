@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
 interface CostItem {
   id: string
@@ -96,6 +95,7 @@ const EVENT_DAYS = [
 ]
 
 const fmtEur = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
+const fmtEur0 = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 const fmtNum = (v: number) => v.toLocaleString('de-DE', { maximumFractionDigits: 0 })
 
 function getStatusBadge(status: string) {
@@ -248,7 +248,6 @@ export default function FinanzenPage() {
   const totalSponsoringReceived = sponsors.filter(sp => sp.received).reduce((s, sp) => s + sp.amount, 0)
 
   const costsForDay = (dayKey: string | null) => costs.filter(c => c.eventDay === dayKey)
-  const costSumForDay = (dayKey: string | null) => costsForDay(dayKey).reduce((s, c) => s + c.projected, 0)
 
   // Revenue from SimpleForecast
   const calcForecastDay = (dayKey: string, scenario: string) => {
@@ -343,7 +342,7 @@ export default function FinanzenPage() {
       {tab === 'kosten' && (
         <div className="space-y-6">
 
-          {/* Kosten-Übersicht – die wichtigsten KPIs (Fälligkeit) groß */}
+          {/* Kosten-Übersicht – die wichtigsten KPIs (Fälligkeit) */}
           {(() => {
             const ACCENTS: Record<string, string> = { before: '#7C3AED', during: '#EA580C', after: '#0891B2' }
             const mainKpis = DUE_DATE_OPTIONS.filter(dd => dd.value !== 'paid')
@@ -352,17 +351,24 @@ export default function FinanzenPage() {
             const paidCount = costs.filter(c => c.dueDate === paid.value).length
             return (
               <div className="space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Abschnitts-Label */}
+                <div className="flex items-center gap-2">
+                  <span className="w-1 h-4 rounded-full bg-indigo-600" />
+                  <h2 className="text-xs font-bold uppercase tracking-wide text-gray-700">Fälligkeit</h2>
+                  <span className="ml-auto text-[11px] text-gray-400">wichtigste Kennzahlen</span>
+                </div>
+                {/* KPI-Kacheln – auf Mobil in einer Zeile */}
+                <div className="grid grid-cols-3 gap-2 sm:gap-4">
                   {mainKpis.map(dd => {
                     const sum = costs.filter(c => c.dueDate === dd.value).reduce((s, c) => s + c.projected, 0)
                     const count = costs.filter(c => c.dueDate === dd.value).length
                     const accent = ACCENTS[dd.value]
                     return (
-                      <div key={dd.value} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 text-center" style={{ borderTopWidth: 4, borderTopColor: accent }}>
-                        <div className="text-3xl mb-1">{dd.icon}</div>
-                        <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">{dd.label}</div>
-                        <div className="text-3xl sm:text-4xl font-extrabold mt-1.5" style={{ color: accent }}>{fmtEur(sum)}</div>
-                        <div className="text-xs text-gray-400 mt-1">{count} {count === 1 ? 'Position' : 'Positionen'}</div>
+                      <div key={dd.value} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-3 sm:p-5" style={{ borderTopWidth: 4, borderTopColor: accent }}>
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-base sm:text-xl mb-2" style={{ backgroundColor: `${accent}1A` }}>{dd.icon}</div>
+                        <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-gray-500 leading-tight">{dd.label}</div>
+                        <div className="text-base sm:text-3xl font-extrabold mt-1 leading-none whitespace-nowrap" style={{ color: accent }}>{fmtEur0(sum)}</div>
+                        <div className="text-[10px] sm:text-xs text-gray-400 mt-1">{count} {count === 1 ? 'Position' : 'Pos.'}</div>
                       </div>
                     )
                   })}
@@ -371,51 +377,21 @@ export default function FinanzenPage() {
                 <div className="flex items-center justify-between bg-white rounded-xl border border-gray-200 px-4 py-2.5">
                   <span className="text-sm text-gray-600">{paid.icon} {paid.label}</span>
                   <span className="text-sm text-gray-400">{paidCount} {paidCount === 1 ? 'Position' : 'Positionen'}</span>
-                  <span className="text-base font-bold text-gray-900">{fmtEur(paidSum)}</span>
+                  <span className="text-base font-bold text-emerald-600">{fmtEur(paidSum)}</span>
                 </div>
               </div>
             )
           })()}
 
-          {/* Kosten pro Tag – Balkendiagramm */}
-          {(() => {
-            const CHART_DAYS = [
-              { key: 'friday', label: 'Fr 10.07.', icon: '🎶' },
-              { key: 'saturday', label: 'Sa 11.07.', icon: '🎉' },
-              { key: 'sunday', label: 'So 12.07.', icon: '⛪' },
-              { key: null as string | null, label: 'Allgemein', icon: '📦' },
-            ]
-            const chartData = CHART_DAYS.map(d => ({
-              name: d.label,
-              icon: d.icon,
-              kosten: costSumForDay(d.key),
-            }))
-            const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#94a3b8']
-            return (
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Kosten pro Tag</h2>
-                <div className="h-52">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                      <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                      <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
-                      <Tooltip formatter={(value) => fmtEur(Number(value))} />
-                      <Bar dataKey="kosten" name="Kosten" radius={[6, 6, 0, 0]}>
-                        {chartData.map((_, i) => (
-                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )
-          })()}
-
+          {/* Budget-Status */}
+          <div className="flex items-center gap-2">
+            <span className="w-1 h-4 rounded-full bg-indigo-600" />
+            <h2 className="text-xs font-bold uppercase tracking-wide text-gray-700">Budget-Status</h2>
+            <span className="ml-auto text-[11px] text-gray-400">{totalCosts > 0 ? Math.round((statusGroups.confirmed / totalCosts) * 100) : 0}% bestätigt</span>
+          </div>
           {/* Fortschrittsbalken */}
           <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <div className="flex justify-between text-[10px] text-gray-500 mb-1">
-              <span>Budget-Status: {totalCosts > 0 ? Math.round((statusGroups.confirmed / totalCosts) * 100) : 0}% bestätigt</span>
+            <div className="flex justify-end text-[10px] text-gray-500 mb-1">
               <span>{fmtEur(statusGroups.confirmed)} von {fmtEur(totalCosts)} fix</span>
             </div>
             <div className="h-2 bg-gray-200 rounded-full overflow-hidden flex">
