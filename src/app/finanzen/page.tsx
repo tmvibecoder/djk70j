@@ -309,10 +309,17 @@ export default function FinanzenPage() {
   const currentScenario = SCENARIOS.find(s => s.key === selectedScenario)!
 
   return (
-    <div className="space-y-6">
+    <>
+    <div className="space-y-6 print:hidden">
       {/* Header */}
       <div className="bg-gray-900 -mx-4 -mt-16 lg:-mt-6 px-4 pt-16 lg:pt-6 pb-4 mb-6 rounded-b-lg">
-        <p className="text-yellow-500 text-xs font-semibold tracking-widest uppercase">DJK Ottenhofen e.V.</p>
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-yellow-500 text-xs font-semibold tracking-widest uppercase">DJK Ottenhofen e.V.</p>
+          <button onClick={() => window.print()} title="Gesamte Finanzplanung als PDF (DIN A4) drucken"
+            className="px-3 py-1.5 rounded-lg border border-gray-600 bg-gray-800 text-white text-xs font-medium hover:bg-gray-700 whitespace-nowrap">
+            📄 Als PDF drucken
+          </button>
+        </div>
         <div className="flex items-end justify-between">
           <h1 className="text-2xl font-bold text-white">Finanzplanung</h1>
           <div className="text-right">
@@ -912,5 +919,185 @@ export default function FinanzenPage() {
         </div>
       )}
     </div>
+
+    {/* ═══════ DRUCK- / PDF-ANSICHT (nur beim Drucken sichtbar, DIN A4) ═══════ */}
+    {(() => {
+      const today = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
+      const dueLabel = (v: string) => DUE_DATE_OPTIONS.find(d => d.value === v)?.label ?? v
+      return (
+        <div className="hidden print:block text-gray-900" style={{ fontSize: '11px' }}>
+          {/* Kopf */}
+          <div className="flex justify-between items-end border-b-2 border-gray-900 pb-2 mb-4">
+            <div>
+              <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-600">DJK Ottenhofen e.V. · 70-Jahre-Jubiläumsfest</p>
+              <h1 className="text-xl font-bold">Finanzplanung – Gesamtübersicht</h1>
+            </div>
+            <div className="text-right text-[10px] text-gray-600">Stand: {today}</div>
+          </div>
+
+          {/* 1. Ergebnis je Szenario */}
+          <h2 className="text-sm font-bold mb-2">Ergebnis (Einnahmen − Ausgaben)</h2>
+          <table className="w-full mb-6 print-avoid-break" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border border-gray-300 px-2 py-1 text-left">Szenario</th>
+                <th className="border border-gray-300 px-2 py-1 text-right">Rohertrag</th>
+                <th className="border border-gray-300 px-2 py-1 text-right">Spenden</th>
+                <th className="border border-gray-300 px-2 py-1 text-right">Einnahmen</th>
+                <th className="border border-gray-300 px-2 py-1 text-right">Kosten</th>
+                <th className="border border-gray-300 px-2 py-1 text-right">Ergebnis</th>
+              </tr>
+            </thead>
+            <tbody>
+              {SCENARIOS.map(sc => {
+                const rev = calcScenarioRevenue(sc.key)
+                const einnahmen = rev.rohertrag + totalSponsoring
+                const profit = einnahmen - totalCosts
+                return (
+                  <tr key={sc.key}>
+                    <td className="border border-gray-300 px-2 py-1">{sc.label}</td>
+                    <td className="border border-gray-300 px-2 py-1 text-right">{fmtEur(rev.rohertrag)}</td>
+                    <td className="border border-gray-300 px-2 py-1 text-right">{fmtEur(totalSponsoring)}</td>
+                    <td className="border border-gray-300 px-2 py-1 text-right">{fmtEur(einnahmen)}</td>
+                    <td className="border border-gray-300 px-2 py-1 text-right">{fmtEur(totalCosts)}</td>
+                    <td className={`border border-gray-300 px-2 py-1 text-right font-bold ${profit >= 0 ? 'text-green-700' : 'text-red-600'}`}>{profit >= 0 ? '+' : ''}{fmtEur(profit)}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+
+          {/* 2. Kosten nach Zahlungszeitpunkt */}
+          <h2 className="text-sm font-bold mb-2">Kosten nach Zahlungszeitpunkt</h2>
+          <table className="w-full mb-6 print-avoid-break" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border border-gray-300 px-2 py-1 text-left">Zeitpunkt</th>
+                <th className="border border-gray-300 px-2 py-1 text-right">Positionen</th>
+                <th className="border border-gray-300 px-2 py-1 text-right">Summe</th>
+              </tr>
+            </thead>
+            <tbody>
+              {DUE_DATE_OPTIONS.map(dd => {
+                const items = costs.filter(c => c.dueDate === dd.value)
+                const sum = items.reduce((s, c) => s + c.projected, 0)
+                return (
+                  <tr key={dd.value}>
+                    <td className="border border-gray-300 px-2 py-1">{dd.label}</td>
+                    <td className="border border-gray-300 px-2 py-1 text-right">{items.length}</td>
+                    <td className="border border-gray-300 px-2 py-1 text-right">{fmtEur(sum)}</td>
+                  </tr>
+                )
+              })}
+              <tr className="bg-gray-100 font-bold">
+                <td className="border border-gray-300 px-2 py-1">Gesamt</td>
+                <td className="border border-gray-300 px-2 py-1 text-right">{costs.length}</td>
+                <td className="border border-gray-300 px-2 py-1 text-right">{fmtEur(totalCosts)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* 3. Alle Kostenpositionen, nach Tag gruppiert */}
+          <h2 className="text-sm font-bold mb-2">Kostenpositionen im Detail</h2>
+          {ACCORDION_DAYS.map(day => {
+            const dayCosts = costsForDay(day.key)
+            if (dayCosts.length === 0) return null
+            const daySum = dayCosts.reduce((s, c) => s + c.projected, 0)
+            return (
+              <div key={day.key === null ? 'allgemein' : day.key} className="mb-4 print-avoid-break">
+                <div className="font-bold text-xs mb-1">{day.icon} {day.label}{day.date ? ` (${day.date})` : ''}</div>
+                <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="border border-gray-300 px-2 py-1 text-left">Position</th>
+                      <th className="border border-gray-300 px-2 py-1 text-left">Status</th>
+                      <th className="border border-gray-300 px-2 py-1 text-left">Zeitpunkt</th>
+                      <th className="border border-gray-300 px-2 py-1 text-right">Betrag</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dayCosts.map(c => (
+                      <tr key={c.id}>
+                        <td className="border border-gray-300 px-2 py-1">{c.name}{c.notes ? <span className="text-gray-500"> – {c.notes}</span> : ''}</td>
+                        <td className="border border-gray-300 px-2 py-1">{getStatusBadge(c.status).label}</td>
+                        <td className="border border-gray-300 px-2 py-1">{dueLabel(c.dueDate)}</td>
+                        <td className="border border-gray-300 px-2 py-1 text-right">{fmtEur(c.projected)}</td>
+                      </tr>
+                    ))}
+                    <tr className="bg-gray-50 font-bold">
+                      <td className="border border-gray-300 px-2 py-1" colSpan={3}>Summe {day.label}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-right">{fmtEur(daySum)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )
+          })}
+          <div className="text-right font-bold text-sm mb-6">Gesamtkosten: {fmtEur(totalCosts)}</div>
+
+          {/* 4. Rohertrag pro Tag & Szenario */}
+          {simpleForecasts.length > 0 && (
+            <div className="print-avoid-break mb-6">
+              <h2 className="text-sm font-bold mb-2">Rohertrag pro Tag & Szenario</h2>
+              <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border border-gray-300 px-2 py-1 text-left">Tag</th>
+                    {SCENARIOS.map(sc => <th key={sc.key} className="border border-gray-300 px-2 py-1 text-right">{sc.label}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {EVENT_DAYS.map(day => (
+                    <tr key={day.key}>
+                      <td className="border border-gray-300 px-2 py-1">{day.label}</td>
+                      {SCENARIOS.map(sc => (
+                        <td key={sc.key} className="border border-gray-300 px-2 py-1 text-right">{fmtEur(calcForecastDay(day.key, sc.key).rohertrag)}</td>
+                      ))}
+                    </tr>
+                  ))}
+                  <tr className="bg-gray-100 font-bold">
+                    <td className="border border-gray-300 px-2 py-1">Gesamt</td>
+                    {SCENARIOS.map(sc => (
+                      <td key={sc.key} className="border border-gray-300 px-2 py-1 text-right">{fmtEur(calcScenarioRevenue(sc.key).rohertrag)}</td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* 5. Spenden */}
+          <div className="print-avoid-break">
+            <h2 className="text-sm font-bold mb-2">Spenden</h2>
+            <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-gray-300 px-2 py-1 text-left">Spender</th>
+                  <th className="border border-gray-300 px-2 py-1 text-left">Status</th>
+                  <th className="border border-gray-300 px-2 py-1 text-right">Betrag</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sponsors.length === 0 ? (
+                  <tr><td className="border border-gray-300 px-2 py-1 text-gray-500" colSpan={3}>Noch keine Spenden eingetragen.</td></tr>
+                ) : sponsors.map(s => (
+                  <tr key={s.id}>
+                    <td className="border border-gray-300 px-2 py-1">{s.name}{s.notes ? <span className="text-gray-500"> – {s.notes}</span> : ''}</td>
+                    <td className="border border-gray-300 px-2 py-1">{s.received ? 'Erhalten' : 'Ausstehend'}</td>
+                    <td className="border border-gray-300 px-2 py-1 text-right">{fmtEur(s.amount)}</td>
+                  </tr>
+                ))}
+                <tr className="bg-gray-100 font-bold">
+                  <td className="border border-gray-300 px-2 py-1">Gesamt (davon erhalten: {fmtEur(totalSponsoringReceived)})</td>
+                  <td className="border border-gray-300 px-2 py-1"></td>
+                  <td className="border border-gray-300 px-2 py-1 text-right">{fmtEur(totalSponsoring)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )
+    })()}
+    </>
   )
 }
