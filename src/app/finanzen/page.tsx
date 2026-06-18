@@ -104,13 +104,14 @@ function getStatusBadge(status: string) {
 }
 
 export default function FinanzenPage() {
-  const [tab, setTab] = useState('ergebnis')
+  const [tab, setTab] = useState('kosten')
   const [costs, setCosts] = useState<CostItem[]>([])
   const [sponsors, setSponsors] = useState<Sponsor[]>([])
   const [simpleForecasts, setSimpleForecasts] = useState<SimpleForecast[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedScenario, setSelectedScenario] = useState('realistic')
   const [openDays, setOpenDays] = useState<Record<string, boolean>>({})
+  const [statusFilter, setStatusFilter] = useState<string[]>([])
 
   // Prognose edits
   const [forecastEdits, setForecastEdits] = useState<Record<string, SimpleForecast>>({})
@@ -278,6 +279,15 @@ export default function FinanzenPage() {
 
   const toggleDay = (key: string) => setOpenDays(prev => ({ ...prev, [key]: !prev[key] }))
 
+  // Status-Filter (oberhalb der Tage)
+  const filterActive = statusFilter.length > 0
+  const matchesFilter = (c: CostItem) => !filterActive || statusFilter.includes(c.status)
+  const filteredCostsForDay = (dayKey: string | null) => costsForDay(dayKey).filter(matchesFilter)
+  const toggleStatusFilter = (value: string) =>
+    setStatusFilter(prev => prev.includes(value) ? prev.filter(s => s !== value) : [...prev, value])
+  // Nur Status anzeigen, die tatsächlich in den Kosten vorkommen
+  const usedStatuses = STATUS_OPTIONS.filter(s => costs.some(c => c.status === s.value))
+
   if (loading) return <div className="flex items-center justify-center h-64"><div className="text-gray-400">Laden...</div></div>
 
   const currentScenario = SCENARIOS.find(s => s.key === selectedScenario)!
@@ -385,8 +395,13 @@ export default function FinanzenPage() {
 
           {/* Neue Position Button */}
           <button onClick={() => { setShowForm(!showForm); setEditCostId(null); setCostForm({ name: '', projected: 0, actual: null, dueDate: 'before', costType: 'fix', status: 'offen', eventDay: '', notes: '' }) }}
-            className="w-full py-3 rounded-xl border-2 border-dashed border-gray-300 text-gray-500 hover:border-blue-400 hover:text-blue-600 text-sm font-medium transition-colors">
-            + Neue Kostenposition
+            className={`group w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-sm font-semibold text-white shadow-md transition-all active:scale-[0.99] ${
+              showForm
+                ? 'bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 shadow-gray-200'
+                : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-200'
+            }`}>
+            <span className={`flex items-center justify-center w-6 h-6 rounded-full bg-white/20 text-base leading-none transition-transform ${showForm ? 'rotate-45' : 'group-hover:rotate-90'}`}>+</span>
+            {showForm ? 'Formular schließen' : 'Neue Kostenposition'}
           </button>
 
           {/* Add/Edit form */}
@@ -446,13 +461,48 @@ export default function FinanzenPage() {
             </div>
           )}
 
+          {/* Status-Filter oberhalb der Tage */}
+          {usedStatuses.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide">Nach Status filtern</h2>
+                {filterActive && (
+                  <button onClick={() => setStatusFilter([])} className="text-[11px] font-medium text-blue-600 hover:text-blue-800">
+                    Filter zurücksetzen
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {usedStatuses.map(s => {
+                  const active = statusFilter.includes(s.value)
+                  const count = costs.filter(c => c.status === s.value).length
+                  return (
+                    <button key={s.value} onClick={() => toggleStatusFilter(s.value)}
+                      className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all flex items-center gap-1.5 ${
+                        active ? s.color + ' ring-2 ring-offset-1 ring-blue-400 shadow-sm' : s.color + ' opacity-60 hover:opacity-100'
+                      }`}>
+                      {s.label}
+                      <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-white/70 text-[10px] font-bold text-gray-700">{count}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Akkordeons pro Tag */}
+          {filterActive && ACCORDION_DAYS.every(day => filteredCostsForDay(day.key).length === 0) && (
+            <div className="bg-white rounded-xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-400">
+              Keine Kostenpositionen mit dem gewählten Status.
+            </div>
+          )}
           {ACCORDION_DAYS.map(day => {
             const dayKey = day.key === null ? 'allgemein' : day.key
-            const dayCosts = costsForDay(day.key)
+            const dayCosts = filteredCostsForDay(day.key)
             const daySum = dayCosts.reduce((s, c) => s + c.projected, 0)
             if (dayCosts.length === 0) return null
-            const isOpen = openDays[dayKey] || false
+            // Bei aktivem Filter automatisch aufklappen, damit Treffer sichtbar sind
+            const isOpen = filterActive || openDays[dayKey] || false
 
             return (
               <div key={dayKey} className="mb-2">
@@ -496,9 +546,23 @@ export default function FinanzenPage() {
                                 )}
                               </td>
                               <td className="px-3 py-2.5 text-right font-bold text-gray-900">{fmtEur(c.projected)}</td>
-                              <td className="px-2 py-2.5 text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => startEditCost(c)} className="text-blue-500 hover:text-blue-700 text-xs mr-1">Bearbeiten</button>
-                                <button onClick={() => deleteCost(c.id)} className="text-red-400 hover:text-red-600 text-xs">Löschen</button>
+                              <td className="px-2 py-2.5">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button onClick={() => startEditCost(c)} title="Bearbeiten"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-colors">
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    <span className="hidden sm:inline">Bearbeiten</span>
+                                  </button>
+                                  <button onClick={() => deleteCost(c.id)} title="Löschen"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 hover:border-red-300 transition-colors">
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    <span className="hidden sm:inline">Löschen</span>
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           )
@@ -687,9 +751,21 @@ export default function FinanzenPage() {
                     <span className={`text-xs font-medium px-2 py-1 rounded-full ${s.received ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
                       {s.received ? 'Erhalten' : 'Ausstehend'}
                     </span>
-                    <div className="flex gap-1">
-                      <button onClick={() => startEditSponsor(s)} className="text-blue-600 hover:text-blue-800 text-sm">Bearbeiten</button>
-                      <button onClick={() => deleteSponsor(s.id)} className="text-red-500 hover:text-red-700 text-sm">Löschen</button>
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => startEditSponsor(s)} title="Bearbeiten"
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-colors">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        <span className="hidden sm:inline">Bearbeiten</span>
+                      </button>
+                      <button onClick={() => deleteSponsor(s.id)} title="Löschen"
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 hover:border-red-300 transition-colors">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span className="hidden sm:inline">Löschen</span>
+                      </button>
                     </div>
                   </div>
                 ))}
