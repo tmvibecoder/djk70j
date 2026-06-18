@@ -8,7 +8,6 @@ function LoginForm() {
   const params = useSearchParams()
   const next = params.get('next') || '/'
 
-  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -20,7 +19,7 @@ function LoginForm() {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ password }),
     })
     setLoading(false)
     if (!res.ok) {
@@ -45,22 +44,12 @@ function LoginForm() {
 
       <div className="space-y-3">
         <div>
-          <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Benutzername</label>
-          <input
-            type="text"
-            value={username}
-            onChange={e => setUsername(e.target.value)}
-            autoFocus
-            autoComplete="username"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-        <div>
           <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Passwort</label>
           <input
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
+            autoFocus
             autoComplete="current-password"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
@@ -75,7 +64,7 @@ function LoginForm() {
 
       <button
         type="submit"
-        disabled={loading || !username || !password}
+        disabled={loading || !password}
         className="w-full px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg disabled:opacity-50"
       >
         {loading ? 'Anmelden…' : 'Anmelden'}
