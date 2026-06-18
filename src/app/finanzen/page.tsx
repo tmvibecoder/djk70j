@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
 interface CostItem {
@@ -111,7 +111,10 @@ export default function FinanzenPage() {
   const [loading, setLoading] = useState(true)
   const [selectedScenario, setSelectedScenario] = useState('realistic')
   const [openDays, setOpenDays] = useState<Record<string, boolean>>({})
-  const [statusFilter, setStatusFilter] = useState<string[]>([])
+  // Ausgeblendete Status (leer = alle sichtbar)
+  const [hiddenStatuses, setHiddenStatuses] = useState<string[]>([])
+  const [filterOpen, setFilterOpen] = useState(false)
+  const filterRef = useRef<HTMLDivElement>(null)
 
   // Prognose edits
   const [forecastEdits, setForecastEdits] = useState<Record<string, SimpleForecast>>({})
@@ -279,14 +282,27 @@ export default function FinanzenPage() {
 
   const toggleDay = (key: string) => setOpenDays(prev => ({ ...prev, [key]: !prev[key] }))
 
-  // Status-Filter (oberhalb der Tage)
-  const filterActive = statusFilter.length > 0
-  const matchesFilter = (c: CostItem) => !filterActive || statusFilter.includes(c.status)
-  const filteredCostsForDay = (dayKey: string | null) => costsForDay(dayKey).filter(matchesFilter)
-  const toggleStatusFilter = (value: string) =>
-    setStatusFilter(prev => prev.includes(value) ? prev.filter(s => s !== value) : [...prev, value])
+  // Status-Filter (Dropdown mit Checkboxen, oberhalb der Tage)
   // Nur Status anzeigen, die tatsächlich in den Kosten vorkommen
   const usedStatuses = STATUS_OPTIONS.filter(s => costs.some(c => c.status === s.value))
+  const filterActive = hiddenStatuses.length > 0
+  const matchesFilter = (c: CostItem) => !hiddenStatuses.includes(c.status)
+  const filteredCostsForDay = (dayKey: string | null) => costsForDay(dayKey).filter(matchesFilter)
+  const toggleStatus = (value: string) =>
+    setHiddenStatuses(prev => prev.includes(value) ? prev.filter(s => s !== value) : [...prev, value])
+  const allOn = usedStatuses.every(s => !hiddenStatuses.includes(s.value))
+  const activeCount = usedStatuses.filter(s => !hiddenStatuses.includes(s.value)).length
+  const toggleAll = () => setHiddenStatuses(allOn ? usedStatuses.map(s => s.value) : [])
+
+  // Dropdown bei Klick außerhalb schließen
+  useEffect(() => {
+    if (!filterOpen) return
+    const onClick = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [filterOpen])
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="text-gray-400">Laden...</div></div>
 
@@ -461,31 +477,49 @@ export default function FinanzenPage() {
             </div>
           )}
 
-          {/* Status-Filter oberhalb der Tage */}
+          {/* Status-Filter oberhalb der Tage (Dropdown mit Checkboxen) */}
           {usedStatuses.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-3">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide">Nach Status filtern</h2>
-                {filterActive && (
-                  <button onClick={() => setStatusFilter([])} className="text-[11px] font-medium text-blue-600 hover:text-blue-800">
-                    Filter zurücksetzen
-                  </button>
-                )}
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                {usedStatuses.map(s => {
-                  const active = statusFilter.includes(s.value)
-                  const count = costs.filter(c => c.status === s.value).length
-                  return (
-                    <button key={s.value} onClick={() => toggleStatusFilter(s.value)}
-                      className={`px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all flex items-center gap-1.5 ${
-                        active ? s.color + ' ring-2 ring-offset-1 ring-blue-400 shadow-sm' : s.color + ' opacity-60 hover:opacity-100'
-                      }`}>
-                      {s.label}
-                      <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-white/70 text-[10px] font-bold text-gray-700">{count}</span>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide">Nach Status filtern</h2>
+              <div className="relative" ref={filterRef}>
+                <button onClick={() => setFilterOpen(o => !o)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl border bg-white text-sm font-medium shadow-sm transition-colors ${
+                    filterActive ? 'border-blue-300 text-blue-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L14 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 018 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+                  </svg>
+                  Status
+                  <span className={`text-xs font-bold ${filterActive ? 'text-blue-600' : 'text-gray-400'}`}>
+                    {filterActive ? `${activeCount}/${usedStatuses.length}` : 'Alle'}
+                  </span>
+                  <svg className={`w-4 h-4 text-gray-400 transition-transform ${filterOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {filterOpen && (
+                  <div className="absolute right-0 z-20 mt-2 w-64 bg-white rounded-xl border border-gray-200 shadow-xl p-2">
+                    <button onClick={toggleAll}
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors">
+                      {allOn ? 'Alle ausschalten' : 'Alle einschalten'}
                     </button>
-                  )
-                })}
+                    <div className="my-1.5 border-t border-gray-100" />
+                    <div className="max-h-64 overflow-y-auto">
+                      {usedStatuses.map(s => {
+                        const checked = !hiddenStatuses.includes(s.value)
+                        const count = costs.filter(c => c.status === s.value).length
+                        return (
+                          <label key={s.value} className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+                            <input type="checkbox" checked={checked} onChange={() => toggleStatus(s.value)}
+                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${s.color}`}>{s.label}</span>
+                            <span className="ml-auto text-xs text-gray-400">{count}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
