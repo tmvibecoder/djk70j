@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, initial-scale=1">
+<title>Finanz-Mockup C – Dark</title>
+<style>
+  :root{
+    --bg:#0b1020; --bg2:#0f1629; --card:#151c30; --line:#243049; --ink:#e8edf7; --sub:#94a3b8;
+    --accent:#6366f1; --green:#34d399; --red:#f87171; --purple:#a78bfa; --orange:#fb923c; --cyan:#22d3ee; --amber:#fbbf24;
+    --shadow:0 1px 0 rgba(255,255,255,.03),0 10px 30px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:radial-gradient(1200px 400px at 80% -50px,#1b2547,transparent),var(--bg);color:var(--ink);width:390px}
+  .wrap{padding:16px 14px 28px}
+  .top{display:flex;align-items:center;justify-content:space-between}
+  .eyebrow{color:var(--amber);font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase}
+  .top h1{font-size:18px;font-weight:800;letter-spacing:-.3px}
+  .toggle{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-size:11px;color:var(--sub)}
+  .toggle .knob{width:14px;height:14px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+  /* hero */
+  .hero{margin-top:14px;background:linear-gradient(135deg,#10182e,#1a1440);border:1px solid var(--line);border-radius:20px;padding:18px;position:relative;overflow:hidden;box-shadow:var(--shadow)}
+  .hero:after{content:"";position:absolute;right:-30px;top:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(99,102,241,.45),transparent 70%)}
+  .hero .lbl{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;font-weight:700}
+  .hero .big{font-size:36px;font-weight:800;letter-spacing:-.6px;margin-top:6px}
+  .hero .row{display:flex;gap:18px;margin-top:12px}
+  .hero .row .k{font-size:11px;color:var(--sub)}
+  .hero .row .v{font-size:15px;font-weight:800}
+  /* tabs */
+  .tabs{display:flex;gap:6px;margin-top:14px;overflow:auto}
+  .tab{flex:0 0 auto;padding:8px 13px;border-radius:11px;font-size:12.5px;font-weight:700;background:var(--card);color:var(--sub);border:1px solid var(--line)}
+  .tab.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 6px 18px rgba(99,102,241,.45)}
+  .sec{display:flex;align-items:center;gap:8px;margin:22px 2px 10px}
+  .sec .bar{width:4px;height:14px;border-radius:3px;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+  .sec h2{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:#c7d2fe}
+  .sec .hint{margin-left:auto;font-size:11px;color:var(--sub)}
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:var(--shadow);position:relative}
+  .kpi .ic{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+  .kpi .lbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--sub)}
+  .kpi .val{font-size:25px;font-weight:800;letter-spacing:-.4px;margin-top:3px}
+  .kpi .cnt{font-size:10.5px;color:var(--sub);margin-top:2px}
+  .kpi.span2{grid-column:span 2;display:flex;align-items:center;gap:14px}
+  .kpi.span2 .val{font-size:29px}
+  .spark{display:flex;align-items:flex-end;gap:3px;height:34px;margin-left:auto}
+  .spark span{width:6px;border-radius:3px;background:#28335a}
+  svg{display:block}
+  .rowline{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 13px;box-shadow:var(--shadow);margin-top:12px}
+  .rowline .lbl{font-size:13px;color:var(--ink)}
+  .rowline .cnt{margin-left:auto;font-size:12px;color:var(--sub)}
+  .rowline .val{font-size:15px;font-weight:800;color:var(--green)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px;box-shadow:var(--shadow)}
+  .bars{display:flex;align-items:flex-end;gap:14px;height:110px;padding:0 4px}
+  .bars .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .bars .b{width:100%;border-radius:8px 8px 0 0}
+  .bars .t{font-size:11px;color:var(--sub)}
+  .progress{height:10px;border-radius:999px;background:#0c1426;overflow:hidden;display:flex}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:11px;color:var(--sub)}
+  .dot{width:8px;height:8px;border-radius:999px;display:inline-block;margin-right:5px;vertical-align:middle}
+  .list{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+  .item{display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid var(--line)}
+  .item:last-child{border-bottom:0}
+  .item .nm{font-weight:700;font-size:14px}
+  .item .ds{font-size:11px;color:var(--sub);margin-top:1px}
+  .badge{font-size:10px;font-weight:800;padding:3px 8px;border-radius:999px;white-space:nowrap}
+  .b-green{background:rgba(52,211,153,.15);color:#6ee7b7}.b-blue{background:rgba(96,165,250,.16);color:#93c5fd}.b-amber{background:rgba(251,191,36,.16);color:#fcd34d}.b-red{background:rgba(248,113,113,.16);color:#fca5a5}
+  .amt{margin-left:auto;font-weight:800;font-size:15px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div>
+      <div class="eyebrow">DJK Ottenhofen · 70-Jahre-Fest</div>
+      <h1>Finanzplanung</h1>
+    </div>
+    <div class="toggle"><span class="knob"></span>Dark</div>
+  </div>
+
+  <div class="hero">
+    <div class="lbl">Gesamtkosten geplant</div>
+    <div class="big">12.150 €</div>
+    <div class="row">
+      <div><div class="k">Ergebnis (realistisch)</div><div class="v" style="color:var(--green)">+3.420 €</div></div>
+      <div><div class="k">Bestätigt</div><div class="v">62 %</div></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab">Gewinn</div><div class="tab">Rohertrag</div><div class="tab active">Kosten</div><div class="tab">Spenden</div>
+  </div>
+
+  <div class="sec"><span class="bar"></span><h2>Fälligkeit</h2><span class="hint">wichtigste KPIs</span></div>
+  <div class="kpis">
+    <div class="kpi" style="border-top:3px solid var(--purple)">
+      <div class="ic" style="background:rgba(167,139,250,.16);color:var(--purple)">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+      </div>
+      <div class="lbl">Vor dem Fest</div>
+      <div class="val" style="color:var(--purple)">6.050 €</div>
+      <div class="cnt">3 Positionen</div>
+    </div>
+    <div class="kpi" style="border-top:3px solid var(--orange)">
+      <div class="ic" style="background:rgba(251,146,60,.16);color:var(--orange)">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V8l7-5 7 5v13"/></svg>
+      </div>
+      <div class="lbl">Während dem Fest</div>
+      <div class="val" style="color:var(--orange)">1.900 €</div>
+      <div class="cnt">2 Positionen</div>
+    </div>
+    <div class="kpi span2" style="border-top:3px solid var(--cyan)">
+      <div>
+        <div class="ic" style="background:rgba(34,211,238,.16);color:var(--cyan)">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v14H5.2L4 19.5z"/><path d="M8 9h8M8 13h5"/></svg>
+        </div>
+        <div class="lbl">Nach dem Fest</div>
+        <div class="val" style="color:var(--cyan)">3.800 €</div>
+        <div class="cnt">3 Positionen · noch zu zahlen</div>
+      </div>
+      <div class="spark">
+        <span style="height:40%"></span><span style="height:65%"></span><span style="height:48%"></span><span style="height:80%"></span><span style="height:60%"></span><span style="height:95%;background:var(--accent);box-shadow:0 0 8px var(--accent)"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="rowline">
+    <span class="lbl">Bereits bezahlt</span>
+    <span class="cnt">1 Position</span>
+    <span class="val">400 €</span>
+  </div>
+
+  <div class="sec"><span class="bar"></span><h2>Kosten pro Tag</h2></div>
+  <div class="card">
+    <div class="bars">
+      <div class="col"><div class="b" style="height:44px;background:linear-gradient(#818cf8,#4f46e5)"></div><div class="t">Fr</div></div>
+      <div class="col"><div class="b" style="height:92px;background:linear-gradient(#fbbf24,#f59e0b)"></div><div class="t">Sa</div></div>
+      <div class="col"><div class="b" style="height:28px;background:linear-gradient(#34d399,#059669)"></div><div class="t">So</div></div>
+      <div class="col"><div class="b" style="height:82px;background:linear-gradient(#cbd5e1,#94a3b8)"></div><div class="t">Allg.</div></div>
+    </div>
+  </div>
+
+  <div class="sec"><span class="bar"></span><h2>Budget-Status</h2><span class="hint">62 % bestätigt</span></div>
+  <div class="card">
+    <div class="progress">
+      <div style="width:62%;background:var(--green)"></div>
+      <div style="width:18%;background:#60a5fa"></div>
+      <div style="width:12%;background:var(--amber)"></div>
+      <div style="width:8%;background:var(--red)"></div>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--green)"></span>Fix/Zugesagt</span>
+      <span><span class="dot" style="background:#60a5fa"></span>Geplant</span>
+      <span><span class="dot" style="background:var(--amber)"></span>Klären</span>
+      <span><span class="dot" style="background:var(--red)"></span>Offen</span>
+    </div>
+  </div>
+
+  <div class="sec"><span class="bar"></span><h2>Positionen</h2><span class="hint">Samstag</span></div>
+  <div class="list">
+    <div class="item"><div><div class="nm">Zeltmiete</div><div class="ds">Festzelt 30×15 m</div></div><span class="badge b-green">FIX</span><span class="amt">4.500 €</span></div>
+    <div class="item"><div><div class="nm">Band „Drunter &amp; Drüber"</div><div class="ds">Samstagabend</div></div><span class="badge b-blue">ZUGESAGT</span><span class="amt">2.500 €</span></div>
+    <div class="item"><div><div class="nm">Security</div><div class="ds">Fr + Sa</div></div><span class="badge b-amber">ANFRAGEN</span><span class="amt">1.800 €</span></div>
+    <div class="item"><div><div class="nm">Strom &amp; Technik</div><div class="ds">Generator</div></div><span class="badge b-red">OFFEN</span><span class="amt">600 €</span></div>
+  </div>
+
+</div>
+</body>
+</html>
