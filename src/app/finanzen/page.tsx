@@ -115,6 +115,8 @@ export default function FinanzenPage() {
   const [hiddenStatuses, setHiddenStatuses] = useState<string[]>([])
   const [filterOpen, setFilterOpen] = useState(false)
   const filterRef = useRef<HTMLDivElement>(null)
+  // Sortierung der Geldbeträge: 'none' = Standard, 'asc' = aufsteigend, 'desc' = absteigend
+  const [amountSort, setAmountSort] = useState<'none' | 'asc' | 'desc'>('none')
 
   // Prognose edits
   const [forecastEdits, setForecastEdits] = useState<Record<string, SimpleForecast>>({})
@@ -287,7 +289,13 @@ export default function FinanzenPage() {
   const usedStatuses = STATUS_OPTIONS.filter(s => costs.some(c => c.status === s.value))
   const filterActive = hiddenStatuses.length > 0
   const matchesFilter = (c: CostItem) => !hiddenStatuses.includes(c.status)
-  const filteredCostsForDay = (dayKey: string | null) => costsForDay(dayKey).filter(matchesFilter)
+  const filteredCostsForDay = (dayKey: string | null) => {
+    const list = costsForDay(dayKey).filter(matchesFilter)
+    if (amountSort === 'asc') return [...list].sort((a, b) => a.projected - b.projected)
+    if (amountSort === 'desc') return [...list].sort((a, b) => b.projected - a.projected)
+    return list
+  }
+  const cycleAmountSort = () => setAmountSort(prev => prev === 'none' ? 'desc' : prev === 'desc' ? 'asc' : 'none')
   const toggleStatus = (value: string) =>
     setHiddenStatuses(prev => prev.includes(value) ? prev.filter(s => s !== value) : [...prev, value])
   const allOn = usedStatuses.every(s => !hiddenStatuses.includes(s.value))
@@ -477,10 +485,24 @@ export default function FinanzenPage() {
             </div>
           )}
 
-          {/* Status-Filter oberhalb der Tage (Dropdown mit Checkboxen) */}
+          {/* Sortierung & Status-Filter oberhalb der Tage */}
           {usedStatuses.length > 0 && (
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide">Nach Status filtern</h2>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide">Filtern &amp; Sortieren</h2>
+              <div className="flex items-center gap-2">
+              {/* Sortierung der Geldbeträge */}
+              <button onClick={cycleAmountSort} title="Geldbeträge sortieren"
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl border bg-white text-sm font-medium shadow-sm transition-colors ${
+                  amountSort !== 'none' ? 'border-blue-300 text-blue-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9M3 12h5m11-7v14m0 0l-4-4m4 4l4-4" />
+                </svg>
+                Betrag
+                <span className={`text-xs font-bold ${amountSort !== 'none' ? 'text-blue-600' : 'text-gray-400'}`}>
+                  {amountSort === 'asc' ? '↑ aufsteigend' : amountSort === 'desc' ? '↓ absteigend' : '—'}
+                </span>
+              </button>
               <div className="relative" ref={filterRef}>
                 <button onClick={() => setFilterOpen(o => !o)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl border bg-white text-sm font-medium shadow-sm transition-colors ${
@@ -520,6 +542,7 @@ export default function FinanzenPage() {
                     </div>
                   </div>
                 )}
+              </div>
               </div>
             </div>
           )}
