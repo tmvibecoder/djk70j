@@ -160,8 +160,11 @@ export default function KostenPage() {
   const totalActual = state.costs.reduce((s, c) => s + (c.actual || 0), 0)
   const hasActuals = state.costs.some(c => c.actual !== null)
 
+  const printPdf = () => window.print()
+
   return (
-    <div className="space-y-6">
+    <>
+    <div className="space-y-6 print:hidden">
       <div className="bg-gray-900 -mx-4 -mt-16 lg:-mt-6 px-4 pt-16 lg:pt-6 pb-4 mb-6 rounded-b-lg">
         <div className="flex justify-between items-start mb-2">
           <div>
@@ -169,6 +172,7 @@ export default function KostenPage() {
             <h1 className="text-2xl font-bold text-white">Kostenplanung</h1>
           </div>
           <div className="flex gap-2">
+            <button onClick={printPdf} className="px-3 py-1.5 rounded-lg border border-gray-600 bg-gray-800 text-white text-sm font-medium hover:bg-gray-700">📄 Als PDF drucken</button>
             <button onClick={saveState} className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${saving ? "bg-green-500 text-white border-green-500" : "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"}`}>
               {saving ? "✓ Gespeichert" : "Speichern"}
             </button>
@@ -251,6 +255,136 @@ export default function KostenPage() {
             )
           })}
         </div>
+      </div>
+    </div>
+
+    {/* ===== Druckansicht (nur beim Drucken / PDF-Export sichtbar) ===== */}
+    <PrintView costs={state.costs} totalProjected={totalProjected} totalActual={totalActual} hasActuals={hasActuals} />
+    </>
+  )
+}
+
+function PrintView({ costs, totalProjected, totalActual, hasActuals }: { costs: AppState["costs"]; totalProjected: number; totalActual: number; hasActuals: boolean }) {
+  const today = new Date().toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })
+  const diff = totalProjected - totalActual
+
+  return (
+    <div className="hidden print:block text-gray-900" style={{ fontSize: "11px" }}>
+      {/* Kopf */}
+      <div className="flex justify-between items-end border-b-2 border-gray-900 pb-2 mb-4">
+        <div>
+          <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-600">DJK Ottenhofen e.V. · 70-Jahre-Jubiläumsfest</p>
+          <h1 className="text-xl font-bold">Kostenplanung</h1>
+        </div>
+        <div className="text-right text-[10px] text-gray-600">Stand: {today}</div>
+      </div>
+
+      {/* Summen */}
+      <div className="flex gap-4 mb-5 print-avoid-break">
+        <div className="flex-1 border border-gray-300 rounded p-2 text-center">
+          <div className="text-[9px] uppercase tracking-wide text-gray-500">Prognostiziert</div>
+          <div className="text-base font-bold text-red-600">{fmtEur(totalProjected)}</div>
+        </div>
+        <div className="flex-1 border border-gray-300 rounded p-2 text-center">
+          <div className="text-[9px] uppercase tracking-wide text-gray-500">Tatsächlich</div>
+          <div className="text-base font-bold">{hasActuals ? fmtEur(totalActual) : "–"}</div>
+        </div>
+        {hasActuals && (
+          <div className="flex-1 border border-gray-300 rounded p-2 text-center">
+            <div className="text-[9px] uppercase tracking-wide text-gray-500">Differenz</div>
+            <div className={`text-base font-bold ${diff >= 0 ? "text-green-600" : "text-red-600"}`}>{diff >= 0 ? "+" : ""}{fmtEur(diff)}</div>
+          </div>
+        )}
+      </div>
+
+      {/* Detail-Tabelle */}
+      <h2 className="text-sm font-bold mb-2">Kostenpositionen</h2>
+      <table className="w-full mb-6" style={{ borderCollapse: "collapse" }}>
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border border-gray-300 px-2 py-1 text-left">Position</th>
+            <th className="border border-gray-300 px-2 py-1 text-left">Art</th>
+            <th className="border border-gray-300 px-2 py-1 text-left">Fälligkeit</th>
+            <th className="border border-gray-300 px-2 py-1 text-right">Prognose</th>
+            <th className="border border-gray-300 px-2 py-1 text-right">Tatsächlich</th>
+          </tr>
+        </thead>
+        <tbody>
+          {costs.map(c => {
+            const ct = COST_TYPES.find(t => t.id === ((c as any).costType || "fix"))
+            const ps = PAYMENT_STATUS.find(p => p.id === c.status)
+            return (
+              <tr key={c.id}>
+                <td className="border border-gray-300 px-2 py-1">{c.name || "–"}</td>
+                <td className="border border-gray-300 px-2 py-1">{ct?.icon} {ct?.label}</td>
+                <td className="border border-gray-300 px-2 py-1">{ps?.label ?? "–"}</td>
+                <td className="border border-gray-300 px-2 py-1 text-right">{fmtEur(c.projected || 0)}</td>
+                <td className="border border-gray-300 px-2 py-1 text-right">{c.actual !== null && c.actual !== undefined ? fmtEur(c.actual) : "–"}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+        <tfoot>
+          <tr className="bg-gray-100 font-bold">
+            <td className="border border-gray-300 px-2 py-1" colSpan={3}>Gesamt</td>
+            <td className="border border-gray-300 px-2 py-1 text-right">{fmtEur(totalProjected)}</td>
+            <td className="border border-gray-300 px-2 py-1 text-right">{hasActuals ? fmtEur(totalActual) : "–"}</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      {/* Nach Kostenart */}
+      <div className="print-avoid-break mb-6">
+        <h2 className="text-sm font-bold mb-2">Nach Kostenart</h2>
+        <table className="w-full" style={{ borderCollapse: "collapse" }}>
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border border-gray-300 px-2 py-1 text-left">Kostenart</th>
+              <th className="border border-gray-300 px-2 py-1 text-right">Positionen</th>
+              <th className="border border-gray-300 px-2 py-1 text-right">Summe (Prognose)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {COST_TYPES.map(ct => {
+              const items = costs.filter(c => (c as any).costType === ct.id || (!((c as any).costType) && ct.id === "fix"))
+              const total = items.reduce((s, c) => s + (c.projected || 0), 0)
+              return (
+                <tr key={ct.id}>
+                  <td className="border border-gray-300 px-2 py-1">{ct.icon} {ct.label}</td>
+                  <td className="border border-gray-300 px-2 py-1 text-right">{items.length}</td>
+                  <td className="border border-gray-300 px-2 py-1 text-right">{fmtEur(total)}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Nach Zahlungsstatus */}
+      <div className="print-avoid-break">
+        <h2 className="text-sm font-bold mb-2">Nach Zahlungsstatus / Fälligkeit</h2>
+        <table className="w-full" style={{ borderCollapse: "collapse" }}>
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border border-gray-300 px-2 py-1 text-left">Fälligkeit</th>
+              <th className="border border-gray-300 px-2 py-1 text-right">Positionen</th>
+              <th className="border border-gray-300 px-2 py-1 text-right">Summe (Prognose)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {PAYMENT_STATUS.map(ps => {
+              const items = costs.filter(c => c.status === ps.id)
+              const total = items.reduce((s, c) => s + (c.projected || 0), 0)
+              return (
+                <tr key={ps.id}>
+                  <td className="border border-gray-300 px-2 py-1">{ps.icon} {ps.label}</td>
+                  <td className="border border-gray-300 px-2 py-1 text-right">{items.length}</td>
+                  <td className="border border-gray-300 px-2 py-1 text-right">{fmtEur(total)}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   )

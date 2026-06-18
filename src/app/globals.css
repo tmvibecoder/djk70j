@@ -18,3 +18,56 @@ body {
     text-wrap: balance;
   }
 }
+
+/* ===== Druck / PDF-Export (DIN A4) ===== */
+@media print {
+  /* Seitenformat A4 mit angenehmen Rändern */
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  /* Hintergrundfarben & Rahmen im Ausdruck erhalten */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+  }
+
+  /* App-Rahmen (Sidebar, Kopfzeile, Buttons) nicht drucken */
+  aside,
+  header,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Layout-Container für den Druck zurücksetzen, volle Seitenbreite nutzen */
+  body .flex.min-h-screen,
+  body .flex-1,
+  body main {
+    display: block !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+  }
+
+  /* Inhalte nicht über Seitenumbrüche zerreißen */
+  table {
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  thead {
+    display: table-header-group;
+  }
+  .print-avoid-break {
+    page-break-inside: avoid;
+  }
+}
