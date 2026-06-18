@@ -343,21 +343,39 @@ export default function FinanzenPage() {
       {tab === 'kosten' && (
         <div className="space-y-6">
 
-          {/* Kosten-Übersicht */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {DUE_DATE_OPTIONS.map(dd => {
-              const sum = costs.filter(c => c.dueDate === dd.value).reduce((s, c) => s + c.projected, 0)
-              const count = costs.filter(c => c.dueDate === dd.value).length
-              return (
-                <div key={dd.value} className="bg-white rounded-xl border border-gray-200 p-3 text-center">
-                  <div className="text-lg mb-1">{dd.icon}</div>
-                  <div className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">{dd.label}</div>
-                  <div className="text-lg font-bold text-gray-900 mt-1">{fmtEur(sum)}</div>
-                  <div className="text-[10px] text-gray-400">{count} {count === 1 ? 'Position' : 'Positionen'}</div>
+          {/* Kosten-Übersicht – die wichtigsten KPIs (Fälligkeit) groß */}
+          {(() => {
+            const ACCENTS: Record<string, string> = { before: '#7C3AED', during: '#EA580C', after: '#0891B2' }
+            const mainKpis = DUE_DATE_OPTIONS.filter(dd => dd.value !== 'paid')
+            const paid = DUE_DATE_OPTIONS.find(dd => dd.value === 'paid')!
+            const paidSum = costs.filter(c => c.dueDate === paid.value).reduce((s, c) => s + c.projected, 0)
+            const paidCount = costs.filter(c => c.dueDate === paid.value).length
+            return (
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {mainKpis.map(dd => {
+                    const sum = costs.filter(c => c.dueDate === dd.value).reduce((s, c) => s + c.projected, 0)
+                    const count = costs.filter(c => c.dueDate === dd.value).length
+                    const accent = ACCENTS[dd.value]
+                    return (
+                      <div key={dd.value} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 text-center" style={{ borderTopWidth: 4, borderTopColor: accent }}>
+                        <div className="text-3xl mb-1">{dd.icon}</div>
+                        <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">{dd.label}</div>
+                        <div className="text-3xl sm:text-4xl font-extrabold mt-1.5" style={{ color: accent }}>{fmtEur(sum)}</div>
+                        <div className="text-xs text-gray-400 mt-1">{count} {count === 1 ? 'Position' : 'Positionen'}</div>
+                      </div>
+                    )
+                  })}
                 </div>
-              )
-            })}
-          </div>
+                {/* Bereits bezahlt – normale Darstellung */}
+                <div className="flex items-center justify-between bg-white rounded-xl border border-gray-200 px-4 py-2.5">
+                  <span className="text-sm text-gray-600">{paid.icon} {paid.label}</span>
+                  <span className="text-sm text-gray-400">{paidCount} {paidCount === 1 ? 'Position' : 'Positionen'}</span>
+                  <span className="text-base font-bold text-gray-900">{fmtEur(paidSum)}</span>
+                </div>
+              </div>
+            )
+          })()}
 
           {/* Kosten pro Tag – Balkendiagramm */}
           {(() => {
