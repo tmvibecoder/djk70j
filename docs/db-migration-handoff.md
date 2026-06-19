@@ -4,6 +4,16 @@
 > neues Claude-Fenster die Arbeit an der editierbaren Aufgaben-Verwaltung
 > aufnehmen kann, ohne die Vorgeschichte zu kennen.
 
+> ⚠️ **Status (Juni 2026): historisch.** Die hier beschriebene Protokolle-/
+> Aufgaben-Migration ist umgesetzt. Einzelne Angaben sind **veraltet** und nur
+> noch als Hintergrund zu lesen:
+> - **Deploy:** Maßgeblich ist das `README.md` (Abschnitt „Deployment"). Der
+>   hier genannte `curl … deploy.sh`-One-Liner ist **nicht** mehr der Weg —
+>   deployt wird automatisch per GitHub Actions auf Push nach `main`.
+>   Niemals direkt auf dem Server editieren (siehe README).
+> - **Repo-Pfad:** Lokale Mac-Pfade (`/Users/thomasmiler/…`) sind irrelevant;
+>   gearbeitet wird im Git-Repo `tmvibecoder/djk70j`.
+
 ---
 
 ## 1. Projekt im Überblick
