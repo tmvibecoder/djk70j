@@ -940,8 +940,8 @@ export default function FinanzenPage() {
       const PDF_TITLES: Record<string, string> = { kosten: 'Kostenübersicht', ergebnis: 'Gewinn / Ergebnis', prognose: 'Rohertrag-Prognose', sponsoring: 'Spenden' }
       const pdfTitle = PDF_TITLES[tab] ?? 'Finanzplanung'
 
-      // Gemeinsame Tabellen-Styles
-      const cTh = { border: '1px solid #374151', padding: '5px 8px', textAlign: 'left' as const, background: '#1f2937', color: '#fff', fontWeight: 600, fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: 0.3 }
+      // Gemeinsame Tabellen-Styles – hell, passend zur Web-Oberfläche
+      const cTh = { border: '1px solid #E5E7EB', padding: '5px 8px', textAlign: 'left' as const, background: '#F3F4F6', color: '#374151', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: 0.3 }
       const cThR = { ...cTh, textAlign: 'right' as const }
       const cTd = { border: '1px solid #E5E7EB', padding: '4px 8px' }
       const cTdR = { ...cTd, textAlign: 'right' as const }
@@ -962,58 +962,86 @@ export default function FinanzenPage() {
         </div>
       )
 
+      // KPI-Kachel mit Icon-Chip (Fälligkeit) – wie im Web-Frontend
+      const dueKpiCard = (icon: string, label: string, value: string, accent: string, count: number) => (
+        <div style={{ flex: 1, border: '1px solid #E5E7EB', borderTop: `3px solid ${accent}`, borderRadius: 10, padding: '9px 11px', background: '#fff' }}>
+          <div style={{ width: 24, height: 24, borderRadius: 7, background: `${accent}1A`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, marginBottom: 5 }}>{icon}</div>
+          <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5, color: '#6B7280', fontWeight: 600 }}>{label}</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: accent, lineHeight: 1.2, marginTop: 2 }}>{value}</div>
+          <div style={{ fontSize: 9, color: '#9CA3AF', marginTop: 1 }}>{count} {count === 1 ? 'Position' : 'Pos.'}</div>
+        </div>
+      )
+
       return (
         <div className="hidden print:block" style={{ fontSize: '11px', color: '#1f2937' }}>
-          {/* Kopfband mit Gold-Akzent – Titel je nach aktivem Reiter */}
-          <div style={{ background: '#111827', borderRadius: 10, padding: '14px 18px', marginBottom: 16 }}>
-            <div style={{ borderLeft: '4px solid #EAB308', paddingLeft: 14 }}>
-              <p style={{ color: '#EAB308', fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', margin: 0 }}>DJK Ottenhofen e.V. · 70-Jahre-Jubiläumsfest</p>
-              <h1 style={{ color: '#fff', fontSize: 21, fontWeight: 800, margin: '3px 0 0' }}>{pdfTitle}</h1>
+          {/* Kopfband – hell, passend zum neuen Web-Frontend */}
+          <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, padding: '14px 18px', marginBottom: 16 }}>
+            <div style={{ borderLeft: '4px solid #4F46E5', paddingLeft: 14 }}>
+              <p style={{ color: '#CA8A04', fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', margin: 0 }}>DJK Ottenhofen e.V. · 70-Jahre-Jubiläumsfest</p>
+              <h1 style={{ color: '#111827', fontSize: 21, fontWeight: 800, margin: '3px 0 0' }}>{pdfTitle}</h1>
               <p style={{ color: '#9CA3AF', fontSize: 10, margin: '3px 0 0' }}>Stand: {today}</p>
             </div>
           </div>
 
           {/* ── KOSTEN ── */}
-          {tab === 'kosten' && (
+          {tab === 'kosten' && (() => {
+            const ACCENTS: Record<string, string> = { before: '#7C3AED', during: '#EA580C', after: '#0891B2' }
+            const mainKpis = DUE_DATE_OPTIONS.filter(dd => dd.value !== 'paid')
+            const paidSum = costs.filter(c => c.dueDate === 'paid').reduce((s, c) => s + c.projected, 0)
+            const paidCount = costs.filter(c => c.dueDate === 'paid').length
+            const pct = (v: number) => (totalCosts > 0 ? (v / totalCosts) * 100 : 0)
+            return (
             <>
-              <div style={{ display: 'flex', gap: 10, marginBottom: 18 }} className="print-avoid-break">
-                {kpiCard('Gesamtausgaben', fmtEur(totalCosts), '#DC2626', `${costs.length} Positionen`)}
-                {kpiCard('Bestätigt (fix/zugesagt)', fmtEur(statusGroups.confirmed), '#16A34A', 'bereits gesichert')}
-                {kpiCard('Noch offen', fmtEur(statusGroups.open), '#D97706', 'ohne festen Status')}
+              {/* Gesamtkosten – Headline-KPI (wie im Web ganz oben) */}
+              <div className="print-avoid-break" style={{ border: '1px solid #E5E7EB', borderTop: '3px solid #4F46E5', borderRadius: 10, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 8, background: '#4F46E51A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>💰</div>
+                <div>
+                  <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.8, color: '#6B7280', fontWeight: 600 }}>Gesamtkosten</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: '#111827', lineHeight: 1.1, marginTop: 2 }}>{fmtEur0(totalCosts)}</div>
+                </div>
+                <div style={{ marginLeft: 'auto', fontSize: 9, color: '#9CA3AF' }}>{costs.length} {costs.length === 1 ? 'Position' : 'Positionen'}</div>
               </div>
 
+              {/* Fälligkeit – KPI-Kacheln wie im Web */}
+              <div className="print-avoid-break" style={{ marginBottom: 18 }}>
+                {sectionTitle('Fälligkeit', '#4F46E5')}
+                <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+                  {mainKpis.map(dd => {
+                    const sum = costs.filter(c => c.dueDate === dd.value).reduce((s, c) => s + c.projected, 0)
+                    const count = costs.filter(c => c.dueDate === dd.value).length
+                    return <div key={dd.value} style={{ flex: 1 }}>{dueKpiCard(dd.icon, dd.label, fmtEur0(sum), ACCENTS[dd.value], count)}</div>
+                  })}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #E5E7EB', borderRadius: 8, padding: '6px 11px' }}>
+                  <span style={{ color: '#4B5563' }}>✅ Bereits bezahlt</span>
+                  <span style={{ color: '#9CA3AF', fontSize: 10 }}>{paidCount} {paidCount === 1 ? 'Position' : 'Positionen'}</span>
+                  <span style={{ color: '#059669', fontWeight: 700 }}>{fmtEur(paidSum)}</span>
+                </div>
+              </div>
+
+              {/* Budget-Status – Fortschrittsbalken wie im Web */}
               <div className="print-avoid-break" style={{ marginBottom: 22 }}>
-                {sectionTitle('Kosten nach Zahlungszeitpunkt', '#DC2626')}
-                <table className="w-full" style={{ borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th style={cTh}>Zeitpunkt</th>
-                      <th style={cThR}>Positionen</th>
-                      <th style={cThR}>Summe</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {DUE_DATE_OPTIONS.map((dd, i) => {
-                      const items = costs.filter(c => c.dueDate === dd.value)
-                      const sum = items.reduce((s, c) => s + c.projected, 0)
-                      return (
-                        <tr key={dd.value} style={zebra(i)}>
-                          <td style={cTd}>{dd.icon} {dd.label}</td>
-                          <td style={cTdR}>{items.length}</td>
-                          <td style={cTdR}>{fmtEur(sum)}</td>
-                        </tr>
-                      )
-                    })}
-                    <tr style={{ background: '#FEF2F2', fontWeight: 700 }}>
-                      <td style={cTd}>Gesamt</td>
-                      <td style={cTdR}>{costs.length}</td>
-                      <td style={{ ...cTdR, color: '#DC2626' }}>{fmtEur(totalCosts)}</td>
-                    </tr>
-                  </tbody>
-                </table>
+                {sectionTitle('Budget-Status', '#4F46E5')}
+                <div style={{ border: '1px solid #E5E7EB', borderRadius: 8, padding: '10px 12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: 9, color: '#6B7280', marginBottom: 4 }}>
+                    {fmtEur(statusGroups.confirmed)} von {fmtEur(totalCosts)} fix
+                  </div>
+                  <div style={{ height: 8, background: '#E5E7EB', borderRadius: 99, overflow: 'hidden', display: 'flex' }}>
+                    <div style={{ background: '#10B981', width: `${pct(statusGroups.confirmed)}%` }} />
+                    <div style={{ background: '#60A5FA', width: `${pct(statusGroups.planned)}%` }} />
+                    <div style={{ background: '#FBBF24', width: `${pct(statusGroups.pending)}%` }} />
+                    <div style={{ background: '#F87171', width: `${pct(statusGroups.open)}%` }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: 14, marginTop: 6, fontSize: 9, color: '#6B7280', flexWrap: 'wrap' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 7, height: 7, borderRadius: 99, background: '#10B981' }} />Fix/Zugesagt</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 7, height: 7, borderRadius: 99, background: '#60A5FA' }} />Geplant</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 7, height: 7, borderRadius: 99, background: '#FBBF24' }} />Klären</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 7, height: 7, borderRadius: 99, background: '#F87171' }} />Offen</span>
+                  </div>
+                </div>
               </div>
 
-              <div style={{ marginBottom: 6 }}>{sectionTitle('Kostenpositionen im Detail', '#DC2626')}</div>
+              <div style={{ marginBottom: 6 }}>{sectionTitle('Kostenpositionen im Detail', '#4F46E5')}</div>
               {ACCORDION_DAYS.map(day => {
                 const dayCosts = costsForDay(day.key)
                 if (dayCosts.length === 0) return null
@@ -1051,12 +1079,13 @@ export default function FinanzenPage() {
                   </div>
                 )
               })}
-              <div style={{ background: '#111827', color: '#fff', borderRadius: 8, padding: '8px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }} className="print-avoid-break">
-                <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: '#EAB308', fontWeight: 700 }}>Gesamtkosten</span>
-                <span style={{ fontSize: 16, fontWeight: 800 }}>{fmtEur(totalCosts)}</span>
+              <div style={{ border: '1px solid #E5E7EB', borderTop: '3px solid #4F46E5', borderRadius: 8, padding: '9px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }} className="print-avoid-break">
+                <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: '#4F46E5', fontWeight: 700 }}>Gesamtkosten</span>
+                <span style={{ fontSize: 16, fontWeight: 800, color: '#111827' }}>{fmtEur(totalCosts)}</span>
               </div>
             </>
-          )}
+            )
+          })()}
 
           {/* ── GEWINN / ERGEBNIS ── */}
           {tab === 'ergebnis' && (
