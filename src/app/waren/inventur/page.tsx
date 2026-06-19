@@ -1,193 +1,204 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { Card, CardContent, CardHeader, Badge } from '@/components/ui'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import {
-  PRODUCT_CATEGORIES,
   INVENTORY_DAYS,
   INVENTORY_DAY_SHORT,
   INVENTORY_DAY_LABELS,
   INVENTORY_START_DAY,
-  STOCK_ENTRY_TYPES,
-  STOCK_ENTRY_TYPE_LABELS,
   buildTimeSlots,
+  makeSessionKey,
   type InventoryDay,
-  type StockEntryType,
 } from '@/types'
 
 interface Product {
   id: string
   name: string
   purchasePrice: number
-  salePrice: number
   unit: string
   category: string
+  packSize: number
+  packLabel: string | null
   isCritical: boolean
 }
 
-interface InventoryEntry {
-  productId: string
-  quantity: number
-  notes?: string
-}
-
-interface InventorySummary {
+interface SummaryItem {
   product: Product
   currentStock: number
-  dayData: Record<string, { start: number; end: number; delivery: number; consumption: number }>
-  totalConsumption: number
-  revenue: number
-  cost: number
-  profit: number
+  baselineStock: number
+  consumption: number
+  countedSessions: number
+  stockValue: number
+  consumptionValue: number
+  sessions: Record<string, { quantity: number; packs: number | null; loose: number | null }>
 }
 
+interface Summary {
+  products: SummaryItem[]
+  totals: { stockValue: number; consumptionValue: number; deliveredValue: number; consumption: number }
+}
+
+type Entry = { packs: string; loose: string; qty: string }
+
 const CATEGORY_ICONS: Record<string, string> = {
-  'Bier & Radler': '🍺',
-  'Softdrinks': '🥤',
-  'Schnaps & Shots': '🥃',
-  'Longdrinks': '🍹',
-  'Wein & Sekt': '🍷',
-  'Warme Speisen': '🌭',
-  'Snacks': '🥨',
+  'Spirituosen & Aperitif': '🥃',
+  'Alkoholfrei': '🥤',
+}
+
+function entryTotal(p: Product, e?: Entry): number {
+  if (!e) return 0
+  if (p.packSize > 0) {
+    const packs = parseFloat(e.packs || '0') || 0
+    const loose = parseFloat(e.loose || '0') || 0
+    return packs * p.packSize + loose
+  }
+  return parseFloat(e.qty || '0') || 0
+}
+
+function hasValue(p: Product, e?: Entry): boolean {
+  if (!e) return false
+  if (p.packSize > 0) return (e.packs !== '' && e.packs != null) || (e.loose !== '' && e.loose != null)
+  return e.qty !== '' && e.qty != null
 }
 
 export default function InventurPage() {
   const [products, setProducts] = useState<Product[]>([])
-  const [summary, setSummary] = useState<{ products: InventorySummary[]; totals: { revenue: number; cost: number; profit: number } } | null>(null)
+  const [summary, setSummary] = useState<Summary | null>(null)
   const [loading, setLoading] = useState(true)
-  const [selectedDay, setSelectedDay] = useState<InventoryDay>(INVENTORY_START_DAY)
-  const [selectedType, setSelectedType] = useState<StockEntryType>('count')
+  const [day, setDay] = useState<InventoryDay>('friday')
+  const [time, setTime] = useState<string>('17:00')
   const [timeStep, setTimeStep] = useState<15 | 30>(15)
-  const [selectedTime, setSelectedTime] = useState<string>('17:00')
-  const [entries, setEntries] = useState<Record<string, { quantity: string; notes: string }>>({})
-  const [saving, setSaving] = useState(false)
-  const [savedAt, setSavedAt] = useState<string | null>(null)
+  const session = makeSessionKey(day, time)
+  const [entries, setEntries] = useState<Record<string, Entry>>({})
   const [viewMode, setViewMode] = useState<'entry' | 'summary'>('entry')
-  const [search, setSearch] = useState('')
+  const [mode, setMode] = useState<'list' | 'tour'>('list')
+  const [blind, setBlind] = useState(true)
+  const [tourIdx, setTourIdx] = useState(0)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [criticalOnly, setCriticalOnly] = useState(false)
+  const [search, setSearch] = useState('')
 
-  const timeSlots = useMemo(() => buildTimeSlots(timeStep), [timeStep])
+  const timeSlots = buildTimeSlots(timeStep)
 
-  useEffect(() => {
-    loadData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDay, selectedType, selectedTime])
+  const entriesRef = useRef(entries)
+  entriesRef.current = entries
+  const productsRef = useRef(products)
+  productsRef.current = products
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Wenn der Takt wechselt, eine gültige Uhrzeit sicherstellen
-  useEffect(() => {
-    if (!timeSlots.includes(selectedTime)) {
-      // auf nächstgelegenen Slot runden
-      setSelectedTime(timeSlots[0])
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeStep])
-
-  const loadData = async () => {
-    const [productsRes, summaryRes] = await Promise.all([
-      fetch('/api/products?active=true'),
+  const loadData = useCallback(async () => {
+    const [productsRes, summaryRes, invRes] = await Promise.all([
+      fetch('/api/products?inventory=true'),
       fetch('/api/inventory/summary'),
+      fetch(`/api/inventory?session=${session}`),
     ])
+    const productsData: Product[] = await productsRes.json()
+    const summaryData: Summary = await summaryRes.json()
+    const invData: Array<{ productId: string; quantity: number; packs: number | null; loose: number | null }> = await invRes.json()
 
-    const productsData = await productsRes.json()
-    const summaryData = await summaryRes.json()
-
+    const newEntries: Record<string, Entry> = {}
+    for (const inv of invData) {
+      newEntries[inv.productId] = {
+        packs: inv.packs != null ? String(inv.packs) : '',
+        loose: inv.loose != null ? String(inv.loose) : '',
+        qty: inv.quantity != null ? String(inv.quantity) : '',
+      }
+    }
     setProducts(productsData)
     setSummary(summaryData)
-
-    const inventoryRes = await fetch(
-      `/api/inventory?eventDay=${selectedDay}&type=${selectedType}&time=${encodeURIComponent(selectedTime)}`
-    )
-    const inventoryData = await inventoryRes.json()
-
-    const newEntries: Record<string, { quantity: string; notes: string }> = {}
-    for (const inv of inventoryData) {
-      newEntries[inv.productId] = {
-        quantity: inv.quantity.toString(),
-        notes: inv.notes || '',
-      }
-    }
     setEntries(newEntries)
     setLoading(false)
-  }
+  }, [session])
 
-  const handleQuantityChange = (productId: string, value: string) => {
-    setEntries((prev) => ({
-      ...prev,
-      [productId]: { ...prev[productId], quantity: value, notes: prev[productId]?.notes || '' },
-    }))
-  }
+  useEffect(() => {
+    setLoading(true)
+    loadData()
+  }, [loadData])
 
-  const handleIncrement = (productId: string, delta: number) => {
+  const doSave = useCallback(async () => {
+    const ps = productsRef.current
+    const es = entriesRef.current
+    const toSave = ps
+      .filter((p) => hasValue(p, es[p.id]))
+      .map((p) => {
+        const e = es[p.id]
+        const total = entryTotal(p, e)
+        return {
+          productId: p.id,
+          quantity: total,
+          packs: p.packSize > 0 ? (parseFloat(e.packs || '0') || 0) : null,
+          loose: p.packSize > 0 ? (parseFloat(e.loose || '0') || 0) : total,
+        }
+      })
+    if (toSave.length === 0) {
+      setSaveStatus('idle')
+      return
+    }
+    setSaveStatus('saving')
+    try {
+      await fetch('/api/inventory', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entries: toSave, session }),
+      })
+      setSaveStatus('saved')
+      fetch('/api/inventory/summary').then((r) => r.json()).then(setSummary).catch(() => {})
+      setTimeout(() => setSaveStatus('idle'), 1500)
+    } catch {
+      setSaveStatus('idle')
+    }
+  }, [session])
+
+  const scheduleSave = useCallback(() => {
+    setSaveStatus('saving')
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(doSave, 700)
+  }, [doSave])
+
+  const setField = (productId: string, field: keyof Entry, value: string) => {
     setEntries((prev) => {
-      const current = parseFloat(prev[productId]?.quantity || '0') || 0
-      const newVal = Math.max(0, current + delta)
-      return {
-        ...prev,
-        [productId]: { ...prev[productId], quantity: newVal.toString(), notes: prev[productId]?.notes || '' },
-      }
+      const base: Entry = prev[productId] ?? { packs: '', loose: '', qty: '' }
+      return { ...prev, [productId]: { ...base, [field]: value } }
     })
+    scheduleSave()
   }
 
-  const toggleCritical = async (product: Product) => {
-    // Optimistisch umschalten
-    setProducts((prev) => prev.map((p) => (p.id === product.id ? { ...p, isCritical: !p.isCritical } : p)))
-    await fetch(`/api/products/${product.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...product, isCritical: !product.isCritical }),
+  const stepField = (p: Product, field: keyof Entry, delta: number) => {
+    setEntries((prev) => {
+      const cur = prev[p.id] || { packs: '', loose: '', qty: '' }
+      const v = Math.max(0, (parseFloat(cur[field] || '0') || 0) + delta)
+      return { ...prev, [p.id]: { ...cur, [field]: String(v) } }
     })
+    scheduleSave()
   }
 
-  const handleSave = async () => {
-    setSaving(true)
+  const sessionLabel = `${INVENTORY_DAY_SHORT[day]} · ${time} Uhr`
 
-    const entriesToSave: InventoryEntry[] = Object.entries(entries)
-      .filter(([, data]) => data.quantity !== '')
-      .map(([productId, data]) => ({
-        productId,
-        quantity: parseFloat(data.quantity) || 0,
-        notes: data.notes,
-      }))
-
-    await fetch('/api/inventory', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        entries: entriesToSave,
-        eventDay: selectedDay,
-        type: selectedType,
-        time: selectedTime,
-      }),
-    })
-
-    await loadData()
-    setSaving(false)
-    setSavedAt(`${INVENTORY_DAY_SHORT[selectedDay]} · ${selectedTime}`)
-    setTimeout(() => setSavedAt(null), 2500)
-  }
-
-  // Sichtbare Produkte nach Filter (Suche / nur kritische)
-  const visibleProducts = useMemo(() => {
-    return products.filter((p) => {
+  // Getränke nach Filter (Suche / nur kritische); kritische zuerst.
+  const visibleProducts = products
+    .filter((p) => {
       if (criticalOnly && !p.isCritical) return false
       if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false
       return true
     })
-  }, [products, criticalOnly, search])
+    .sort((a, b) => (a.isCritical === b.isCritical ? 0 : a.isCritical ? -1 : 1))
 
-  const criticalProducts = useMemo(() => visibleProducts.filter((p) => p.isCritical), [visibleProducts])
+  const filledCount = visibleProducts.filter((p) => hasValue(p, entries[p.id])).length
+  const sumItem = (id: string) => summary?.products.find((s) => s.product.id === id)
 
-  // Gruppierung der nicht-kritischen (bzw. aller) Produkte nach Kategorie
-  const groupedProducts = useMemo(() => {
-    return visibleProducts.reduce((acc, product) => {
-      if (!acc[product.category]) acc[product.category] = []
-      acc[product.category].push(product)
-      return acc
-    }, {} as Record<string, Product[]>)
-  }, [visibleProducts])
-
-  const filledCount = visibleProducts.filter((p) => entries[p.id]?.quantity !== undefined && entries[p.id]?.quantity !== '').length
-  const openCount = visibleProducts.length - filledCount
+  const toggleCritical = async (p: Product) => {
+    setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, isCritical: !x.isCritical } : x)))
+    try {
+      await fetch(`/api/products/${p.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isCritical: !p.isCritical }),
+      })
+    } catch {
+      // bei Fehler zurückdrehen
+      setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, isCritical: p.isCritical } : x)))
+    }
+  }
 
   if (loading) {
     return (
@@ -197,110 +208,34 @@ export default function InventurPage() {
     )
   }
 
-  // Eine Produkt-Zeile (wiederverwendet in kritischer Sektion + Kategorien)
-  const renderProductRow = (product: Product) => {
-    const summaryItem = summary?.products.find((p) => p.product.id === product.id)
-    const hasValue = entries[product.id]?.quantity !== undefined && entries[product.id]?.quantity !== ''
-
-    return (
-      <div key={product.id} className={`px-4 py-3 ${product.isCritical ? 'bg-amber-50/60' : ''}`}>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="font-medium text-gray-900 text-sm flex items-center gap-1.5">
-              <button
-                onClick={() => toggleCritical(product)}
-                className="shrink-0 text-base leading-none"
-                title={product.isCritical ? 'Kritisch-Markierung entfernen' : 'Als kritisch markieren'}
-              >
-                <span className={product.isCritical ? '' : 'opacity-25 grayscale'}>⭐</span>
-              </button>
-              <span className="truncate">{product.name}</span>
-            </div>
-            <div className={`text-xs mt-0.5 ${hasValue ? 'text-gray-400' : 'text-amber-500 font-medium'}`}>
-              {hasValue
-                ? `Aktueller Bestand: ${summaryItem?.currentStock ?? '–'} ${product.unit}`
-                : 'Noch nicht erfasst'}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleIncrement(product.id, -1)}
-              className="w-9 h-9 rounded-lg bg-gray-100 text-gray-600 font-bold text-lg flex items-center justify-center hover:bg-gray-200 active:scale-95"
-            >
-              −
-            </button>
-            <input
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="1"
-              value={entries[product.id]?.quantity || ''}
-              onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-              placeholder="—"
-              className={`w-16 border rounded-lg px-2 py-2 text-sm text-center font-bold ${
-                hasValue ? 'border-gray-300' : 'border-amber-300 bg-amber-50'
-              }`}
-            />
-            <button
-              onClick={() => handleIncrement(product.id, 1)}
-              className="w-9 h-9 rounded-lg bg-gray-100 text-gray-600 font-bold text-lg flex items-center justify-center hover:bg-gray-200 active:scale-95"
-            >
-              +
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-4">
-      {/* View Toggle */}
+      {/* View toggle: Erfassung / Übersicht */}
       <div className="bg-white rounded-lg shadow-sm border p-1 flex gap-1">
-        <button
-          onClick={() => setViewMode('entry')}
-          className={`flex-1 py-2 rounded-md text-xs font-semibold transition-all ${
-            viewMode === 'entry' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-50'
-          }`}
-        >
-          Erfassung
-        </button>
-        <button
-          onClick={() => setViewMode('summary')}
-          className={`flex-1 py-2 rounded-md text-xs font-semibold transition-all ${
-            viewMode === 'summary' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-50'
-          }`}
-        >
-          Übersicht
-        </button>
+        <button onClick={() => setViewMode('entry')} className={`flex-1 py-2 rounded-md text-xs font-semibold transition-all ${viewMode === 'entry' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>Erfassung</button>
+        <button onClick={() => setViewMode('summary')} className={`flex-1 py-2 rounded-md text-xs font-semibold transition-all ${viewMode === 'summary' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>Übersicht</button>
       </div>
 
       {viewMode === 'entry' ? (
         <>
-          {/* Zeitpunkt: Tag-Buttons */}
-          <div className="bg-white rounded-xl shadow-sm border p-3 space-y-3">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Zeitpunkt wählen</div>
+          {/* Zählzeitpunkt: Tag + Uhrzeit */}
+          <div className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
+            <div className="text-[11px] font-medium uppercase text-gray-400 px-0.5">Zählzeitpunkt</div>
 
             {/* Tage */}
             <div className="grid grid-cols-3 gap-2">
-              {INVENTORY_DAYS.map((day) => {
-                const isStart = day === INVENTORY_START_DAY
-                const active = selectedDay === day
+              {INVENTORY_DAYS.map((d) => {
+                const active = day === d
+                const isStart = d === INVENTORY_START_DAY
                 return (
                   <button
-                    key={day}
-                    onClick={() => setSelectedDay(day)}
-                    className={`relative py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                      active ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                    key={d}
+                    onClick={() => { setDay(d); setTourIdx(0) }}
+                    className={`relative py-2.5 rounded-lg text-sm font-semibold transition-all ${active ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                   >
-                    {INVENTORY_DAY_SHORT[day]}
+                    {INVENTORY_DAY_SHORT[d]}
                     {isStart && (
-                      <span
-                        className={`block text-[9px] font-medium leading-none mt-0.5 ${active ? 'text-indigo-100' : 'text-indigo-500'}`}
-                      >
-                        START
-                      </span>
+                      <span className={`block text-[9px] font-medium leading-none mt-0.5 ${active ? 'text-indigo-100' : 'text-indigo-500'}`}>START</span>
                     )}
                   </button>
                 )
@@ -309,27 +244,23 @@ export default function InventurPage() {
 
             {/* Uhrzeit + Takt */}
             <div className="flex items-center gap-2">
-              <div className="flex-1">
-                <select
-                  value={selectedTime}
-                  onChange={(e) => setSelectedTime(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
-                >
-                  {timeSlots.map((t) => (
-                    <option key={t} value={t}>
-                      {t} Uhr
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <select
+                value={time}
+                onChange={(e) => { setTime(e.target.value); setTourIdx(0) }}
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-semibold bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                {/* aktuelle Uhrzeit immer wählbar halten, auch wenn nicht im Raster */}
+                {!timeSlots.includes(time) && <option value={time}>{time} Uhr</option>}
+                {timeSlots.map((t) => (
+                  <option key={t} value={t}>{t} Uhr</option>
+                ))}
+              </select>
               <div className="bg-gray-100 rounded-lg p-0.5 flex shrink-0">
                 {([15, 30] as const).map((step) => (
                   <button
                     key={step}
                     onClick={() => setTimeStep(step)}
-                    className={`px-2.5 py-2 rounded-md text-xs font-semibold transition-all ${
-                      timeStep === step ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500'
-                    }`}
+                    className={`px-2.5 py-2 rounded-md text-xs font-semibold transition-all ${timeStep === step ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500'}`}
                   >
                     {step}′
                   </button>
@@ -337,203 +268,255 @@ export default function InventurPage() {
               </div>
             </div>
 
-            <div className="text-xs text-gray-500">
-              {INVENTORY_DAY_LABELS[selectedDay]} · {selectedTime} Uhr
-            </div>
-
-            {/* Erfassungs-Art */}
-            <div className="bg-gray-100 rounded-lg p-1 flex gap-1">
-              {STOCK_ENTRY_TYPES.map((type) => (
-                <button
-                  key={type}
-                  onClick={() => setSelectedType(type)}
-                  className={`flex-1 py-2 rounded-md text-xs font-semibold transition-all ${
-                    selectedType === type ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500'
-                  }`}
-                >
-                  {STOCK_ENTRY_TYPE_LABELS[type]}
-                </button>
-              ))}
-            </div>
+            <div className="text-xs text-gray-500">{INVENTORY_DAY_LABELS[day]} · {time} Uhr</div>
           </div>
 
-          {/* Getränke-Auswahl: Suche + Filter */}
-          <div className="bg-white rounded-xl shadow-sm border p-3 space-y-3">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Getränke zählen</div>
-            <div className="flex gap-2">
-              <div className="flex-1 relative">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Getränk suchen..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <button
-                onClick={() => setCriticalOnly((v) => !v)}
-                className={`shrink-0 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all border ${
-                  criticalOnly
-                    ? 'bg-amber-500 text-white border-amber-500'
-                    : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                ⭐ Nur kritische
-              </button>
+          {/* Getränke-Auswahl: Suche + nur kritische */}
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Getränk suchen..."
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setTourIdx(0) }}
+                className="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
             </div>
-
-            {/* Fortschritt */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-gray-50 rounded-lg p-3 text-center">
-                <div className="text-[10px] text-gray-500 font-medium uppercase">Erfasst</div>
-                <div className="text-xl font-bold text-green-600">
-                  {filledCount}<span className="text-sm text-gray-400 font-normal"> / {visibleProducts.length}</span>
-                </div>
-              </div>
-              <div className={`rounded-lg p-3 text-center ${openCount > 0 ? 'bg-amber-50 border border-amber-200' : 'bg-green-50 border border-green-200'}`}>
-                <div className={`text-[10px] font-medium uppercase ${openCount > 0 ? 'text-amber-600' : 'text-green-600'}`}>
-                  {openCount > 0 ? 'Offen' : 'Komplett'}
-                </div>
-                <div className={`text-xl font-bold ${openCount > 0 ? 'text-amber-600' : 'text-green-600'}`}>
-                  {openCount > 0 ? openCount : '✓'}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Kritische Getränke — oben angepinnt */}
-          {!criticalOnly && criticalProducts.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border-2 border-amber-300 overflow-hidden">
-              <div className="bg-amber-100 border-b border-amber-200 px-4 py-3 flex items-center gap-2">
-                <span className="text-lg">⭐</span>
-                <h3 className="font-semibold text-amber-900 text-sm">Kritische Getränke</h3>
-                <span className="text-xs text-amber-700">({criticalProducts.length})</span>
-              </div>
-              <div className="divide-y divide-amber-100">
-                {criticalProducts.map((product) => renderProductRow(product))}
-              </div>
-            </div>
-          )}
-
-          {/* Entry List nach Kategorie */}
-          {PRODUCT_CATEGORIES.map((category) => {
-            // kritische schon oben gezeigt (außer wenn "nur kritische" aktiv) → hier rausfiltern
-            const categoryProducts = (groupedProducts[category] || []).filter((p) => criticalOnly || !p.isCritical)
-            if (!categoryProducts.length) return null
-            const icon = CATEGORY_ICONS[category] || '📦'
-
-            return (
-              <div key={category} className="bg-white rounded-lg shadow-sm border overflow-hidden">
-                <div className="bg-gray-50 border-b px-4 py-3 flex items-center gap-2">
-                  <span className="text-lg">{icon}</span>
-                  <h3 className="font-semibold text-gray-900 text-sm">{category}</h3>
-                </div>
-                <div className="divide-y">{categoryProducts.map((product) => renderProductRow(product))}</div>
-              </div>
-            )
-          })}
-
-          {visibleProducts.length === 0 && (
-            <div className="bg-white rounded-lg shadow-sm border p-8 text-center text-sm text-gray-500">
-              Keine Getränke gefunden.
-            </div>
-          )}
-
-          {/* Sticky Save */}
-          <div className="sticky bottom-4">
             <button
-              onClick={handleSave}
-              disabled={saving}
-              className="w-full bg-indigo-600 text-white rounded-xl px-4 py-3.5 text-sm font-bold shadow-lg shadow-indigo-600/25 hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              onClick={() => { setCriticalOnly((v) => !v); setTourIdx(0) }}
+              className={`shrink-0 px-3 py-2.5 rounded-lg text-xs font-semibold border transition-all ${criticalOnly ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
             >
-              {saving ? (
-                'Speichere...'
-              ) : savedAt ? (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Gespeichert: {savedAt}
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {INVENTORY_DAY_SHORT[selectedDay]} · {selectedTime} · {STOCK_ENTRY_TYPE_LABELS[selectedType]} speichern
-                </>
-              )}
+              ⭐ Nur kritische
             </button>
           </div>
+
+          {/* Controls: Liste/Tour + Blind + Save status */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="bg-white rounded-lg shadow-sm border p-1 flex gap-1">
+              <button onClick={() => setMode('list')} className={`px-3 py-1.5 rounded-md text-xs font-semibold ${mode === 'list' ? 'bg-gray-900 text-white' : 'text-gray-500'}`}>Liste</button>
+              <button onClick={() => setMode('tour')} className={`px-3 py-1.5 rounded-md text-xs font-semibold ${mode === 'tour' ? 'bg-gray-900 text-white' : 'text-gray-500'}`}>Helfer-Tour</button>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-medium" aria-live="polite">
+                {saveStatus === 'saving' ? <span className="text-amber-500">Speichere…</span> : saveStatus === 'saved' ? <span className="text-green-600">✓ gespeichert</span> : <span className="text-gray-400">autom. gespeichert</span>}
+              </span>
+              <button
+                onClick={() => setBlind((b) => !b)}
+                className="flex items-center gap-1 text-[11px] font-medium border rounded-full px-2.5 py-1.5 text-gray-600 hover:bg-gray-50"
+                aria-pressed={!blind}
+              >
+                {blind ? 'Soll: aus' : 'Soll: an'}
+              </button>
+            </div>
+          </div>
+
+          {/* Progress */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white rounded-lg shadow-sm border p-3 text-center">
+              <div className="text-[10px] text-gray-500 font-medium uppercase">Erfasst · {sessionLabel}</div>
+              <div className="text-xl font-bold text-green-600">{filledCount}<span className="text-sm text-gray-400 font-normal"> / {visibleProducts.length}</span></div>
+            </div>
+            <div className={`rounded-lg p-3 text-center ${visibleProducts.length - filledCount > 0 ? 'bg-amber-50 border border-amber-200' : 'bg-green-50 border border-green-200'}`}>
+              <div className={`text-[10px] font-medium uppercase ${visibleProducts.length - filledCount > 0 ? 'text-amber-600' : 'text-green-600'}`}>{visibleProducts.length - filledCount > 0 ? 'Offen' : 'Komplett'}</div>
+              <div className={`text-xl font-bold ${visibleProducts.length - filledCount > 0 ? 'text-amber-600' : 'text-green-600'}`}>{visibleProducts.length - filledCount > 0 ? visibleProducts.length - filledCount : '✓'}</div>
+            </div>
+          </div>
+
+          {mode === 'list' ? renderList() : renderTour()}
         </>
       ) : (
-        <>
-          {/* Financial Summary */}
-          {summary && (
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-white rounded-lg shadow-sm border p-3 text-center">
-                <div className="text-xs text-gray-500">Umsatz</div>
-                <div className="text-lg font-bold text-gray-900">{summary.totals.revenue.toFixed(2)} €</div>
-              </div>
-              <div className="bg-white rounded-lg shadow-sm border p-3 text-center">
-                <div className="text-xs text-gray-500">Kosten</div>
-                <div className="text-lg font-bold text-red-600">{summary.totals.cost.toFixed(2)} €</div>
-              </div>
-              <div className="bg-white rounded-lg shadow-sm border p-3 text-center">
-                <div className="text-xs text-gray-500">Gewinn</div>
-                <div className="text-lg font-bold text-green-600">{summary.totals.profit.toFixed(2)} €</div>
-              </div>
-            </div>
-          )}
-
-          {/* Consumption Table */}
-          <Card>
-            <CardHeader>
-              <h2 className="text-lg font-semibold text-gray-900">Verbrauch nach Produkt</h2>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-gray-200">
-                {summary?.products
-                  .filter((item) => item.totalConsumption > 0 || item.currentStock > 0)
-                  .map((item) => (
-                    <div key={item.product.id} className="px-4 py-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5">
-                            {item.product.isCritical && <span title="Kritisch">⭐</span>}
-                            {item.product.name}
-                          </p>
-                          <p className="text-xs text-gray-500">{item.product.category}</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="flex items-center gap-2 justify-end">
-                            <Badge variant={item.currentStock <= 5 ? 'danger' : item.currentStock <= 10 ? 'warning' : 'success'}>
-                              {item.currentStock} {item.product.unit}
-                            </Badge>
-                          </div>
-                          <div className="text-xs text-gray-500 mt-0.5">
-                            Verbrauch: {item.totalConsumption} · Gewinn: <span className="text-green-600 font-semibold">{item.profit.toFixed(2)} €</span>
-                          </div>
-                        </div>
-                      </div>
-                      {item.totalConsumption > 0 && (
-                        <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-indigo-500 rounded-full"
-                            style={{ width: `${Math.min(100, (item.totalConsumption / Math.max(...(summary?.products.map(p => p.totalConsumption) || [1]))) * 100)}%` }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
-            </CardContent>
-          </Card>
-        </>
+        renderSummary()
       )}
     </div>
   )
+
+  // ─── Listen-Modus ──────────────────────────────────────────────
+  function renderList() {
+    if (visibleProducts.length === 0) {
+      return <div className="bg-white rounded-lg shadow-sm border p-8 text-center text-sm text-gray-500">Keine Getränke gefunden.</div>
+    }
+    const cats = Array.from(new Set(visibleProducts.map((p) => p.category)))
+    return (
+      <>
+        {cats.map((cat) => {
+          const items = visibleProducts.filter((p) => p.category === cat)
+          return (
+            <div key={cat} className="bg-white rounded-lg shadow-sm border overflow-hidden">
+              <div className="bg-gray-50 border-b px-4 py-3 flex items-center gap-2">
+                <span className="text-lg">{CATEGORY_ICONS[cat] || '📦'}</span>
+                <h3 className="font-semibold text-gray-900 text-sm">{cat}</h3>
+              </div>
+              <div className="divide-y">
+                {items.map((p) => {
+                  const e = entries[p.id]
+                  const filled = hasValue(p, e)
+                  const total = entryTotal(p, e)
+                  const si = sumItem(p.id)
+                  return (
+                    <div key={p.id} className={`px-4 py-3 ${p.isCritical ? 'bg-amber-50/60' : ''}`}>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-900 text-sm flex items-center gap-1.5">
+                            <button onClick={() => toggleCritical(p)} className="shrink-0 text-base leading-none" title={p.isCritical ? 'Kritisch-Markierung entfernen' : 'Als kritisch markieren'} aria-label="kritisch umschalten">
+                              <span className={p.isCritical ? '' : 'opacity-25 grayscale'}>⭐</span>
+                            </button>
+                            <span className="truncate">{p.name}</span>
+                          </div>
+                          <div className="text-xs mt-0.5 text-gray-400">
+                            {p.packSize > 0 ? `${p.packLabel || 'Träger'} à ${p.packSize}` : 'Einzelflaschen'}
+                            {!blind && si ? <span className="text-gray-500"> · Anlieferung {si.baselineStock}</span> : null}
+                          </div>
+                        </div>
+                        {p.packSize > 0 ? (
+                          <div className="flex items-end gap-2">
+                            <div className="text-center">
+                              <div className="text-[10px] text-gray-400 mb-0.5">{p.packLabel || 'Träger'}</div>
+                              <input inputMode="numeric" value={e?.packs || ''} onChange={(ev) => setField(p.id, 'packs', ev.target.value)} placeholder="0" aria-label={`Träger ${p.name}`} className="w-12 h-11 border rounded-lg text-center text-base font-bold border-gray-300" />
+                            </div>
+                            <div className="text-center">
+                              <div className="text-[10px] text-gray-400 mb-0.5">lose</div>
+                              <input inputMode="numeric" value={e?.loose || ''} onChange={(ev) => setField(p.id, 'loose', ev.target.value)} placeholder="0" aria-label={`lose Flaschen ${p.name}`} className="w-12 h-11 border rounded-lg text-center text-base font-bold border-gray-300" />
+                            </div>
+                            <div className="text-center min-w-[44px]">
+                              <div className="text-[10px] text-gray-400 mb-0.5">= Fl</div>
+                              <div className={`h-11 flex items-center justify-center text-base font-bold ${filled ? 'text-gray-900' : 'text-gray-300'}`}>{filled ? total : '—'}</div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => stepField(p, 'qty', -1)} aria-label="weniger" className="w-9 h-11 rounded-lg bg-gray-100 text-gray-600 font-bold text-lg">−</button>
+                            <input inputMode="numeric" value={e?.qty || ''} onChange={(ev) => setField(p.id, 'qty', ev.target.value)} placeholder="—" aria-label={`Anzahl ${p.name}`} className={`w-16 h-11 border rounded-lg text-center text-base font-bold ${filled ? 'border-gray-300' : 'border-amber-300 bg-amber-50'}`} />
+                            <button onClick={() => stepField(p, 'qty', 1)} aria-label="mehr" className="w-9 h-11 rounded-lg bg-gray-100 text-gray-600 font-bold text-lg">+</button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+        <p className="text-center text-xs text-gray-400">Eingaben werden automatisch gespeichert.</p>
+      </>
+    )
+  }
+
+  // ─── Helfer-Tour (ein Getränk pro Bildschirm) ──────────────────
+  function renderTour() {
+    if (visibleProducts.length === 0) {
+      return <div className="bg-white rounded-lg shadow-sm border p-8 text-center text-sm text-gray-500">Keine Getränke gefunden.</div>
+    }
+    const p = visibleProducts[Math.min(tourIdx, visibleProducts.length - 1)]
+    if (!p) return null
+    const e = entries[p.id]
+    const total = entryTotal(p, e)
+    const next = () => { doSave(); setTourIdx((i) => Math.min(visibleProducts.length - 1, i + 1)) }
+    const prev = () => { doSave(); setTourIdx((i) => Math.max(0, i - 1)) }
+    return (
+      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+        <div className="bg-gray-900 px-4 py-3 text-white">
+          <div className="flex items-center justify-between text-xs"><span>{p.category}</span><span className="text-gray-300">{tourIdx + 1} / {visibleProducts.length}</span></div>
+          <div className="h-1.5 bg-gray-700 rounded-full mt-2 overflow-hidden"><div className="h-full bg-green-500" style={{ width: `${((tourIdx + 1) / visibleProducts.length) * 100}%` }} /></div>
+        </div>
+        <div className="px-5 py-6 text-center">
+          <div className="flex items-center justify-center gap-2">
+            <button onClick={() => toggleCritical(p)} className="text-lg leading-none" title={p.isCritical ? 'Kritisch-Markierung entfernen' : 'Als kritisch markieren'} aria-label="kritisch umschalten">
+              <span className={p.isCritical ? '' : 'opacity-25 grayscale'}>⭐</span>
+            </button>
+            <div className="text-xl font-bold text-gray-900">{p.name}</div>
+          </div>
+          <div className="text-xs text-gray-400 mt-1 mb-5">{p.packSize > 0 ? `Lieferung in ${p.packLabel || 'Träger'} à ${p.packSize} — volle ${p.packLabel || 'Träger'} + lose Flaschen zählen` : 'Einzelflaschen zählen'}</div>
+          {p.packSize > 0 ? (
+            <div>
+              <div className="flex gap-3 justify-center">
+                {(['packs', 'loose'] as const).map((f) => (
+                  <div key={f} className="flex-1 bg-gray-50 rounded-lg p-3">
+                    <div className="text-xs text-gray-500 mb-2">{f === 'packs' ? `volle ${p.packLabel || 'Träger'}` : 'lose Flaschen'}</div>
+                    <div className="flex items-center gap-2 justify-center">
+                      <button onClick={() => stepField(p, f, -1)} aria-label="weniger" className="w-10 h-10 rounded-lg bg-white border text-gray-600 text-xl font-bold">−</button>
+                      <input inputMode="numeric" value={e?.[f] || ''} onChange={(ev) => setField(p.id, f, ev.target.value)} placeholder="0" className="w-12 h-11 border rounded-lg text-center text-xl font-bold" />
+                      <button onClick={() => stepField(p, f, 1)} aria-label="mehr" className="w-10 h-10 rounded-lg bg-white border text-gray-600 text-xl font-bold">+</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="text-sm font-semibold text-gray-900 mt-3">= {total} Flaschen gesamt</div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-4">
+              <button onClick={() => stepField(p, 'qty', -1)} aria-label="weniger" className="w-14 h-14 rounded-xl bg-gray-100 text-gray-700 text-3xl font-bold">−</button>
+              <input inputMode="numeric" value={e?.qty || ''} onChange={(ev) => setField(p.id, 'qty', ev.target.value)} placeholder="0" className="w-24 h-16 border rounded-lg text-center text-3xl font-bold" />
+              <button onClick={() => stepField(p, 'qty', 1)} aria-label="mehr" className="w-14 h-14 rounded-xl bg-gray-100 text-gray-700 text-3xl font-bold">+</button>
+            </div>
+          )}
+        </div>
+        <div className="flex gap-2 px-4 pb-4">
+          <button onClick={prev} disabled={tourIdx === 0} className="flex-1 h-12 rounded-lg border text-sm font-semibold text-gray-700 disabled:opacity-40">← Zurück</button>
+          <button onClick={next} disabled={tourIdx === visibleProducts.length - 1} className="flex-1 h-12 rounded-lg bg-indigo-600 text-white text-sm font-semibold disabled:opacity-40">Weiter →</button>
+        </div>
+      </div>
+    )
+  }
+
+  // ─── Übersicht ─────────────────────────────────────────────────
+  function renderSummary() {
+    if (!summary) return null
+    return (
+      <>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-white rounded-lg shadow-sm border p-3 text-center">
+            <div className="text-[10px] text-gray-500 uppercase">Warenwert (EK)</div>
+            <div className="text-lg font-bold text-gray-900">{summary.totals.stockValue.toFixed(0)} €</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border p-3 text-center">
+            <div className="text-[10px] text-gray-500 uppercase">Verbrauch</div>
+            <div className="text-lg font-bold text-gray-900">{summary.totals.consumption} Fl</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border p-3 text-center">
+            <div className="text-[10px] text-gray-500 uppercase">Wert Verbrauch</div>
+            <div className="text-lg font-bold text-red-600">{summary.totals.consumptionValue.toFixed(0)} €</div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+          <div className="bg-gray-50 border-b px-4 py-3"><h3 className="font-semibold text-gray-900 text-sm">Bestand & Verbrauch je Getränk</h3></div>
+          <div className="divide-y">
+            {summary.products.map((item) => {
+              const low = item.countedSessions >= 1 && item.currentStock <= Math.max(6, item.baselineStock * 0.1)
+              const pct = item.baselineStock > 0 ? Math.min(100, Math.round((item.currentStock / item.baselineStock) * 100)) : 0
+              return (
+                <div key={item.product.id} className="px-4 py-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 text-sm">
+                        {item.product.isCritical && <span title="Kritisch">⭐ </span>}
+                        {item.product.name}
+                        {low && <span className="ml-2 text-[11px] font-medium text-red-600">⚠ niedrig</span>}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        Anlieferung {item.baselineStock} · Verbrauch {item.consumption} Fl
+                        {item.countedSessions < 2 && <span className="text-gray-400"> · noch zu wenig gezählt</span>}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${low ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>{item.currentStock} {item.product.unit}</span>
+                      <div className="text-[11px] text-gray-400 mt-0.5">Wert {item.stockValue.toFixed(0)} €</div>
+                    </div>
+                  </div>
+                  <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: low ? '#dc2626' : '#4f46e5' }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+        <p className="text-center text-xs text-gray-400">Verbrauch = Anlieferung − zuletzt gezählter Bestand. Werte auf EK-Basis.</p>
+      </>
+    )
+  }
 }

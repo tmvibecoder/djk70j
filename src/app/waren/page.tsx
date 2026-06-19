@@ -12,7 +12,6 @@ interface Product {
   unit: string
   category: string
   isActive: boolean
-  isCritical: boolean
 }
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -38,7 +37,6 @@ export default function KatalogPage() {
     unit: 'Flasche',
     category: PRODUCT_CATEGORIES[0] as string,
     isActive: true,
-    isCritical: false,
   })
 
   const loadProducts = async () => {
@@ -62,7 +60,6 @@ export default function KatalogPage() {
         unit: product.unit,
         category: product.category,
         isActive: product.isActive,
-        isCritical: product.isCritical ?? false,
       })
     } else {
       setEditingProduct(null)
@@ -73,7 +70,6 @@ export default function KatalogPage() {
         unit: 'Flasche',
         category: category || PRODUCT_CATEGORIES[0],
         isActive: true,
-        isCritical: false,
       })
     }
     setIsModalOpen(true)
@@ -205,10 +201,7 @@ export default function KatalogPage() {
                   return (
                     <div key={product.id} className={`px-4 py-3 flex items-center gap-3 ${!product.isActive ? 'opacity-50' : ''}`}>
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 text-sm flex items-center gap-1.5">
-                          {product.isCritical && <span title="Kritisches Getränk">⭐</span>}
-                          {product.name}
-                        </div>
+                        <div className="font-medium text-gray-900 text-sm">{product.name}</div>
                         <div className="flex items-center gap-3 mt-0.5">
                           <span className="text-xs text-gray-400">{product.unit}</span>
                           <span className="text-xs text-gray-500">EK {product.purchasePrice.toFixed(2)} €</span>
@@ -357,19 +350,6 @@ export default function KatalogPage() {
               className="rounded border-gray-300"
             />
             <label htmlFor="isActive" className="text-sm text-gray-700">Produkt ist aktiv</label>
-          </div>
-          <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
-            <input
-              type="checkbox"
-              id="isCritical"
-              checked={form.isCritical}
-              onChange={(e) => setForm({ ...form, isCritical: e.target.checked })}
-              className="rounded border-gray-300 mt-0.5"
-            />
-            <label htmlFor="isCritical" className="text-sm text-gray-700">
-              <span className="font-medium">⭐ Kritisches Getränk</span>
-              <span className="block text-xs text-gray-500">Wird bei der Inventur hervorgehoben und regelmäßig gezählt</span>
-            </label>
           </div>
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>

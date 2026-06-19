@@ -70,22 +70,25 @@ export const INVENTORY_TYPE_LABELS: Record<InventoryType, string> = {
   delivery: 'Lieferung',
 }
 
-// ─── Flexible Inventur (Bestandsaufnahme nach Tag + Uhrzeit) ──────────────────
+// Zähl-Zeitpunkte ("Sessions") für die Inventur – Reihenfolge = chronologisch.
+// Der Verbrauch wird aus der ersten vs. der letzten erfassten Session berechnet.
+export const COUNT_SESSIONS = [
+  { key: 'anlieferung',   label: 'Anlieferung / Start', short: 'Start' },
+  { key: 'freitag',       label: 'Freitag',             short: 'Fr' },
+  { key: 'samstag_frueh', label: 'Samstag früh',        short: 'Sa früh' },
+  { key: 'samstag_spaet', label: 'Samstag spät',        short: 'Sa spät' },
+  { key: 'sonntag',       label: 'Sonntag',             short: 'So' },
+  { key: 'montag',        label: 'Montag (Abschluss)',  short: 'Mo' },
+] as const
 
-// Erfassungs-Arten der neuen, flexiblen Inventur.
-// "count"    = aktueller Bestand (eine Zählung zu einem Zeitpunkt)
-// "delivery" = Lieferung/Nachschub (wird dem Bestand hinzugerechnet)
-export const STOCK_ENTRY_TYPES = ['count', 'delivery'] as const
-export type StockEntryType = typeof STOCK_ENTRY_TYPES[number]
+export type CountSessionKey = typeof COUNT_SESSIONS[number]['key']
+export const COUNT_SESSION_ORDER: string[] = COUNT_SESSIONS.map((s) => s.key)
 
-export const STOCK_ENTRY_TYPE_LABELS: Record<StockEntryType, string> = {
-  count: 'Bestand zählen',
-  delivery: 'Lieferung',
-}
-
-// Tage, an denen Inventur gemacht werden kann — chronologisch.
-// Donnerstag ist der Start des Fests, Mittwoch der Tag davor (Anlieferung),
-// Montag der Tag danach (Endabrechnung).
+// ─── Flexible Zählzeitpunkte: Tag + Uhrzeit ───────────────────────────────────
+// Statt fester Sessions kann der Zeitpunkt frei aus Tag + Uhrzeit gewählt werden.
+// Der Session-Key hat dann das Format "tag@HH:MM", z.B. "friday@17:15".
+// Donnerstag = Start des Fests, Mittwoch der Tag davor (Anlieferung),
+// Montag der Tag danach (Abschluss).
 export const INVENTORY_DAYS = ['wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'monday'] as const
 export type InventoryDay = typeof INVENTORY_DAYS[number]
 
@@ -107,23 +110,20 @@ export const INVENTORY_DAY_LABELS: Record<InventoryDay, string> = {
   monday: 'Montag (13. Juli)',
 }
 
-// Der Start-Tag des Fests (für die "Start"-Markierung am Button).
+// Start-Tag des Fests (für die "START"-Markierung).
 export const INVENTORY_START_DAY: InventoryDay = 'thursday'
 
-// Chronologische Reihenfolge der Tage für Verbrauchs-/Bestands-Berechnung.
+// Chronologische Reihenfolge der Tage.
 export const INVENTORY_DAY_ORDER: Record<string, number> = {
-  wednesday: 0,
-  thursday: 1,
-  friday: 2,
-  saturday: 3,
-  sunday: 4,
-  monday: 5,
-  // Legacy-/Aufbau-Tage werden hinten einsortiert
-  tuesday: -1,
+  wednesday: 1,
+  thursday: 2,
+  friday: 3,
+  saturday: 4,
+  sunday: 5,
+  monday: 6,
 }
 
-// Erzeugt die Uhrzeit-Auswahl im 15- oder 30-Minuten-Takt.
-// Standardbereich 08:00 bis 02:00 (nach Mitternacht zählt zum Fest-Abend).
+// Erzeugt die Uhrzeit-Auswahl im 15- oder 30-Minuten-Takt (08:00 bis 02:00).
 export function buildTimeSlots(stepMinutes: 15 | 30, fromHour = 8, toHour = 26): string[] {
   const slots: string[] = []
   for (let m = fromHour * 60; m <= toHour * 60; m += stepMinutes) {
@@ -134,15 +134,51 @@ export function buildTimeSlots(stepMinutes: 15 | 30, fromHour = 8, toHour = 26):
   return slots
 }
 
-// Wandelt "HH:MM" in eine sortierbare Minutenzahl um.
-// Zeiten vor 06:00 gehören zum vorherigen Fest-Abend → +24h, damit die
-// Reihenfolge (erste Zählung … letzte Zählung) je Tag korrekt bleibt.
-export function inventoryTimeRank(time?: string | null): number {
-  if (!time) return 12 * 60 // ohne Uhrzeit: Mittag als neutraler Wert
-  const [h, m] = time.split(':').map(Number)
-  let mins = (h || 0) * 60 + (m || 0)
-  if (mins < 6 * 60) mins += 24 * 60
-  return mins
+// Baut/zerlegt den Session-Key "tag@HH:MM".
+export function makeSessionKey(day: string, time: string): string {
+  return `${day}@${time}`
+}
+export function parseSessionKey(key: string): { day: string; time: string } | null {
+  const at = key.indexOf('@')
+  if (at === -1) return null
+  return { day: key.slice(0, at), time: key.slice(at + 1) }
+}
+
+// Sortier-Rang eines Session-Keys für die Verbrauchs-/Bestandsberechnung.
+// Unterstützt sowohl die neuen "tag@HH:MM"-Keys als auch die alten festen Sessions.
+const LEGACY_SESSION_RANK: Record<string, number> = {
+  anlieferung: 0,
+  freitag: 3 * 10000,
+  samstag_frueh: 4 * 10000 + 10 * 60,
+  samstag_spaet: 4 * 10000 + 22 * 60,
+  sonntag: 5 * 10000,
+  montag: 6 * 10000,
+}
+export function inventorySessionRank(key: string | null | undefined): number {
+  if (!key) return 9_999_999
+  if (key in LEGACY_SESSION_RANK) return LEGACY_SESSION_RANK[key]
+  const parsed = parseSessionKey(key)
+  if (!parsed) return 9_999_999
+  const day = INVENTORY_DAY_ORDER[parsed.day]
+  if (day === undefined) return 9_999_999
+  let mins = 0
+  if (parsed.time) {
+    const [h, m] = parsed.time.split(':').map(Number)
+    mins = (h || 0) * 60 + (m || 0)
+    if (mins < 6 * 60) mins += 24 * 60 // nach Mitternacht zählt zum Vorabend
+  }
+  return day * 10000 + mins
+}
+
+// Lesbares Label für einen beliebigen Session-Key (neu oder legacy).
+export function inventorySessionLabel(key: string): string {
+  const legacy = COUNT_SESSIONS.find((s) => s.key === key)
+  if (legacy) return legacy.label
+  const parsed = parseSessionKey(key)
+  if (parsed && INVENTORY_DAY_LABELS[parsed.day as InventoryDay]) {
+    return `${INVENTORY_DAY_LABELS[parsed.day as InventoryDay]} · ${parsed.time} Uhr`
+  }
+  return key
 }
 
 export const PRIORITY_LEVELS = ['low', 'medium', 'high'] as const

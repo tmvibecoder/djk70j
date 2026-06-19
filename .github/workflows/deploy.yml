@@ -15,8 +15,12 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
             cd /var/www/djk-ottenhofen-event/app
-            git pull origin main
+            # Robust gegen lokale Server-Änderungen: sauber auf origin/main setzen,
+            # statt mit "git pull" an lokalen Änderungen zu scheitern.
+            git fetch origin main
+            git checkout -f -B main origin/main
             npm install
             npx prisma generate
             npx prisma db push --accept-data-loss --skip-generate
