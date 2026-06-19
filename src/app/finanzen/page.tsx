@@ -32,11 +32,19 @@ interface SimpleForecast {
 }
 
 const TABS = [
-  { id: 'ergebnis', label: 'Gewinn', icon: '📊' },
-  { id: 'prognose', label: 'Rohertrag', icon: '🔮' },
-  { id: 'kosten', label: 'Kosten', icon: '📋' },
-  { id: 'sponsoring', label: 'Spenden', icon: '🤝' },
+  { id: 'ergebnis', label: 'Gewinn', icon: '📊', accent: 'emerald' },
+  { id: 'prognose', label: 'Rohertrag', icon: '🔮', accent: 'violet' },
+  { id: 'kosten', label: 'Kosten', icon: '📋', accent: 'blue' },
+  { id: 'sponsoring', label: 'Spenden', icon: '🤝', accent: 'amber' },
 ]
+
+// Farbige, helle Tab-Optik (statische Klassen, damit Tailwind sie generiert)
+const TAB_STYLES: Record<string, { active: string; inactive: string }> = {
+  emerald: { active: 'bg-emerald-500 text-white border-emerald-500 shadow-emerald-200', inactive: 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50' },
+  violet:  { active: 'bg-violet-500 text-white border-violet-500 shadow-violet-200', inactive: 'bg-white text-violet-700 border-violet-200 hover:bg-violet-50' },
+  blue:    { active: 'bg-blue-500 text-white border-blue-500 shadow-blue-200', inactive: 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50' },
+  amber:   { active: 'bg-amber-500 text-white border-amber-500 shadow-amber-200', inactive: 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50' },
+}
 
 const COST_TYPES = [
   { value: 'musik', label: 'Musik & Unterhaltung', icon: '🎵' },
@@ -311,36 +319,45 @@ export default function FinanzenPage() {
     <>
     <div className="space-y-6 print:hidden">
       {/* Header */}
-      <div className="bg-gray-900 -mx-4 -mt-16 lg:-mt-6 px-4 pt-16 lg:pt-6 pb-4 mb-6 rounded-b-lg">
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-yellow-500 text-xs font-semibold tracking-widest uppercase">DJK Ottenhofen e.V.</p>
-          <button onClick={() => window.print()} title="Aktuellen Reiter als PDF (DIN A4) drucken"
-            className="px-3 py-1.5 rounded-lg border border-gray-600 bg-gray-800 text-white text-xs font-medium hover:bg-gray-700 whitespace-nowrap">
-            📄 Diesen Reiter als PDF
+      <div className="bg-white -mx-4 -mt-16 lg:-mt-6 px-4 pt-16 lg:pt-6 pb-4 mb-6 rounded-b-lg border-b border-gray-200">
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="text-2xl font-bold text-gray-900">Finanzplanung</h1>
+          <button onClick={() => window.print()} title="Aktuellen Reiter als PDF (DIN A4) exportieren"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-700 text-xs font-semibold hover:bg-gray-50 shadow-sm whitespace-nowrap">
+            <span>📄</span> PDF exportieren
           </button>
         </div>
-        <div className="flex items-end justify-between">
-          <h1 className="text-2xl font-bold text-white">Finanzplanung</h1>
-          <div className="text-right">
-            <div className="text-3xl font-bold text-white">{fmtEur(totalCosts)}</div>
-            <div className="text-xs text-gray-400">{costs.length} Positionen</div>
-          </div>
-        </div>
-        <div className="flex gap-1 mt-3 overflow-x-auto">
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`px-4 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${
-                tab === t.id ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-white hover:bg-gray-800'
-              }`}>
-              <span>{t.icon}</span> {t.label}
-            </button>
-          ))}
+        <div className="flex gap-2 mt-4 overflow-x-auto pb-1">
+          {TABS.map(t => {
+            const style = TAB_STYLES[t.accent]
+            const active = tab === t.id
+            return (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                className={`flex-1 min-w-[88px] flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-semibold border whitespace-nowrap transition-all active:scale-[0.98] ${
+                  active ? `${style.active} shadow-md` : `${style.inactive} shadow-sm`
+                }`}>
+                <span className="text-base">{t.icon}</span> {t.label}
+              </button>
+            )
+          })}
         </div>
       </div>
 
       {/* ── KOSTEN TAB ── */}
       {tab === 'kosten' && (
         <div className="space-y-6">
+
+          {/* Gesamtkosten – Headline-KPI ganz oben */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-5 flex items-center gap-4" style={{ borderTopWidth: 4, borderTopColor: '#4F46E5' }}>
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-xl sm:text-2xl shrink-0" style={{ backgroundColor: '#4F46E51A' }}>💰</div>
+            <div className="min-w-0">
+              <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-gray-500">Gesamtkosten</div>
+              <div className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-none mt-1 whitespace-nowrap">{fmtEur0(totalCosts)}</div>
+            </div>
+            <div className="ml-auto text-right shrink-0">
+              <div className="text-xs sm:text-sm text-gray-400">{costs.length} {costs.length === 1 ? 'Position' : 'Positionen'}</div>
+            </div>
+          </div>
 
           {/* Kosten-Übersicht – die wichtigsten KPIs (Fälligkeit) */}
           {(() => {
