@@ -1,7 +1,15 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { COUNT_SESSIONS } from '@/types'
+import {
+  INVENTORY_DAYS,
+  INVENTORY_DAY_SHORT,
+  INVENTORY_DAY_LABELS,
+  INVENTORY_START_DAY,
+  buildTimeSlots,
+  makeSessionKey,
+  type InventoryDay,
+} from '@/types'
 
 interface Product {
   id: string
@@ -11,6 +19,7 @@ interface Product {
   category: string
   packSize: number
   packLabel: string | null
+  isCritical: boolean
 }
 
 interface SummaryItem {
@@ -56,13 +65,20 @@ export default function InventurPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [summary, setSummary] = useState<Summary | null>(null)
   const [loading, setLoading] = useState(true)
-  const [session, setSession] = useState<string>('freitag')
+  const [day, setDay] = useState<InventoryDay>('friday')
+  const [time, setTime] = useState<string>('17:00')
+  const [timeStep, setTimeStep] = useState<15 | 30>(15)
+  const session = makeSessionKey(day, time)
   const [entries, setEntries] = useState<Record<string, Entry>>({})
   const [viewMode, setViewMode] = useState<'entry' | 'summary'>('entry')
   const [mode, setMode] = useState<'list' | 'tour'>('list')
   const [blind, setBlind] = useState(true)
   const [tourIdx, setTourIdx] = useState(0)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [criticalOnly, setCriticalOnly] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const timeSlots = buildTimeSlots(timeStep)
 
   const entriesRef = useRef(entries)
   entriesRef.current = entries
@@ -156,9 +172,33 @@ export default function InventurPage() {
     scheduleSave()
   }
 
-  const sessionLabel = COUNT_SESSIONS.find((s) => s.key === session)?.label ?? session
-  const filledCount = products.filter((p) => hasValue(p, entries[p.id])).length
+  const sessionLabel = `${INVENTORY_DAY_SHORT[day]} · ${time} Uhr`
+
+  // Getränke nach Filter (Suche / nur kritische); kritische zuerst.
+  const visibleProducts = products
+    .filter((p) => {
+      if (criticalOnly && !p.isCritical) return false
+      if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false
+      return true
+    })
+    .sort((a, b) => (a.isCritical === b.isCritical ? 0 : a.isCritical ? -1 : 1))
+
+  const filledCount = visibleProducts.filter((p) => hasValue(p, entries[p.id])).length
   const sumItem = (id: string) => summary?.products.find((s) => s.product.id === id)
+
+  const toggleCritical = async (p: Product) => {
+    setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, isCritical: !x.isCritical } : x)))
+    try {
+      await fetch(`/api/products/${p.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isCritical: !p.isCritical }),
+      })
+    } catch {
+      // bei Fehler zurückdrehen
+      setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, isCritical: p.isCritical } : x)))
+    }
+  }
 
   if (loading) {
     return (
@@ -178,20 +218,79 @@ export default function InventurPage() {
 
       {viewMode === 'entry' ? (
         <>
-          {/* Session chips */}
-          <div>
-            <div className="text-[11px] font-medium uppercase text-gray-400 mb-1.5 px-0.5">Zählzeitpunkt</div>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {COUNT_SESSIONS.map((s) => (
-                <button
-                  key={s.key}
-                  onClick={() => { setSession(s.key); setTourIdx(0) }}
-                  className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${session === s.key ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                >
-                  {s.short}
-                </button>
-              ))}
+          {/* Zählzeitpunkt: Tag + Uhrzeit */}
+          <div className="bg-white rounded-lg shadow-sm border p-3 space-y-3">
+            <div className="text-[11px] font-medium uppercase text-gray-400 px-0.5">Zählzeitpunkt</div>
+
+            {/* Tage */}
+            <div className="grid grid-cols-3 gap-2">
+              {INVENTORY_DAYS.map((d) => {
+                const active = day === d
+                const isStart = d === INVENTORY_START_DAY
+                return (
+                  <button
+                    key={d}
+                    onClick={() => { setDay(d); setTourIdx(0) }}
+                    className={`relative py-2.5 rounded-lg text-sm font-semibold transition-all ${active ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  >
+                    {INVENTORY_DAY_SHORT[d]}
+                    {isStart && (
+                      <span className={`block text-[9px] font-medium leading-none mt-0.5 ${active ? 'text-indigo-100' : 'text-indigo-500'}`}>START</span>
+                    )}
+                  </button>
+                )
+              })}
             </div>
+
+            {/* Uhrzeit + Takt */}
+            <div className="flex items-center gap-2">
+              <select
+                value={time}
+                onChange={(e) => { setTime(e.target.value); setTourIdx(0) }}
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-semibold bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                {/* aktuelle Uhrzeit immer wählbar halten, auch wenn nicht im Raster */}
+                {!timeSlots.includes(time) && <option value={time}>{time} Uhr</option>}
+                {timeSlots.map((t) => (
+                  <option key={t} value={t}>{t} Uhr</option>
+                ))}
+              </select>
+              <div className="bg-gray-100 rounded-lg p-0.5 flex shrink-0">
+                {([15, 30] as const).map((step) => (
+                  <button
+                    key={step}
+                    onClick={() => setTimeStep(step)}
+                    className={`px-2.5 py-2 rounded-md text-xs font-semibold transition-all ${timeStep === step ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500'}`}
+                  >
+                    {step}′
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="text-xs text-gray-500">{INVENTORY_DAY_LABELS[day]} · {time} Uhr</div>
+          </div>
+
+          {/* Getränke-Auswahl: Suche + nur kritische */}
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Getränk suchen..."
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setTourIdx(0) }}
+                className="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+            <button
+              onClick={() => { setCriticalOnly((v) => !v); setTourIdx(0) }}
+              className={`shrink-0 px-3 py-2.5 rounded-lg text-xs font-semibold border transition-all ${criticalOnly ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
+            >
+              ⭐ Nur kritische
+            </button>
           </div>
 
           {/* Controls: Liste/Tour + Blind + Save status */}
@@ -218,11 +317,11 @@ export default function InventurPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white rounded-lg shadow-sm border p-3 text-center">
               <div className="text-[10px] text-gray-500 font-medium uppercase">Erfasst · {sessionLabel}</div>
-              <div className="text-xl font-bold text-green-600">{filledCount}<span className="text-sm text-gray-400 font-normal"> / {products.length}</span></div>
+              <div className="text-xl font-bold text-green-600">{filledCount}<span className="text-sm text-gray-400 font-normal"> / {visibleProducts.length}</span></div>
             </div>
-            <div className={`rounded-lg p-3 text-center ${products.length - filledCount > 0 ? 'bg-amber-50 border border-amber-200' : 'bg-green-50 border border-green-200'}`}>
-              <div className={`text-[10px] font-medium uppercase ${products.length - filledCount > 0 ? 'text-amber-600' : 'text-green-600'}`}>{products.length - filledCount > 0 ? 'Offen' : 'Komplett'}</div>
-              <div className={`text-xl font-bold ${products.length - filledCount > 0 ? 'text-amber-600' : 'text-green-600'}`}>{products.length - filledCount > 0 ? products.length - filledCount : '✓'}</div>
+            <div className={`rounded-lg p-3 text-center ${visibleProducts.length - filledCount > 0 ? 'bg-amber-50 border border-amber-200' : 'bg-green-50 border border-green-200'}`}>
+              <div className={`text-[10px] font-medium uppercase ${visibleProducts.length - filledCount > 0 ? 'text-amber-600' : 'text-green-600'}`}>{visibleProducts.length - filledCount > 0 ? 'Offen' : 'Komplett'}</div>
+              <div className={`text-xl font-bold ${visibleProducts.length - filledCount > 0 ? 'text-amber-600' : 'text-green-600'}`}>{visibleProducts.length - filledCount > 0 ? visibleProducts.length - filledCount : '✓'}</div>
             </div>
           </div>
 
@@ -236,11 +335,14 @@ export default function InventurPage() {
 
   // ─── Listen-Modus ──────────────────────────────────────────────
   function renderList() {
-    const cats = Array.from(new Set(products.map((p) => p.category)))
+    if (visibleProducts.length === 0) {
+      return <div className="bg-white rounded-lg shadow-sm border p-8 text-center text-sm text-gray-500">Keine Getränke gefunden.</div>
+    }
+    const cats = Array.from(new Set(visibleProducts.map((p) => p.category)))
     return (
       <>
         {cats.map((cat) => {
-          const items = products.filter((p) => p.category === cat)
+          const items = visibleProducts.filter((p) => p.category === cat)
           return (
             <div key={cat} className="bg-white rounded-lg shadow-sm border overflow-hidden">
               <div className="bg-gray-50 border-b px-4 py-3 flex items-center gap-2">
@@ -254,10 +356,15 @@ export default function InventurPage() {
                   const total = entryTotal(p, e)
                   const si = sumItem(p.id)
                   return (
-                    <div key={p.id} className="px-4 py-3">
+                    <div key={p.id} className={`px-4 py-3 ${p.isCritical ? 'bg-amber-50/60' : ''}`}>
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 text-sm">{p.name}</div>
+                          <div className="font-medium text-gray-900 text-sm flex items-center gap-1.5">
+                            <button onClick={() => toggleCritical(p)} className="shrink-0 text-base leading-none" title={p.isCritical ? 'Kritisch-Markierung entfernen' : 'Als kritisch markieren'} aria-label="kritisch umschalten">
+                              <span className={p.isCritical ? '' : 'opacity-25 grayscale'}>⭐</span>
+                            </button>
+                            <span className="truncate">{p.name}</span>
+                          </div>
                           <div className="text-xs mt-0.5 text-gray-400">
                             {p.packSize > 0 ? `${p.packLabel || 'Träger'} à ${p.packSize}` : 'Einzelflaschen'}
                             {!blind && si ? <span className="text-gray-500"> · Anlieferung {si.baselineStock}</span> : null}
@@ -300,20 +407,28 @@ export default function InventurPage() {
 
   // ─── Helfer-Tour (ein Getränk pro Bildschirm) ──────────────────
   function renderTour() {
-    const p = products[tourIdx]
+    if (visibleProducts.length === 0) {
+      return <div className="bg-white rounded-lg shadow-sm border p-8 text-center text-sm text-gray-500">Keine Getränke gefunden.</div>
+    }
+    const p = visibleProducts[Math.min(tourIdx, visibleProducts.length - 1)]
     if (!p) return null
     const e = entries[p.id]
     const total = entryTotal(p, e)
-    const next = () => { doSave(); setTourIdx((i) => Math.min(products.length - 1, i + 1)) }
+    const next = () => { doSave(); setTourIdx((i) => Math.min(visibleProducts.length - 1, i + 1)) }
     const prev = () => { doSave(); setTourIdx((i) => Math.max(0, i - 1)) }
     return (
       <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
         <div className="bg-gray-900 px-4 py-3 text-white">
-          <div className="flex items-center justify-between text-xs"><span>{p.category}</span><span className="text-gray-300">{tourIdx + 1} / {products.length}</span></div>
-          <div className="h-1.5 bg-gray-700 rounded-full mt-2 overflow-hidden"><div className="h-full bg-green-500" style={{ width: `${((tourIdx + 1) / products.length) * 100}%` }} /></div>
+          <div className="flex items-center justify-between text-xs"><span>{p.category}</span><span className="text-gray-300">{tourIdx + 1} / {visibleProducts.length}</span></div>
+          <div className="h-1.5 bg-gray-700 rounded-full mt-2 overflow-hidden"><div className="h-full bg-green-500" style={{ width: `${((tourIdx + 1) / visibleProducts.length) * 100}%` }} /></div>
         </div>
         <div className="px-5 py-6 text-center">
-          <div className="text-xl font-bold text-gray-900">{p.name}</div>
+          <div className="flex items-center justify-center gap-2">
+            <button onClick={() => toggleCritical(p)} className="text-lg leading-none" title={p.isCritical ? 'Kritisch-Markierung entfernen' : 'Als kritisch markieren'} aria-label="kritisch umschalten">
+              <span className={p.isCritical ? '' : 'opacity-25 grayscale'}>⭐</span>
+            </button>
+            <div className="text-xl font-bold text-gray-900">{p.name}</div>
+          </div>
           <div className="text-xs text-gray-400 mt-1 mb-5">{p.packSize > 0 ? `Lieferung in ${p.packLabel || 'Träger'} à ${p.packSize} — volle ${p.packLabel || 'Träger'} + lose Flaschen zählen` : 'Einzelflaschen zählen'}</div>
           {p.packSize > 0 ? (
             <div>
@@ -341,7 +456,7 @@ export default function InventurPage() {
         </div>
         <div className="flex gap-2 px-4 pb-4">
           <button onClick={prev} disabled={tourIdx === 0} className="flex-1 h-12 rounded-lg border text-sm font-semibold text-gray-700 disabled:opacity-40">← Zurück</button>
-          <button onClick={next} disabled={tourIdx === products.length - 1} className="flex-1 h-12 rounded-lg bg-indigo-600 text-white text-sm font-semibold disabled:opacity-40">Weiter →</button>
+          <button onClick={next} disabled={tourIdx === visibleProducts.length - 1} className="flex-1 h-12 rounded-lg bg-indigo-600 text-white text-sm font-semibold disabled:opacity-40">Weiter →</button>
         </div>
       </div>
     )
@@ -378,6 +493,7 @@ export default function InventurPage() {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-gray-900 text-sm">
+                        {item.product.isCritical && <span title="Kritisch">⭐ </span>}
                         {item.product.name}
                         {low && <span className="ml-2 text-[11px] font-medium text-red-600">⚠ niedrig</span>}
                       </div>

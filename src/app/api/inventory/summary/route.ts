@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { NextResponse } from 'next/server'
-import { COUNT_SESSION_ORDER } from '@/types'
+import { inventorySessionRank } from '@/types'
 
 // Nie cachen: muss live den aktuellen Zählstand widerspiegeln.
 export const dynamic = 'force-dynamic'
@@ -15,10 +15,7 @@ export async function GET() {
     orderBy: [{ category: 'asc' }, { name: 'asc' }],
   })
 
-  const orderIndex = (key: string | null) => {
-    const i = key ? COUNT_SESSION_ORDER.indexOf(key) : -1
-    return i === -1 ? 999 : i
-  }
+  const orderIndex = (key: string | null) => inventorySessionRank(key)
 
   const summaryData = await Promise.all(
     products.map(async (product) => {

@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
       unit: body.unit,
       category: body.category,
       isActive: body.isActive ?? true,
+      isCritical: body.isCritical ?? false,
     },
   })
 
