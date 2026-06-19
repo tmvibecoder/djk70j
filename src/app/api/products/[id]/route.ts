@@ -39,6 +39,7 @@ export async function PUT(
       unit: body.unit,
       category: body.category,
       isActive: body.isActive,
+      isCritical: body.isCritical ?? false,
     },
   })
 

@@ -6,11 +6,13 @@ export async function GET(request: NextRequest) {
   const eventDay = searchParams.get('eventDay')
   const productId = searchParams.get('productId')
   const type = searchParams.get('type')
+  const time = searchParams.get('time')
 
   const where: Record<string, unknown> = {}
   if (eventDay) where.eventDay = eventDay
   if (productId) where.productId = productId
   if (type) where.type = type
+  if (time) where.time = time
 
   const inventories = await prisma.inventory.findMany({
     where,
@@ -31,6 +33,7 @@ export async function POST(request: NextRequest) {
       productId: body.productId,
       quantity: parseFloat(body.quantity),
       eventDay: body.eventDay,
+      time: body.time ?? null,
       type: body.type,
       notes: body.notes,
       date: body.date ? new Date(body.date) : new Date(),
@@ -46,16 +49,18 @@ export async function POST(request: NextRequest) {
 // Bulk upsert für schnelle Inventur-Erfassung
 export async function PUT(request: NextRequest) {
   const body = await request.json()
-  const { entries, eventDay, type } = body
+  const { entries, eventDay, type, time } = body
+  const slot = time ?? null
 
   const results = await Promise.all(
     entries.map(async (entry: { productId: string; quantity: number; notes?: string }) => {
-      // Prüfen ob bereits ein Eintrag für dieses Produkt/Tag/Typ existiert
+      // Prüfen ob bereits ein Eintrag für dieses Produkt/Tag/Typ/Uhrzeit existiert
       const existing = await prisma.inventory.findFirst({
         where: {
           productId: entry.productId,
           eventDay,
           type,
+          time: slot,
         },
       })
 
@@ -74,6 +79,7 @@ export async function PUT(request: NextRequest) {
             productId: entry.productId,
             quantity: entry.quantity,
             eventDay,
+            time: slot,
             type,
             notes: entry.notes,
           },
