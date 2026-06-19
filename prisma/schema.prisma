@@ -33,6 +33,10 @@ model Product {
   unit          String   // z.B. "Flasche", "Kiste", "Stück"
   category      String   // z.B. "Bier", "Softdrinks", "Wein", "Speisen"
   isActive      Boolean  @default(true)
+  // Warenwirtschaft: Trennung Katalog (Verkaufsware) vs. Inventur (eingekaufte Ware)
+  trackInventory Boolean @default(false) // true = erscheint in der Inventur statt im Katalog
+  packSize       Int     @default(0)     // Gebindegröße (z.B. 12 = Träger à 12); 0 = Einzelware
+  packLabel      String?                 // Bezeichnung des Gebindes, z.B. "Träger"
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -64,15 +68,19 @@ model Inventory {
   id        String   @id @default(cuid())
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  quantity  Float
+  quantity  Float    // Gesamtmenge in Flaschen/Stück (= packs * packSize + loose)
+  packs     Float?   // gezählte volle Gebinde (Träger), optional
+  loose     Float?   // gezählte lose Einzelflaschen, optional
+  session   String?  // Zählzeitpunkt-Key (z.B. "freitag", "samstag_spaet"); siehe COUNT_SESSIONS
   date      DateTime @default(now())
   eventDay  String   // "thursday", "friday", "saturday", "sunday"
-  type      String   // "start", "end", "delivery"
+  type      String   // "start", "end", "delivery", "count"
   notes     String?
   createdAt DateTime @default(now())
 
   @@index([productId])
   @@index([eventDay])
+  @@index([session])
 }
 
 // Verkaufsschätzungen

@@ -1,69 +1,74 @@
 import { prisma } from '@/lib/prisma'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
+import { COUNT_SESSION_ORDER } from '@/types'
 
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams
-  const eventDay = searchParams.get('eventDay')
+// Nie cachen: muss live den aktuellen Zählstand widerspiegeln.
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
-  // Alle aktiven Produkte holen
+// Übersicht für die Inventur (nur Inventur-Artikel = trackInventory).
+// Verbrauch = erste erfasste Zählung (+ Lieferungen) − letzte erfasste Zählung.
+// Warenwert basiert auf dem Einkaufspreis (EK), da es sich um eingekaufte Ware handelt.
+export async function GET() {
   const products = await prisma.product.findMany({
-    where: { isActive: true },
+    where: { trackInventory: true },
     orderBy: [{ category: 'asc' }, { name: 'asc' }],
   })
 
-  // Inventur-Daten für jedes Produkt sammeln
+  const orderIndex = (key: string | null) => {
+    const i = key ? COUNT_SESSION_ORDER.indexOf(key) : -1
+    return i === -1 ? 999 : i
+  }
+
   const summaryData = await Promise.all(
     products.map(async (product) => {
       const inventories = await prisma.inventory.findMany({
-        where: {
-          productId: product.id,
-          ...(eventDay ? { eventDay } : {}),
-        },
-        orderBy: { date: 'asc' },
+        where: { productId: product.id },
       })
 
-      // Berechne aktuellen Bestand
-      let currentStock = 0
-      const dayData: Record<string, { start: number; end: number; delivery: number; consumption: number }> = {}
-
+      // Zählungen pro Session sammeln
+      const sessions: Record<string, { quantity: number; packs: number | null; loose: number | null }> = {}
+      let delivery = 0
       for (const inv of inventories) {
-        if (!dayData[inv.eventDay]) {
-          dayData[inv.eventDay] = { start: 0, end: 0, delivery: 0, consumption: 0 }
+        if (inv.type === 'delivery') {
+          delivery += inv.quantity
+          continue
         }
-
-        if (inv.type === 'start') {
-          dayData[inv.eventDay].start = inv.quantity
-          currentStock = inv.quantity
-        } else if (inv.type === 'delivery') {
-          dayData[inv.eventDay].delivery += inv.quantity
-          currentStock += inv.quantity
-        } else if (inv.type === 'end') {
-          dayData[inv.eventDay].end = inv.quantity
-          dayData[inv.eventDay].consumption =
-            dayData[inv.eventDay].start + dayData[inv.eventDay].delivery - inv.quantity
-          currentStock = inv.quantity
+        const key = inv.session ?? inv.eventDay
+        sessions[key] = {
+          quantity: inv.quantity,
+          packs: inv.packs ?? null,
+          loose: inv.loose ?? null,
         }
       }
 
-      // Berechne Gesamtverbrauch und Umsatz
-      const totalConsumption = Object.values(dayData).reduce((sum, d) => sum + d.consumption, 0)
-      const revenue = totalConsumption * product.salePrice
-      const cost = totalConsumption * product.purchasePrice
-      const profit = revenue - cost
+      const countedKeys = Object.keys(sessions).sort((a, b) => orderIndex(a) - orderIndex(b))
+      const firstKey = countedKeys[0]
+      const lastKey = countedKeys[countedKeys.length - 1]
+
+      const baselineStock = firstKey ? sessions[firstKey].quantity + delivery : 0
+      const currentStock = lastKey ? sessions[lastKey].quantity : 0
+      const consumption = countedKeys.length >= 2 ? Math.max(0, baselineStock - currentStock) : 0
+
+      const stockValue = currentStock * product.purchasePrice
+      const consumptionValue = consumption * product.purchasePrice
+      const deliveredValue = (firstKey ? sessions[firstKey].quantity : 0) * product.purchasePrice
 
       return {
         product,
         currentStock,
-        dayData,
-        totalConsumption,
-        revenue,
-        cost,
-        profit,
+        baselineStock,
+        consumption,
+        delivery,
+        sessions,
+        countedSessions: countedKeys.length,
+        stockValue,
+        consumptionValue,
+        deliveredValue,
       }
     })
   )
 
-  // Gruppiere nach Kategorie
   const byCategory: Record<string, typeof summaryData> = {}
   for (const item of summaryData) {
     const cat = item.product.category
@@ -71,16 +76,12 @@ export async function GET(request: NextRequest) {
     byCategory[cat].push(item)
   }
 
-  // Gesamtübersicht
   const totals = {
-    revenue: summaryData.reduce((sum, item) => sum + item.revenue, 0),
-    cost: summaryData.reduce((sum, item) => sum + item.cost, 0),
-    profit: summaryData.reduce((sum, item) => sum + item.profit, 0),
+    stockValue: summaryData.reduce((s, i) => s + i.stockValue, 0),
+    consumptionValue: summaryData.reduce((s, i) => s + i.consumptionValue, 0),
+    deliveredValue: summaryData.reduce((s, i) => s + i.deliveredValue, 0),
+    consumption: summaryData.reduce((s, i) => s + i.consumption, 0),
   }
 
-  return NextResponse.json({
-    products: summaryData,
-    byCategory,
-    totals,
-  })
+  return NextResponse.json({ products: summaryData, byCategory, totals })
 }

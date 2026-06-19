@@ -70,6 +70,20 @@ export const INVENTORY_TYPE_LABELS: Record<InventoryType, string> = {
   delivery: 'Lieferung',
 }
 
+// Zähl-Zeitpunkte ("Sessions") für die Inventur – Reihenfolge = chronologisch.
+// Der Verbrauch wird aus der ersten vs. der letzten erfassten Session berechnet.
+export const COUNT_SESSIONS = [
+  { key: 'anlieferung',   label: 'Anlieferung / Start', short: 'Start' },
+  { key: 'freitag',       label: 'Freitag',             short: 'Fr' },
+  { key: 'samstag_frueh', label: 'Samstag früh',        short: 'Sa früh' },
+  { key: 'samstag_spaet', label: 'Samstag spät',        short: 'Sa spät' },
+  { key: 'sonntag',       label: 'Sonntag',             short: 'So' },
+  { key: 'montag',        label: 'Montag (Abschluss)',  short: 'Mo' },
+] as const
+
+export type CountSessionKey = typeof COUNT_SESSIONS[number]['key']
+export const COUNT_SESSION_ORDER: string[] = COUNT_SESSIONS.map((s) => s.key)
+
 export const PRIORITY_LEVELS = ['low', 'medium', 'high'] as const
 export type Priority = typeof PRIORITY_LEVELS[number]
 
