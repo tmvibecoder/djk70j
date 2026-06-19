@@ -33,6 +33,7 @@ model Product {
   unit          String   // z.B. "Flasche", "Kiste", "Stück"
   category      String   // z.B. "Bier", "Softdrinks", "Wein", "Speisen"
   isActive      Boolean  @default(true)
+  isCritical    Boolean  @default(false) // kritisches Getränk → regelmäßig zählen, hervorgehoben
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -66,8 +67,9 @@ model Inventory {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   quantity  Float
   date      DateTime @default(now())
-  eventDay  String   // "thursday", "friday", "saturday", "sunday"
-  type      String   // "start", "end", "delivery"
+  eventDay  String   // "wednesday", "thursday", "friday", "saturday", "sunday", "monday"
+  time      String?  // Uhrzeit der Aufnahme im 15/30-Min-Takt, z.B. "17:15" (null = ganztägig/legacy)
+  type      String   // "count" (Bestand), "delivery" (Lieferung) — legacy: "start", "end"
   notes     String?
   createdAt DateTime @default(now())
 
