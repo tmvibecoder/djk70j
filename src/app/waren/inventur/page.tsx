@@ -366,7 +366,7 @@ export default function InventurPage() {
                             <span className="truncate">{p.name}</span>
                           </div>
                           <div className="text-xs mt-0.5 text-gray-400">
-                            {p.packSize > 0 ? `${p.packLabel || 'Träger'} à ${p.packSize}` : 'Einzelflaschen'}
+                            {p.packSize > 0 ? `${p.packLabel || 'Träger'} à ${p.packSize}` : `Einzeln je ${p.unit}`}
                             {!blind && si ? <span className="text-gray-500"> · Anlieferung {si.baselineStock}</span> : null}
                           </div>
                         </div>
@@ -429,7 +429,7 @@ export default function InventurPage() {
             </button>
             <div className="text-xl font-bold text-gray-900">{p.name}</div>
           </div>
-          <div className="text-xs text-gray-400 mt-1 mb-5">{p.packSize > 0 ? `Lieferung in ${p.packLabel || 'Träger'} à ${p.packSize} — volle ${p.packLabel || 'Träger'} + lose Flaschen zählen` : 'Einzelflaschen zählen'}</div>
+          <div className="text-xs text-gray-400 mt-1 mb-5">{p.packSize > 0 ? `Lieferung in ${p.packLabel || 'Träger'} à ${p.packSize} — volle ${p.packLabel || 'Träger'} + lose Flaschen zählen` : `Einzeln zählen (${p.unit})`}</div>
           {p.packSize > 0 ? (
             <div>
               <div className="flex gap-3 justify-center">
@@ -444,7 +444,7 @@ export default function InventurPage() {
                   </div>
                 ))}
               </div>
-              <div className="text-sm font-semibold text-gray-900 mt-3">= {total} Flaschen gesamt</div>
+              <div className="text-sm font-semibold text-gray-900 mt-3">= {total} {p.unit} gesamt</div>
             </div>
           ) : (
             <div className="flex items-center justify-center gap-4">
