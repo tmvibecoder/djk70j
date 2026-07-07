@@ -139,7 +139,7 @@ npx prisma generate
 npx prisma db push          # Schema → frische SQLite-DB
 npx tsx prisma/seed-user.ts # Login-User DJKalle anlegen
 npm run db:seed             # Festplanung + Watt-Turnier seeden (prisma/seed.ts)
-npx tsx prisma/seed-dabberger.ts   # optional: Inventur-Artikel + Anlieferung
+npx tsx prisma/seed-anfangsbestand-2026-07-07.ts   # optional: Inventur-Artikel + Anfangsbestand Fest
 npm run dev                 # http://localhost:3000
 ```
 
@@ -149,7 +149,8 @@ npm run dev                 # http://localhost:3000
 
 - **`seed.ts`** (`npm run db:seed`) — Festplanung (`Bereich`, `Person`, `Task`, `TaskAssignment`, `Beschluss`) + Watt-Turnier aus `src/data/protokolle.ts`. **Lässt `User`, `Product`, `Inventory`, `SalesEntry`, `SalesEstimate` bewusst unangetastet**, damit Katalog/Preise und Login bei Re-Seed erhalten bleiben.
 - **`seed-user.ts`** — idempotenter Login-User-Seed (`DJKalle`). **Läuft bei jedem Deploy** (`scripts/deploy.sh`).
-- **`seed-dabberger.ts`** — Inventur-Artikel (Auftragsbestätigung Dabberger) inkl. Anlieferungs-Startbestand (Session `anlieferung`). **Löscht zuvor alle `trackInventory`-Artikel** (idempotent, aber destruktiv für Inventur-Stammdaten).
+- **`seed-anfangsbestand-2026-07-07.ts`** — **Anfangsbestand zum Fest** (Lieferungen Schweiger + Daberger LS 2026-23142, angeliefert & geprüft am 07.07.2026). Ersetzt alle `trackInventory`-Artikel samt Zählungen und legt die Anlieferung als Startbestand an (Session `anlieferung`). **Läuft beim Auto-Deploy**, ist aber per Marker gegen Mehrfachausführung geschützt — spätere Fest-Zählungen bleiben erhalten. Fässer/Kästen ohne bekannte Flaschenzahl werden in ganzen Gebinden gezählt (`unit` = Fass/Kasten, `packSize 0`); Träger/Trays/WINZZ mit bekannter Gebindegröße in vollen Gebinden + losen Flaschen.
+- **`seed-dabberger.ts`** — *veraltet, abgelöst durch `seed-anfangsbestand-2026-07-07.ts`*: Inventur-Artikel (Auftragsbestätigung Dabberger) inkl. Anlieferungs-Startbestand (Session `anlieferung`). **Löscht zuvor alle `trackInventory`-Artikel** (idempotent, aber destruktiv für Inventur-Stammdaten).
 - `migrate-*.ts` — historische Einmal-Migrationsskripte (z. B. `migrate-katalog-2026-04-13.ts`); nicht erneut nötig.
 
 ## Deployment & Git-Workflow
