@@ -204,8 +204,10 @@ model Beschluss {
 model CostItem {
   id          String   @id @default(cuid())
   name        String
-  projected   Float    @default(0)
+  projected   Float    @default(0)        // Brutto-Betrag; Netto/MwSt werden über vatRate abgeleitet
   actual      Float?
+  vatRate     Float    @default(0)        // MwSt-Satz in %: 0, 7 oder 19
+  amountEntry String   @default("brutto") // "netto" | "brutto" – wie der Betrag zuletzt eingegeben wurde
   dueDate     String   @default("before") // "before", "during", "after", "paid"
   costType    String   @default("fix")    // "fix", "variabel_getraenke", "variabel_sonstig", "unklar"
   status      String   @default("offen")  // "fix", "bezahlt", "zugesagt", "geplant", "geschaetzt", "offen", "klaeren", "bestellen", "anfragen"
