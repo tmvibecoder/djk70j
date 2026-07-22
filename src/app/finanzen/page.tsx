@@ -5,8 +5,10 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 interface CostItem {
   id: string
   name: string
-  projected: number
+  projected: number   // Brutto-Betrag
   actual: number | null
+  vatRate: number     // MwSt-Satz in %: 0, 7 oder 19
+  amountEntry: string // "netto" | "brutto" – wie der Betrag zuletzt eingegeben wurde
   dueDate: string
   costType: string
   status: string
@@ -106,6 +108,18 @@ const fmtEur = (v: number) => v.toLocaleString('de-DE', { style: 'currency', cur
 const fmtEur0 = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 const fmtNum = (v: number) => v.toLocaleString('de-DE', { maximumFractionDigits: 0 })
 
+const VAT_RATES = [
+  { value: 0, label: '0 %' },
+  { value: 7, label: '7 %' },
+  { value: 19, label: '19 %' },
+]
+const round2 = (v: number) => Math.round(v * 100) / 100
+// projected ist immer Brutto; vatRate kann bei Altdaten fehlen → wie 0 % behandeln
+const netOf = (c: { projected: number; vatRate?: number }) => c.projected / (1 + (c.vatRate || 0) / 100)
+const vatOf = (c: { projected: number; vatRate?: number }) => c.projected - netOf(c)
+
+const EMPTY_COST_FORM = { name: '', amount: 0, vatRate: 0, amountEntry: 'brutto', actual: null as number | null, dueDate: 'before', costType: 'fix', status: 'offen', eventDay: '' as string, notes: '' }
+
 function getStatusBadge(status: string) {
   const opt = STATUS_OPTIONS.find(s => s.value === status) || STATUS_OPTIONS[STATUS_OPTIONS.length - 1]
   return opt
@@ -173,7 +187,7 @@ export default function FinanzenPage() {
 
   // Cost form
   const [editCostId, setEditCostId] = useState<string | null>(null)
-  const [costForm, setCostForm] = useState({ name: '', projected: 0, actual: null as number | null, dueDate: 'before', costType: 'fix', status: 'offen', eventDay: '' as string, notes: '' })
+  const [costForm, setCostForm] = useState({ ...EMPTY_COST_FORM })
   const [showForm, setShowForm] = useState(false)
 
   // Sponsor form
@@ -202,13 +216,27 @@ export default function FinanzenPage() {
   // Cost CRUD
   const saveCost = async () => {
     if (!costForm.name.trim()) return
-    const body = { ...costForm, actual: costForm.actual || null, eventDay: costForm.eventDay || null }
+    const rate = costForm.vatRate || 0
+    // Gespeichert wird immer Brutto; bei Netto-Eingabe wird hochgerechnet
+    const gross = costForm.amountEntry === 'netto' ? round2(costForm.amount * (1 + rate / 100)) : costForm.amount
+    const body = {
+      name: costForm.name,
+      projected: gross,
+      vatRate: rate,
+      amountEntry: costForm.amountEntry,
+      actual: costForm.actual || null,
+      dueDate: costForm.dueDate,
+      costType: costForm.costType,
+      status: costForm.status,
+      eventDay: costForm.eventDay || null,
+      notes: costForm.notes,
+    }
     if (editCostId) {
       await fetch('/api/costs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editCostId, ...body }) })
     } else {
       await fetch('/api/costs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     }
-    setCostForm({ name: '', projected: 0, actual: null, dueDate: 'before', costType: 'fix', status: 'offen', eventDay: '', notes: '' })
+    setCostForm({ ...EMPTY_COST_FORM })
     setEditCostId(null)
     setShowForm(false)
     loadAll()
@@ -222,7 +250,19 @@ export default function FinanzenPage() {
 
   const startEditCost = (c: CostItem) => {
     setEditCostId(c.id)
-    setCostForm({ name: c.name, projected: c.projected, actual: c.actual, dueDate: c.dueDate, costType: c.costType, status: c.status, eventDay: c.eventDay || '', notes: c.notes || '' })
+    const entry = c.amountEntry === 'netto' ? 'netto' : 'brutto'
+    setCostForm({
+      name: c.name,
+      amount: entry === 'netto' ? round2(netOf(c)) : c.projected,
+      vatRate: c.vatRate || 0,
+      amountEntry: entry,
+      actual: c.actual,
+      dueDate: c.dueDate,
+      costType: c.costType,
+      status: c.status,
+      eventDay: c.eventDay || '',
+      notes: c.notes || '',
+    })
     setShowForm(true)
   }
 
@@ -251,7 +291,9 @@ export default function FinanzenPage() {
   }
 
   // Calculations
-  const totalCosts = costs.reduce((s, c) => s + c.projected, 0)
+  const totalCosts = costs.reduce((s, c) => s + c.projected, 0) // Brutto
+  const totalNetCosts = costs.reduce((s, c) => s + netOf(c), 0)
+  const totalVatCosts = totalCosts - totalNetCosts
   const totalSponsoring = sponsors.reduce((s, sp) => s + sp.amount, 0)
   const totalSponsoringReceived = sponsors.filter(sp => sp.received).reduce((s, sp) => s + sp.amount, 0)
 
@@ -351,8 +393,9 @@ export default function FinanzenPage() {
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-5 flex items-center gap-4" style={{ borderTopWidth: 4, borderTopColor: '#4F46E5' }}>
             <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-xl sm:text-2xl shrink-0" style={{ backgroundColor: '#4F46E51A' }}>💰</div>
             <div className="min-w-0">
-              <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-gray-500">Gesamtkosten</div>
+              <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-gray-500">Gesamtkosten (brutto)</div>
               <div className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-none mt-1 whitespace-nowrap">{fmtEur0(totalCosts)}</div>
+              <div className="text-[11px] text-gray-500 mt-1 whitespace-nowrap">Netto {fmtEur(totalNetCosts)} · MwSt {fmtEur(totalVatCosts)}</div>
             </div>
             <div className="ml-auto text-right shrink-0">
               <div className="text-xs sm:text-sm text-gray-400">{costs.length} {costs.length === 1 ? 'Position' : 'Positionen'}</div>
@@ -428,7 +471,7 @@ export default function FinanzenPage() {
           </div>
 
           {/* Neue Position Button */}
-          <button onClick={() => { setShowForm(!showForm); setEditCostId(null); setCostForm({ name: '', projected: 0, actual: null, dueDate: 'before', costType: 'fix', status: 'offen', eventDay: '', notes: '' }) }}
+          <button onClick={() => { setShowForm(!showForm); setEditCostId(null); setCostForm({ ...EMPTY_COST_FORM }) }}
             className={`group w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl text-sm font-semibold text-white shadow-md transition-all active:scale-[0.99] ${
               showForm
                 ? 'bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 shadow-gray-200'
@@ -447,10 +490,42 @@ export default function FinanzenPage() {
                   placeholder="Position (z.B. Zeltmiete)" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900" />
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="text-xs text-gray-500 font-medium">Betrag (€)</label>
-                    <input type="number" step="0.01" value={costForm.projected || ''} onChange={e => setCostForm(f => ({ ...f, projected: +e.target.value }))}
+                    <label className="text-xs text-gray-500 font-medium">Eingabe als</label>
+                    <div className="flex rounded-lg border border-gray-300 overflow-hidden mt-1">
+                      {(['netto', 'brutto'] as const).map(m => (
+                        <button key={m} type="button" onClick={() => setCostForm(f => ({ ...f, amountEntry: m }))}
+                          className={`flex-1 px-2 py-2 text-sm font-medium transition-colors ${costForm.amountEntry === m ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+                          {m === 'netto' ? 'Netto' : 'Brutto'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 font-medium">{costForm.amountEntry === 'netto' ? 'Netto-Betrag (€)' : 'Brutto-Betrag (€)'}</label>
+                    <input type="number" step="0.01" value={costForm.amount || ''} onChange={e => setCostForm(f => ({ ...f, amount: +e.target.value }))}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1" />
                   </div>
+                  <div>
+                    <label className="text-xs text-gray-500 font-medium">MwSt-Satz</label>
+                    <select value={costForm.vatRate} onChange={e => setCostForm(f => ({ ...f, vatRate: +e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1">
+                      {VAT_RATES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+                {costForm.amount > 0 && (() => {
+                  const rate = costForm.vatRate || 0
+                  const gross = costForm.amountEntry === 'netto' ? round2(costForm.amount * (1 + rate / 100)) : costForm.amount
+                  const net = round2(gross / (1 + rate / 100))
+                  return (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
+                      <span>Netto: <b className="text-gray-900">{fmtEur(net)}</b></span>
+                      <span>MwSt ({rate} %): <b className="text-gray-900">{fmtEur(round2(gross - net))}</b></span>
+                      <span>Brutto: <b className="text-gray-900">{fmtEur(gross)}</b></span>
+                    </div>
+                  )
+                })()}
+                <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-gray-500 font-medium">Status</label>
                     <select value={costForm.status} onChange={e => setCostForm(f => ({ ...f, status: e.target.value }))}
@@ -465,8 +540,6 @@ export default function FinanzenPage() {
                       {DUE_DATE_OPTIONS.map(d => <option key={d.value} value={d.value}>{d.icon} {d.label}</option>)}
                     </select>
                   </div>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-gray-500 font-medium">Tag</label>
                     <select value={costForm.eventDay} onChange={e => setCostForm(f => ({ ...f, eventDay: e.target.value }))}
@@ -551,7 +624,9 @@ export default function FinanzenPage() {
           {ACCORDION_DAYS.map(day => {
             const dayKey = day.key === null ? 'allgemein' : day.key
             const dayCosts = filteredCostsForDay(day.key)
-            const daySum = dayCosts.reduce((s, c) => s + c.projected, 0)
+            const daySum = dayCosts.reduce((s, c) => s + c.projected, 0) // Brutto
+            const dayNet = dayCosts.reduce((s, c) => s + netOf(c), 0)
+            const dayVat = daySum - dayNet
             if (dayCosts.length === 0) return null
             // Bei aktivem Filter automatisch aufklappen, damit Treffer sichtbar sind
             const isOpen = filterActive || openDays[dayKey] || false
@@ -575,6 +650,17 @@ export default function FinanzenPage() {
                 {isOpen && (
                   <div className="bg-white border border-t-0 border-gray-200 rounded-b-xl px-1 pb-1">
                     <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-[10px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
+                          <th className="px-4 py-2 text-left font-semibold">Position</th>
+                          <th className="px-2 py-2 text-left font-semibold">Status</th>
+                          <th className="px-2 py-2 text-left font-semibold hidden sm:table-cell">Fälligkeit</th>
+                          <th className="px-2 py-2 text-right font-semibold hidden sm:table-cell">Netto</th>
+                          <th className="px-2 py-2 text-right font-semibold hidden sm:table-cell">MwSt</th>
+                          <th className="px-3 py-2 text-right font-semibold">Brutto</th>
+                          <th></th>
+                        </tr>
+                      </thead>
                       <tbody>
                         {dayCosts.map(c => {
                           const badge = getStatusBadge(c.status)
@@ -597,7 +683,11 @@ export default function FinanzenPage() {
                                   </span>
                                 )}
                               </td>
-                              <td className="px-3 py-2.5 text-right font-bold text-gray-900">{fmtEur(c.projected)}</td>
+                              <td className="px-2 py-2.5 text-right text-gray-600 hidden sm:table-cell whitespace-nowrap">{fmtEur(netOf(c))}</td>
+                              <td className="px-2 py-2.5 text-right text-gray-500 hidden sm:table-cell whitespace-nowrap">
+                                {fmtEur(vatOf(c))}<span className="text-[10px] text-gray-400 ml-1">({c.vatRate || 0} %)</span>
+                              </td>
+                              <td className="px-3 py-2.5 text-right font-bold text-gray-900 whitespace-nowrap">{fmtEur(c.projected)}</td>
                               <td className="px-2 py-2.5">
                                 <div className="flex items-center justify-end gap-1.5">
                                   <button onClick={() => startEditCost(c)} title="Bearbeiten"
@@ -622,9 +712,15 @@ export default function FinanzenPage() {
                       </tbody>
                       <tfoot>
                         <tr className="bg-gray-50">
-                          <td className="px-4 py-2 font-bold text-gray-700 text-xs" colSpan={3}>SUMME</td>
-                          <td className="px-3 py-2 text-right font-bold text-gray-900">{fmtEur(daySum)}</td>
+                          <td className="px-4 py-2 font-bold text-gray-700 text-xs" colSpan={2}>SUMME</td>
+                          <td className="hidden sm:table-cell"></td>
+                          <td className="px-2 py-2 text-right font-semibold text-gray-700 hidden sm:table-cell whitespace-nowrap">{fmtEur(dayNet)}</td>
+                          <td className="px-2 py-2 text-right font-semibold text-gray-700 hidden sm:table-cell whitespace-nowrap">{fmtEur(dayVat)}</td>
+                          <td className="px-3 py-2 text-right font-bold text-gray-900 whitespace-nowrap">{fmtEur(daySum)}</td>
                           <td></td>
+                        </tr>
+                        <tr className="bg-gray-50 sm:hidden">
+                          <td colSpan={4} className="px-4 pb-2 text-right text-[11px] text-gray-500">Netto {fmtEur(dayNet)} · MwSt {fmtEur(dayVat)}</td>
                         </tr>
                       </tfoot>
                     </table>
@@ -1045,7 +1141,9 @@ export default function FinanzenPage() {
               {ACCORDION_DAYS.map(day => {
                 const dayCosts = costsForDay(day.key)
                 if (dayCosts.length === 0) return null
-                const daySum = dayCosts.reduce((s, c) => s + c.projected, 0)
+                const daySum = dayCosts.reduce((s, c) => s + c.projected, 0) // Brutto
+                const dayNet = dayCosts.reduce((s, c) => s + netOf(c), 0)
+                const dayVat = daySum - dayNet
                 return (
                   <div key={day.key === null ? 'allgemein' : day.key} className="print-avoid-break" style={{ marginBottom: 14 }}>
                     <div style={{ background: '#F3F4F6', borderLeft: '3px solid #6366F1', padding: '4px 9px', fontWeight: 700, fontSize: 11, borderRadius: 4, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
@@ -1058,7 +1156,9 @@ export default function FinanzenPage() {
                           <th style={cTh}>Position</th>
                           <th style={cTh}>Status</th>
                           <th style={cTh}>Zeitpunkt</th>
-                          <th style={cThR}>Betrag</th>
+                          <th style={cThR}>Netto</th>
+                          <th style={cThR}>MwSt</th>
+                          <th style={cThR}>Brutto</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1067,11 +1167,15 @@ export default function FinanzenPage() {
                             <td style={cTd}>{c.name}{c.notes ? <span style={{ color: '#9CA3AF' }}> – {c.notes}</span> : ''}</td>
                             <td style={cTd}><span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadge(c.status).color}`}>{getStatusBadge(c.status).label}</span></td>
                             <td style={cTd}>{dueLabel(c.dueDate)}</td>
-                            <td style={cTdR}>{fmtEur(c.projected)}</td>
+                            <td style={cTdR}>{fmtEur(netOf(c))}</td>
+                            <td style={cTdR}>{fmtEur(vatOf(c))} <span style={{ color: '#9CA3AF', fontSize: 9 }}>({c.vatRate || 0} %)</span></td>
+                            <td style={{ ...cTdR, fontWeight: 600 }}>{fmtEur(c.projected)}</td>
                           </tr>
                         ))}
                         <tr style={{ background: '#F3F4F6', fontWeight: 700 }}>
                           <td style={cTd} colSpan={3}>Summe {day.label}</td>
+                          <td style={cTdR}>{fmtEur(dayNet)}</td>
+                          <td style={cTdR}>{fmtEur(dayVat)}</td>
                           <td style={cTdR}>{fmtEur(daySum)}</td>
                         </tr>
                       </tbody>
@@ -1081,7 +1185,8 @@ export default function FinanzenPage() {
               })}
               <div style={{ border: '1px solid #E5E7EB', borderTop: '3px solid #4F46E5', borderRadius: 8, padding: '9px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }} className="print-avoid-break">
                 <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: '#4F46E5', fontWeight: 700 }}>Gesamtkosten</span>
-                <span style={{ fontSize: 16, fontWeight: 800, color: '#111827' }}>{fmtEur(totalCosts)}</span>
+                <span style={{ fontSize: 10, color: '#6B7280' }}>Netto {fmtEur(totalNetCosts)} · MwSt {fmtEur(totalVatCosts)}</span>
+                <span style={{ fontSize: 16, fontWeight: 800, color: '#111827' }}>{fmtEur(totalCosts)} <span style={{ fontSize: 10, fontWeight: 600, color: '#6B7280' }}>brutto</span></span>
               </div>
             </>
             )
