@@ -963,7 +963,7 @@ export default function FinanzenPage() {
                 <div className="border-l-4 border-indigo-600 pl-4">
                   <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-amber-600">DJK Ottenhofen e.V. · 70-Jahre-Jubiläumsfest</div>
                   <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 mt-0.5">Gesamtbericht Finanzen</h2>
-                  <div className="text-[11px] text-gray-400 mt-0.5">Fest vom 09.–12.07.2026 · über „PDF exportieren" oben druckbar</div>
+                  <div className="text-[11px] text-gray-400 mt-0.5">Fest vom 09.–12.07.2026 · über „PDF exportieren“ oben druckbar</div>
                 </div>
               </div>
 
