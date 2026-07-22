@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { UMSATZ_ENTRIES, UMSATZ_DAYS, UmsatzDayKey } from '@/lib/umsaetze'
 
 interface CostItem {
   id: string
@@ -37,6 +38,7 @@ const TABS = [
   { id: 'ergebnis', label: 'Gewinn', icon: '📊', accent: 'emerald' },
   { id: 'prognose', label: 'Rohertrag', icon: '🔮', accent: 'violet' },
   { id: 'kosten', label: 'Kosten', icon: '📋', accent: 'blue' },
+  { id: 'umsaetze', label: 'Umsätze', icon: '💶', accent: 'indigo' },
   { id: 'sponsoring', label: 'Spenden', icon: '🤝', accent: 'amber' },
 ]
 
@@ -45,6 +47,7 @@ const TAB_STYLES: Record<string, { active: string; inactive: string }> = {
   emerald: { active: 'bg-emerald-500 text-white border-emerald-500 shadow-emerald-200', inactive: 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50' },
   violet:  { active: 'bg-violet-500 text-white border-violet-500 shadow-violet-200', inactive: 'bg-white text-violet-700 border-violet-200 hover:bg-violet-50' },
   blue:    { active: 'bg-blue-500 text-white border-blue-500 shadow-blue-200', inactive: 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50' },
+  indigo:  { active: 'bg-indigo-500 text-white border-indigo-500 shadow-indigo-200', inactive: 'bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50' },
   amber:   { active: 'bg-amber-500 text-white border-amber-500 shadow-amber-200', inactive: 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50' },
 }
 
@@ -107,6 +110,8 @@ const EVENT_DAYS = [
 const fmtEur = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
 const fmtEur0 = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 const fmtNum = (v: number) => v.toLocaleString('de-DE', { maximumFractionDigits: 0 })
+const fmtNum2 = (v: number) => v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const fmtPct1 = (v: number) => v.toLocaleString('de-DE', { maximumFractionDigits: 1 }) + ' %'
 
 const VAT_RATES = [
   { value: 0, label: '0 %' },
@@ -193,6 +198,10 @@ export default function FinanzenPage() {
   // Sponsor form
   const [editSponsorId, setEditSponsorId] = useState<string | null>(null)
   const [sponsorForm, setSponsorForm] = useState({ name: '', amount: 0, received: false, notes: '' })
+
+  // Umsätze-Tab: Unterseite + Umlage-Schalter für die Allgemeinkosten
+  const [umsatzView, setUmsatzView] = useState<'matrix' | 'vergleich' | 'bericht'>('matrix')
+  const [umlegen, setUmlegen] = useState(false)
 
   const loadAll = useCallback(async () => {
     const [costsRes, sponsorsRes, forecastRes] = await Promise.all([
@@ -330,6 +339,33 @@ export default function FinanzenPage() {
   }
 
   const toggleDay = (key: string) => setOpenDays(prev => ({ ...prev, [key]: !prev[key] }))
+
+  // ── Umsätze (Endstände aus der Kassen-Excel, siehe src/lib/umsaetze.ts) ──
+  const umsatzGesamt = UMSATZ_ENTRIES.reduce(
+    (a, e) => ({ brutto: a.brutto + e.brutto, ust: a.ust + e.ust, netto: a.netto + e.netto }),
+    { brutto: 0, ust: 0, netto: 0 }
+  )
+  const umsatzTag = (day: UmsatzDayKey) => UMSATZ_ENTRIES.filter(e => e.day === day).reduce(
+    (a, e) => ({ brutto: a.brutto + e.brutto, ust: a.ust + e.ust, netto: a.netto + e.netto }),
+    { brutto: 0, ust: 0, netto: 0 }
+  )
+  const standortRows = Array.from(new Set(UMSATZ_ENTRIES.map(e => e.standort))).map(name => {
+    const es = UMSATZ_ENTRIES.filter(e => e.standort === name)
+    const perDay: Partial<Record<UmsatzDayKey, number>> = {}
+    es.forEach(e => { perDay[e.day] = e.brutto })
+    return { name, ustRate: es[0].ustRate, perDay, total: es.reduce((s, e) => s + e.brutto, 0) }
+  }).sort((a, b) => b.total - a.total)
+  const maxUmsatzZelle = Math.max(...UMSATZ_ENTRIES.map(e => e.brutto))
+  const ustSplit = ([7, 19] as const).map(rate => {
+    const es = UMSATZ_ENTRIES.filter(e => e.ustRate === rate)
+    return { rate, brutto: es.reduce((s, e) => s + e.brutto, 0), ust: es.reduce((s, e) => s + e.ust, 0) }
+  })
+  // Kosten je Tag (brutto) + optionale Umlage der Allgemeinkosten nach Umsatzanteil
+  const kostenTag = (day: string | null) => costs.filter(c => c.eventDay === day).reduce((s, c) => s + c.projected, 0)
+  const kostenAllgemein = kostenTag(null)
+  const umlageTag = (day: UmsatzDayKey) =>
+    umsatzGesamt.brutto > 0 ? kostenAllgemein * (umsatzTag(day).brutto / umsatzGesamt.brutto) : 0
+  const festErgebnis = umsatzGesamt.brutto - totalCosts
 
   // Status-Filter (Dropdown mit Checkboxen, oberhalb der Tage)
   // Nur Status anzeigen, die tatsächlich in den Kosten vorkommen
@@ -732,6 +768,362 @@ export default function FinanzenPage() {
         </div>
       )}
 
+      {/* ── UMSÄTZE TAB ── */}
+      {tab === 'umsaetze' && (
+        <div className="space-y-5">
+
+          {/* Unterseiten */}
+          <div className="flex gap-2">
+            {([['matrix', '💶', 'Umsätze'], ['vergleich', '⚖️', 'Vergleich'], ['bericht', '📈', 'Bericht']] as const).map(([k, ic, l]) => (
+              <button key={k} onClick={() => setUmsatzView(k)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-bold border transition-all ${
+                  umsatzView === k ? 'bg-indigo-500 border-indigo-500 text-white shadow-md' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}>
+                <span>{ic}</span> {l}
+              </button>
+            ))}
+          </div>
+
+          {/* ── Unterseite: Umsatz-Matrix ── */}
+          {umsatzView === 'matrix' && (<>
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+              {[
+                { label: 'Umsatz brutto', value: umsatzGesamt.brutto, accent: '#2563EB' },
+                { label: 'Umsatz netto', value: umsatzGesamt.netto, accent: '#0891B2' },
+                { label: 'Umsatzsteuer', value: umsatzGesamt.ust, accent: '#7C3AED' },
+              ].map(k => (
+                <div key={k.label} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-3 sm:p-4" style={{ borderTopWidth: 3, borderTopColor: k.accent }}>
+                  <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-gray-500">{k.label}</div>
+                  <div className="text-base sm:text-2xl font-extrabold text-gray-900 mt-1 whitespace-nowrap">{fmtEur(k.value)}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="w-1 h-4 rounded-full bg-indigo-600" />
+              <h2 className="text-xs font-bold uppercase tracking-wide text-gray-700">Umsatz nach Standort & Tag</h2>
+              <span className="ml-auto text-[11px] text-gray-400">brutto · Farbe = Höhe · % = Anteil am Gesamtumsatz</span>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-2 overflow-x-auto">
+              <table className="w-full text-sm min-w-[680px]">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
+                    <th className="px-3 py-2 text-left font-semibold">Standort</th>
+                    <th className="px-2 py-2 text-right font-semibold">USt</th>
+                    {UMSATZ_DAYS.map(d => <th key={d.key} className="px-2 py-2 text-right font-semibold">{d.icon} {d.short}</th>)}
+                    <th className="px-3 py-2 text-right font-semibold">Gesamt · Anteil</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {standortRows.map(r => (
+                    <tr key={r.name} className="border-b border-gray-100">
+                      <td className="px-3 py-2 font-medium text-gray-900">{r.name}</td>
+                      <td className="px-2 py-2 text-right text-gray-400 text-xs">{r.ustRate} %</td>
+                      {UMSATZ_DAYS.map(d => {
+                        const v = r.perDay[d.key]
+                        return (
+                          <td key={d.key} className="px-2 py-1.5 text-right">
+                            {v === undefined ? <span className="text-gray-300">—</span> : (
+                              <span className="inline-block rounded-md px-1.5 py-1 min-w-[68px]"
+                                style={{ backgroundColor: `rgba(37,99,235,${(0.06 + 0.49 * v / maxUmsatzZelle).toFixed(2)})` }}>
+                                <span className="block text-xs font-bold text-gray-900 whitespace-nowrap">{fmtNum2(v)}</span>
+                                <span className="block text-[9px] text-gray-600">{fmtPct1(v / umsatzGesamt.brutto * 100)}</span>
+                              </span>
+                            )}
+                          </td>
+                        )
+                      })}
+                      <td className="px-3 py-2 text-right whitespace-nowrap">
+                        <span className="font-bold text-gray-900">{fmtEur(r.total)}</span>
+                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
+                          <div className="h-full bg-blue-600 rounded-full" style={{ width: `${r.total / umsatzGesamt.brutto * 100}%` }} />
+                        </div>
+                        <span className="text-[10px] text-gray-400">{fmtPct1(r.total / umsatzGesamt.brutto * 100)}</span>
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="bg-gray-50 font-bold text-gray-900">
+                    <td className="px-3 py-2" colSpan={2}>Gesamt</td>
+                    {UMSATZ_DAYS.map(d => <td key={d.key} className="px-2 py-2 text-right whitespace-nowrap">{fmtNum2(umsatzTag(d.key).brutto)}</td>)}
+                    <td className="px-3 py-2 text-right whitespace-nowrap">{fmtEur(umsatzGesamt.brutto)}</td>
+                  </tr>
+                  <tr className="text-xs text-gray-400">
+                    <td className="px-3 py-1.5" colSpan={2}>Tagesanteil</td>
+                    {UMSATZ_DAYS.map(d => <td key={d.key} className="px-2 py-1.5 text-right">{fmtPct1(umsatzTag(d.key).brutto / umsatzGesamt.brutto * 100)}</td>)}
+                    <td className="px-3 py-1.5 text-right">100 %</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="w-1 h-4 rounded-full bg-violet-600" />
+              <h2 className="text-xs font-bold uppercase tracking-wide text-gray-700">Umsatzsteuer nach Satz</h2>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="flex h-4 rounded-lg overflow-hidden gap-0.5 mb-3">
+                <div className="bg-violet-600" style={{ width: `${ustSplit[1].brutto / umsatzGesamt.brutto * 100}%` }} />
+                <div className="bg-cyan-600" style={{ width: `${ustSplit[0].brutto / umsatzGesamt.brutto * 100}%` }} />
+              </div>
+              <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-600">
+                <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-violet-600 mr-1.5 align-[-1px]" /><b>19 %</b> (Getränke, Kaffee): {fmtEur(ustSplit[1].brutto)} brutto → <b className="text-gray-900">{fmtEur(ustSplit[1].ust)} USt</b></span>
+                <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-cyan-600 mr-1.5 align-[-1px]" /><b>7 %</b> (Essen, Eintritt): {fmtEur(ustSplit[0].brutto)} brutto → <b className="text-gray-900">{fmtEur(ustSplit[0].ust)} USt</b></span>
+              </div>
+            </div>
+          </>)}
+
+          {/* ── Unterseite: Vergleich Umsätze vs. Kosten ── */}
+          {umsatzView === 'vergleich' && (() => {
+            const rows = UMSATZ_DAYS.map(d => {
+              const u = umsatzTag(d.key).brutto
+              const k = kostenTag(d.key) + (umlegen ? umlageTag(d.key) : 0)
+              return { key: d.key as string, label: `${d.icon} ${d.short}`, short: d.short.split(' ')[0], umsatz: u as number | null, kosten: k }
+            })
+            if (!umlegen) rows.push({ key: 'allgemein', label: '📦 Allgemein', short: 'Allg.', umsatz: null, kosten: kostenAllgemein })
+            const maxVal = Math.max(...rows.map(r => Math.max(r.umsatz || 0, r.kosten)))
+            return (<>
+              <div className="inline-flex rounded-full border border-gray-200 overflow-hidden self-start">
+                <button onClick={() => setUmlegen(false)}
+                  className={`px-4 py-2 text-xs font-semibold ${!umlegen ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+                  Allgemeinkosten separat
+                </button>
+                <button onClick={() => setUmlegen(true)}
+                  className={`px-4 py-2 text-xs font-semibold ${umlegen ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+                  auf Tage umgelegt
+                </button>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="flex gap-4 text-[11px] text-gray-600 mb-2">
+                  <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-blue-600 mr-1.5 align-[-1px]" />Umsatz</span>
+                  <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-amber-600 mr-1.5 align-[-1px]" />Kosten{umlegen ? ' inkl. Umlage' : ''}</span>
+                </div>
+                <div className="flex items-end gap-3 sm:gap-5 h-44 border-b-2 border-gray-200 px-1 pt-5">
+                  {rows.map(r => (
+                    <div key={r.key} className="flex-1 h-full flex items-end justify-center gap-0.5">
+                      {r.umsatz !== null && (
+                        <div className="relative w-5 sm:w-7 rounded-t bg-blue-600" style={{ height: `${Math.max(r.umsatz / maxVal * 100, 1)}%` }}>
+                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 pb-0.5 text-[9px] sm:text-[10px] font-bold text-gray-600 whitespace-nowrap">{fmtNum(r.umsatz)}</span>
+                        </div>
+                      )}
+                      <div className="relative w-5 sm:w-7 rounded-t bg-amber-600" style={{ height: `${Math.max(r.kosten / maxVal * 100, 1)}%` }}>
+                        {r.kosten / maxVal > 0.06 && <span className="absolute bottom-full left-1/2 -translate-x-1/2 pb-0.5 text-[9px] sm:text-[10px] font-bold text-gray-600 whitespace-nowrap">{fmtNum(r.kosten)}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-3 sm:gap-5 px-1 pt-1.5">
+                  {rows.map(r => <div key={r.key} className="flex-1 text-center text-[11px] font-semibold text-gray-600">{r.short}</div>)}
+                </div>
+
+                <div className="overflow-x-auto mt-4">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-[10px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
+                        <th className="px-3 py-2 text-left font-semibold">Tag</th>
+                        <th className="px-2 py-2 text-right font-semibold">Umsatz</th>
+                        <th className="px-2 py-2 text-right font-semibold">Kosten{umlegen ? ' inkl. Umlage' : ''}</th>
+                        <th className="px-3 py-2 text-right font-semibold">Saldo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map(r => {
+                        const saldo = (r.umsatz || 0) - r.kosten
+                        return (
+                          <tr key={r.key} className="border-b border-gray-100">
+                            <td className="px-3 py-2 font-medium text-gray-900">{r.label}</td>
+                            <td className="px-2 py-2 text-right text-gray-600 whitespace-nowrap">{r.umsatz === null ? '—' : fmtEur(r.umsatz)}</td>
+                            <td className="px-2 py-2 text-right text-gray-600 whitespace-nowrap">{fmtEur(r.kosten)}</td>
+                            <td className={`px-3 py-2 text-right font-bold whitespace-nowrap ${saldo >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{saldo >= 0 ? '+' : '−'}{fmtEur(Math.abs(saldo))}</td>
+                          </tr>
+                        )
+                      })}
+                      <tr className="bg-gray-50 font-bold text-gray-900">
+                        <td className="px-3 py-2">Gesamt</td>
+                        <td className="px-2 py-2 text-right whitespace-nowrap">{fmtEur(umsatzGesamt.brutto)}</td>
+                        <td className="px-2 py-2 text-right whitespace-nowrap">{fmtEur(totalCosts)}</td>
+                        <td className={`px-3 py-2 text-right whitespace-nowrap ${festErgebnis >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{festErgebnis >= 0 ? '+' : '−'}{fmtEur(Math.abs(festErgebnis))}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                {umlegen && <p className="text-[11px] text-gray-400 mt-2">Allgemeinkosten ({fmtEur(kostenAllgemein)}) nach Umsatzanteil auf die Tage verteilt.</p>}
+              </div>
+            </>)
+          })()}
+
+          {/* ── Unterseite: Gesamtbericht ── */}
+          {umsatzView === 'bericht' && (() => {
+            const KOSTEN_BEREICHE = [
+              ...UMSATZ_DAYS.map(d => ({ key: d.key as string | null, label: `${d.icon} ${d.short.split(' ')[0]}` })),
+              { key: null, label: '📦 Allgemein' },
+            ]
+            return (<>
+              <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 flex items-center gap-4">
+                <div className="border-l-4 border-indigo-600 pl-4">
+                  <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-amber-600">DJK Ottenhofen e.V. · 70-Jahre-Jubiläumsfest</div>
+                  <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 mt-0.5">Gesamtbericht Finanzen</h2>
+                  <div className="text-[11px] text-gray-400 mt-0.5">Fest vom 09.–12.07.2026 · über „PDF exportieren" oben druckbar</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
+                {[
+                  { label: 'Umsatz brutto', value: fmtEur(umsatzGesamt.brutto), accent: '#2563EB', color: 'text-gray-900' },
+                  { label: 'Umsatz netto', value: fmtEur(umsatzGesamt.netto), accent: '#0891B2', color: 'text-gray-900' },
+                  { label: 'Umsatzsteuer', value: fmtEur(umsatzGesamt.ust), accent: '#7C3AED', color: 'text-gray-900' },
+                  { label: 'Kosten', value: fmtEur(totalCosts), accent: '#D97706', color: 'text-gray-900' },
+                  { label: 'Ergebnis', value: `${festErgebnis >= 0 ? '+' : '−'}${fmtEur(Math.abs(festErgebnis))}`, accent: '#059669', color: festErgebnis >= 0 ? 'text-emerald-600' : 'text-red-600' },
+                ].map((k, i) => (
+                  <div key={k.label} className={`bg-white rounded-xl border border-gray-200 p-2.5 sm:p-3 ${i === 4 ? 'col-span-2 sm:col-span-1' : ''}`} style={{ borderTopWidth: 3, borderTopColor: k.accent }}>
+                    <div className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide text-gray-500">{k.label}</div>
+                    <div className={`text-sm sm:text-base font-extrabold mt-0.5 whitespace-nowrap ${k.color}`}>{k.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="w-1 h-4 rounded-full bg-indigo-600" />
+                <h2 className="text-xs font-bold uppercase tracking-wide text-gray-700">1 · Tagesvergleich</h2>
+                <span className="ml-auto text-[11px] text-gray-400">Umsätze & Kosten je Tag</span>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-2 overflow-x-auto">
+                <table className="w-full text-sm min-w-[640px]">
+                  <thead>
+                    <tr className="text-[10px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
+                      <th className="px-3 py-2 text-left font-semibold"></th>
+                      {UMSATZ_DAYS.map(d => <th key={d.key} className="px-2 py-2 text-right font-semibold">{d.icon} {d.short}</th>)}
+                      <th className="px-2 py-2 text-right font-semibold">📦 Allg.</th>
+                      <th className="px-3 py-2 text-right font-semibold">Gesamt</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-gray-100">
+                      <td className="px-3 py-2 font-medium text-gray-900">Umsatz brutto</td>
+                      {UMSATZ_DAYS.map(d => <td key={d.key} className="px-2 py-2 text-right text-gray-600 whitespace-nowrap">{fmtNum2(umsatzTag(d.key).brutto)}</td>)}
+                      <td className="px-2 py-2 text-right text-gray-300">—</td>
+                      <td className="px-3 py-2 text-right font-bold text-gray-900 whitespace-nowrap">{fmtEur(umsatzGesamt.brutto)}</td>
+                    </tr>
+                    <tr className="border-b border-gray-100 text-gray-400">
+                      <td className="px-3 py-2">davon USt</td>
+                      {UMSATZ_DAYS.map(d => <td key={d.key} className="px-2 py-2 text-right whitespace-nowrap">{fmtNum2(umsatzTag(d.key).ust)}</td>)}
+                      <td className="px-2 py-2 text-right">—</td>
+                      <td className="px-3 py-2 text-right whitespace-nowrap">{fmtEur(umsatzGesamt.ust)}</td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="px-3 py-2 font-medium text-gray-900">Umsatz netto</td>
+                      {UMSATZ_DAYS.map(d => <td key={d.key} className="px-2 py-2 text-right text-gray-600 whitespace-nowrap">{fmtNum2(umsatzTag(d.key).netto)}</td>)}
+                      <td className="px-2 py-2 text-right text-gray-300">—</td>
+                      <td className="px-3 py-2 text-right font-bold text-gray-900 whitespace-nowrap">{fmtEur(umsatzGesamt.netto)}</td>
+                    </tr>
+                    <tr className="border-b border-gray-100 text-gray-400">
+                      <td className="px-3 py-2">Anteil am Umsatz</td>
+                      {UMSATZ_DAYS.map(d => <td key={d.key} className="px-2 py-2 text-right">{fmtPct1(umsatzTag(d.key).brutto / umsatzGesamt.brutto * 100)}</td>)}
+                      <td className="px-2 py-2 text-right">—</td>
+                      <td className="px-3 py-2 text-right">100 %</td>
+                    </tr>
+                    <tr className="border-b border-gray-100">
+                      <td className="px-3 py-2 font-medium text-gray-900">Kosten</td>
+                      {UMSATZ_DAYS.map(d => <td key={d.key} className="px-2 py-2 text-right text-gray-600 whitespace-nowrap">{fmtNum2(kostenTag(d.key))}</td>)}
+                      <td className="px-2 py-2 text-right text-gray-600 whitespace-nowrap">{fmtNum2(kostenAllgemein)}</td>
+                      <td className="px-3 py-2 text-right font-bold text-gray-900 whitespace-nowrap">{fmtEur(totalCosts)}</td>
+                    </tr>
+                    <tr className="bg-gray-50 font-bold">
+                      <td className="px-3 py-2 text-gray-900">Saldo</td>
+                      {UMSATZ_DAYS.map(d => {
+                        const s = umsatzTag(d.key).brutto - kostenTag(d.key)
+                        return <td key={d.key} className={`px-2 py-2 text-right whitespace-nowrap ${s >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{s >= 0 ? '+' : '−'}{fmtNum2(Math.abs(s))}</td>
+                      })}
+                      <td className="px-2 py-2 text-right text-red-600 whitespace-nowrap">−{fmtNum2(kostenAllgemein)}</td>
+                      <td className={`px-3 py-2 text-right whitespace-nowrap ${festErgebnis >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{festErgebnis >= 0 ? '+' : '−'}{fmtEur(Math.abs(festErgebnis))}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="w-1 h-4 rounded-full bg-indigo-600" />
+                <h2 className="text-xs font-bold uppercase tracking-wide text-gray-700">2 · Umsätze nach Standort</h2>
+                <span className="ml-auto text-[11px] text-gray-400">brutto, je Tag</span>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-2 overflow-x-auto">
+                <table className="w-full text-sm min-w-[640px]">
+                  <thead>
+                    <tr className="text-[10px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
+                      <th className="px-3 py-2 text-left font-semibold">Standort</th>
+                      <th className="px-2 py-2 text-right font-semibold">USt</th>
+                      {UMSATZ_DAYS.map(d => <th key={d.key} className="px-2 py-2 text-right font-semibold">{d.short.split(' ')[0]}</th>)}
+                      <th className="px-2 py-2 text-right font-semibold">Gesamt</th>
+                      <th className="px-3 py-2 text-right font-semibold">Anteil</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {standortRows.map(r => (
+                      <tr key={r.name} className="border-b border-gray-100">
+                        <td className="px-3 py-2 font-medium text-gray-900">{r.name}</td>
+                        <td className="px-2 py-2 text-right text-gray-400 text-xs">{r.ustRate} %</td>
+                        {UMSATZ_DAYS.map(d => (
+                          <td key={d.key} className="px-2 py-2 text-right text-gray-600 whitespace-nowrap">
+                            {r.perDay[d.key] === undefined ? <span className="text-gray-300">—</span> : fmtNum2(r.perDay[d.key]!)}
+                          </td>
+                        ))}
+                        <td className="px-2 py-2 text-right font-bold text-gray-900 whitespace-nowrap">{fmtNum2(r.total)}</td>
+                        <td className="px-3 py-2 text-right text-gray-600">{fmtPct1(r.total / umsatzGesamt.brutto * 100)}</td>
+                      </tr>
+                    ))}
+                    <tr className="bg-gray-50 font-bold text-gray-900">
+                      <td className="px-3 py-2" colSpan={2}>Gesamt</td>
+                      {UMSATZ_DAYS.map(d => <td key={d.key} className="px-2 py-2 text-right whitespace-nowrap">{fmtNum2(umsatzTag(d.key).brutto)}</td>)}
+                      <td className="px-2 py-2 text-right whitespace-nowrap">{fmtEur(umsatzGesamt.brutto)}</td>
+                      <td className="px-3 py-2 text-right">100 %</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="w-1 h-4 rounded-full bg-indigo-600" />
+                <h2 className="text-xs font-bold uppercase tracking-wide text-gray-700">3 · Kosten im Überblick</h2>
+                <span className="ml-auto text-[11px] text-gray-400">aus der Kosten-Seite, brutto</span>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-2 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-[10px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
+                      <th className="px-3 py-2 text-left font-semibold">Bereich</th>
+                      <th className="px-2 py-2 text-right font-semibold">Positionen</th>
+                      <th className="px-2 py-2 text-right font-semibold hidden sm:table-cell">Größte Position</th>
+                      <th className="px-3 py-2 text-right font-semibold">Summe</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {KOSTEN_BEREICHE.map(b => {
+                      const bc = costs.filter(c => c.eventDay === b.key)
+                      if (bc.length === 0) return null
+                      const biggest = bc.reduce((m, c) => (c.projected > m.projected ? c : m), bc[0])
+                      return (
+                        <tr key={b.label} className="border-b border-gray-100">
+                          <td className="px-3 py-2 font-medium text-gray-900">{b.label}</td>
+                          <td className="px-2 py-2 text-right text-gray-400">{bc.length}</td>
+                          <td className="px-2 py-2 text-right text-gray-400 hidden sm:table-cell">{biggest.name} · {fmtNum2(biggest.projected)}</td>
+                          <td className="px-3 py-2 text-right font-bold text-gray-900 whitespace-nowrap">{fmtEur(kostenTag(b.key))}</td>
+                        </tr>
+                      )
+                    })}
+                    <tr className="bg-gray-50 font-bold text-gray-900">
+                      <td className="px-3 py-2">Gesamt</td>
+                      <td className="px-2 py-2 text-right">{costs.length}</td>
+                      <td className="hidden sm:table-cell"></td>
+                      <td className="px-3 py-2 text-right whitespace-nowrap">{fmtEur(totalCosts)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </>)
+          })()}
+        </div>
+      )}
+
       {/* ── ROHERTRAG / PROGNOSE TAB ── */}
       {tab === 'prognose' && (
         <div className="space-y-4">
@@ -1033,7 +1425,7 @@ export default function FinanzenPage() {
       const dueLabel = (v: string) => DUE_DATE_OPTIONS.find(d => d.value === v)?.label ?? v
       const realisticRev = calcScenarioRevenue('realistic')
       const realisticProfit = realisticRev.rohertrag + totalSponsoring - totalCosts
-      const PDF_TITLES: Record<string, string> = { kosten: 'Kostenübersicht', ergebnis: 'Gewinn / Ergebnis', prognose: 'Rohertrag-Prognose', sponsoring: 'Spenden' }
+      const PDF_TITLES: Record<string, string> = { kosten: 'Kostenübersicht', ergebnis: 'Gewinn / Ergebnis', prognose: 'Rohertrag-Prognose', sponsoring: 'Spenden', umsaetze: 'Gesamtbericht Finanzen' }
       const pdfTitle = PDF_TITLES[tab] ?? 'Finanzplanung'
 
       // Gemeinsame Tabellen-Styles – hell, passend zur Web-Oberfläche
@@ -1191,6 +1583,106 @@ export default function FinanzenPage() {
             </>
             )
           })()}
+
+          {/* ── UMSÄTZE / GESAMTBERICHT ── */}
+          {tab === 'umsaetze' && (
+            <>
+              <div style={{ display: 'flex', gap: 10, marginBottom: 18 }} className="print-avoid-break">
+                {kpiCard('Umsatz brutto', fmtEur(umsatzGesamt.brutto), '#2563EB')}
+                {kpiCard('Umsatz netto', fmtEur(umsatzGesamt.netto), '#0891B2')}
+                {kpiCard('Umsatzsteuer', fmtEur(umsatzGesamt.ust), '#7C3AED')}
+                {kpiCard('Kosten', fmtEur(totalCosts), '#D97706')}
+                {kpiCard('Ergebnis', `${festErgebnis >= 0 ? '+' : '−'}${fmtEur(Math.abs(festErgebnis))}`, festErgebnis >= 0 ? '#16A34A' : '#DC2626')}
+              </div>
+
+              <div className="print-avoid-break" style={{ marginBottom: 22 }}>
+                {sectionTitle('Tagesvergleich — Umsätze & Kosten', '#4F46E5')}
+                <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={cTh}></th>
+                      {UMSATZ_DAYS.map(d => <th key={d.key} style={cThR}>{d.short}</th>)}
+                      <th style={cThR}>Allg.</th>
+                      <th style={cThR}>Gesamt</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={cTd}>Umsatz brutto</td>
+                      {UMSATZ_DAYS.map(d => <td key={d.key} style={cTdR}>{fmtNum2(umsatzTag(d.key).brutto)}</td>)}
+                      <td style={cTdR}>—</td>
+                      <td style={{ ...cTdR, fontWeight: 700 }}>{fmtEur(umsatzGesamt.brutto)}</td>
+                    </tr>
+                    <tr style={{ color: '#9CA3AF' }}>
+                      <td style={cTd}>davon USt</td>
+                      {UMSATZ_DAYS.map(d => <td key={d.key} style={cTdR}>{fmtNum2(umsatzTag(d.key).ust)}</td>)}
+                      <td style={cTdR}>—</td>
+                      <td style={cTdR}>{fmtEur(umsatzGesamt.ust)}</td>
+                    </tr>
+                    <tr>
+                      <td style={cTd}>Umsatz netto</td>
+                      {UMSATZ_DAYS.map(d => <td key={d.key} style={cTdR}>{fmtNum2(umsatzTag(d.key).netto)}</td>)}
+                      <td style={cTdR}>—</td>
+                      <td style={{ ...cTdR, fontWeight: 700 }}>{fmtEur(umsatzGesamt.netto)}</td>
+                    </tr>
+                    <tr style={{ color: '#9CA3AF' }}>
+                      <td style={cTd}>Anteil am Umsatz</td>
+                      {UMSATZ_DAYS.map(d => <td key={d.key} style={cTdR}>{fmtPct1(umsatzTag(d.key).brutto / umsatzGesamt.brutto * 100)}</td>)}
+                      <td style={cTdR}>—</td>
+                      <td style={cTdR}>100 %</td>
+                    </tr>
+                    <tr>
+                      <td style={cTd}>Kosten</td>
+                      {UMSATZ_DAYS.map(d => <td key={d.key} style={cTdR}>{fmtNum2(kostenTag(d.key))}</td>)}
+                      <td style={cTdR}>{fmtNum2(kostenAllgemein)}</td>
+                      <td style={{ ...cTdR, fontWeight: 700 }}>{fmtEur(totalCosts)}</td>
+                    </tr>
+                    <tr style={{ background: '#F3F4F6', fontWeight: 700 }}>
+                      <td style={cTd}>Saldo</td>
+                      {UMSATZ_DAYS.map(d => {
+                        const s = umsatzTag(d.key).brutto - kostenTag(d.key)
+                        return <td key={d.key} style={{ ...cTdR, color: s >= 0 ? '#15803D' : '#DC2626' }}>{s >= 0 ? '+' : '−'}{fmtNum2(Math.abs(s))}</td>
+                      })}
+                      <td style={{ ...cTdR, color: '#DC2626' }}>−{fmtNum2(kostenAllgemein)}</td>
+                      <td style={{ ...cTdR, color: festErgebnis >= 0 ? '#15803D' : '#DC2626' }}>{festErgebnis >= 0 ? '+' : '−'}{fmtEur(Math.abs(festErgebnis))}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="print-avoid-break" style={{ marginBottom: 22 }}>
+                {sectionTitle('Umsätze nach Standort (brutto)', '#2563EB')}
+                <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={cTh}>Standort</th>
+                      <th style={cThR}>USt</th>
+                      {UMSATZ_DAYS.map(d => <th key={d.key} style={cThR}>{d.short.split(' ')[0]}</th>)}
+                      <th style={cThR}>Gesamt</th>
+                      <th style={cThR}>Anteil</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {standortRows.map((r, i) => (
+                      <tr key={r.name} style={zebra(i)}>
+                        <td style={cTd}>{r.name}</td>
+                        <td style={cTdR}>{r.ustRate} %</td>
+                        {UMSATZ_DAYS.map(d => <td key={d.key} style={cTdR}>{r.perDay[d.key] === undefined ? '—' : fmtNum2(r.perDay[d.key]!)}</td>)}
+                        <td style={{ ...cTdR, fontWeight: 600 }}>{fmtNum2(r.total)}</td>
+                        <td style={cTdR}>{fmtPct1(r.total / umsatzGesamt.brutto * 100)}</td>
+                      </tr>
+                    ))}
+                    <tr style={{ background: '#F3F4F6', fontWeight: 700 }}>
+                      <td style={cTd} colSpan={2}>Gesamt</td>
+                      {UMSATZ_DAYS.map(d => <td key={d.key} style={cTdR}>{fmtNum2(umsatzTag(d.key).brutto)}</td>)}
+                      <td style={cTdR}>{fmtEur(umsatzGesamt.brutto)}</td>
+                      <td style={cTdR}>100 %</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
 
           {/* ── GEWINN / ERGEBNIS ── */}
           {tab === 'ergebnis' && (
