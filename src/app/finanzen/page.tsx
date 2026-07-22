@@ -25,21 +25,12 @@ interface Sponsor {
   notes: string | null
 }
 
-interface SimpleForecast {
-  eventDay: string
-  scenario: string
-  visitors: number
-  revenuePerPerson: number
-  entryFee: number
-  costPercent: number
-}
-
 const TABS = [
-  { id: 'ergebnis', label: 'Gewinn', icon: '📊', accent: 'emerald' },
-  { id: 'prognose', label: 'Rohertrag', icon: '🔮', accent: 'violet' },
-  { id: 'kosten', label: 'Kosten', icon: '📋', accent: 'blue' },
   { id: 'umsaetze', label: 'Umsätze', icon: '💶', accent: 'indigo' },
+  { id: 'kosten', label: 'Kosten', icon: '📋', accent: 'blue' },
   { id: 'sponsoring', label: 'Spenden', icon: '🤝', accent: 'amber' },
+  { id: 'vergleich', label: 'Vergleich', icon: '⚖️', accent: 'emerald' },
+  { id: 'bericht', label: 'Bericht', icon: '📈', accent: 'violet' },
 ]
 
 // Farbige, helle Tab-Optik (statische Klassen, damit Tailwind sie generiert)
@@ -93,20 +84,6 @@ const ACCORDION_DAYS = [
   { key: null, label: 'Allgemein', date: '', event: 'Tagesunabhängig', icon: '📦' },
 ]
 
-const SCENARIOS = [
-  { key: 'pessimistic', label: 'Pessimistisch', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', headerBg: 'bg-red-600' },
-  { key: 'realistic', label: 'Realistisch', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-300', headerBg: 'bg-blue-600' },
-  { key: 'optimistic', label: 'Optimistisch', color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', headerBg: 'bg-green-600' },
-]
-
-const EVENT_DAYS = [
-  { key: 'thursday', label: 'Do 09.07.', short: 'Do', icon: '🃏' },
-  { key: 'friday', label: 'Fr 10.07.', short: 'Fr', icon: '🎶' },
-  { key: 'saturday_day', label: 'Sa Tag', short: 'Sa☀️', icon: '⚽' },
-  { key: 'saturday_night', label: 'Sa Abend', short: 'Sa🌙', icon: '🎉' },
-  { key: 'sunday', label: 'So 12.07.', short: 'So', icon: '⛪' },
-]
-
 const fmtEur = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
 const fmtEur0 = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 const fmtNum = (v: number) => v.toLocaleString('de-DE', { maximumFractionDigits: 0 })
@@ -131,64 +108,15 @@ function getStatusBadge(status: string) {
 }
 
 export default function FinanzenPage() {
-  const [tab, setTab] = useState('kosten')
+  const [tab, setTab] = useState('umsaetze')
   const [costs, setCosts] = useState<CostItem[]>([])
   const [sponsors, setSponsors] = useState<Sponsor[]>([])
-  const [simpleForecasts, setSimpleForecasts] = useState<SimpleForecast[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedScenario, setSelectedScenario] = useState('realistic')
   const [openDays, setOpenDays] = useState<Record<string, boolean>>({})
   // Ausgeblendete Status (leer = alle sichtbar)
   const [hiddenStatuses, setHiddenStatuses] = useState<string[]>([])
   const [filterOpen, setFilterOpen] = useState(false)
   const filterRef = useRef<HTMLDivElement>(null)
-
-  // Prognose edits
-  const [forecastEdits, setForecastEdits] = useState<Record<string, SimpleForecast>>({})
-  const [savingForecast, setSavingForecast] = useState(false)
-
-  const FORECAST_DAYS = [
-    { key: 'thursday', label: 'Donnerstag', event: 'Watt-Turnier', icon: '🃏' },
-    { key: 'friday', label: 'Freitag', event: 'Disco-Party', icon: '🎶' },
-    { key: 'saturday_day', label: 'Sa Festprogramm', event: 'Tagsüber', icon: '⚽' },
-    { key: 'saturday_night', label: 'Sa Festzeltparty', event: 'Abends', icon: '🎉' },
-    { key: 'sunday', label: 'Sonntag', event: 'Festsonntag', icon: '⛪' },
-  ]
-
-  const DEFAULTS: Record<string, Record<string, { visitors: number; revenuePerPerson: number; entryFee: number; costPercent: number }>> = {
-    thursday:       { pessimistic: { visitors: 100, revenuePerPerson: 10, entryFee: 0, costPercent: 25 }, realistic: { visitors: 150, revenuePerPerson: 15, entryFee: 0, costPercent: 25 }, optimistic: { visitors: 200, revenuePerPerson: 20, entryFee: 0, costPercent: 25 } },
-    friday:         { pessimistic: { visitors: 200, revenuePerPerson: 20, entryFee: 5, costPercent: 25 }, realistic: { visitors: 300, revenuePerPerson: 30, entryFee: 5, costPercent: 25 }, optimistic: { visitors: 400, revenuePerPerson: 40, entryFee: 5, costPercent: 25 } },
-    saturday_day:   { pessimistic: { visitors: 150, revenuePerPerson: 10, entryFee: 0, costPercent: 25 }, realistic: { visitors: 300, revenuePerPerson: 15, entryFee: 0, costPercent: 25 }, optimistic: { visitors: 400, revenuePerPerson: 20, entryFee: 0, costPercent: 25 } },
-    saturday_night: { pessimistic: { visitors: 300, revenuePerPerson: 20, entryFee: 10, costPercent: 25 }, realistic: { visitors: 400, revenuePerPerson: 30, entryFee: 10, costPercent: 25 }, optimistic: { visitors: 500, revenuePerPerson: 40, entryFee: 10, costPercent: 25 } },
-    sunday:         { pessimistic: { visitors: 100, revenuePerPerson: 20, entryFee: 0, costPercent: 25 }, realistic: { visitors: 200, revenuePerPerson: 30, entryFee: 0, costPercent: 25 }, optimistic: { visitors: 300, revenuePerPerson: 40, entryFee: 0, costPercent: 25 } },
-  }
-
-  const getForecastEntry = (day: string, scenario: string): SimpleForecast => {
-    const key = `${day}-${scenario}`
-    if (forecastEdits[key]) return forecastEdits[key]
-    const saved = simpleForecasts.find(f => f.eventDay === day && f.scenario === scenario)
-    if (saved) return saved
-    const def = DEFAULTS[day]?.[scenario]
-    return { eventDay: day, scenario, visitors: def?.visitors || 0, revenuePerPerson: def?.revenuePerPerson || 0, entryFee: def?.entryFee || 0, costPercent: def?.costPercent || 25 }
-  }
-
-  const setForecastField = (day: string, scenario: string, field: keyof SimpleForecast, value: number) => {
-    const key = `${day}-${scenario}`
-    const current = getForecastEntry(day, scenario)
-    setForecastEdits(prev => ({ ...prev, [key]: { ...current, [field]: value } }))
-  }
-
-  const hasForecastChanges = Object.keys(forecastEdits).length > 0
-
-  const saveForecast = async () => {
-    setSavingForecast(true)
-    for (const entry of Object.values(forecastEdits)) {
-      await fetch('/api/simple-forecast', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry) })
-    }
-    setForecastEdits({})
-    await loadAll()
-    setSavingForecast(false)
-  }
 
   // Cost form
   const [editCostId, setEditCostId] = useState<string | null>(null)
@@ -199,24 +127,17 @@ export default function FinanzenPage() {
   const [editSponsorId, setEditSponsorId] = useState<string | null>(null)
   const [sponsorForm, setSponsorForm] = useState({ name: '', amount: 0, received: false, notes: '' })
 
-  // Umsätze-Tab: Unterseite + Umlage-Schalter für die Allgemeinkosten
-  const [umsatzView, setUmsatzView] = useState<'matrix' | 'vergleich' | 'bericht'>('matrix')
+  // Vergleich-Tab: Umlage-Schalter für die Allgemeinkosten
   const [umlegen, setUmlegen] = useState(false)
 
   const loadAll = useCallback(async () => {
-    const [costsRes, sponsorsRes, forecastRes] = await Promise.all([
+    const [costsRes, sponsorsRes] = await Promise.all([
       fetch('/api/costs'),
       fetch('/api/sponsors'),
-      fetch('/api/simple-forecast'),
     ])
-    const [costsData, sponsorsData, forecastData] = await Promise.all([
-      costsRes.json(),
-      sponsorsRes.json(),
-      forecastRes.json(),
-    ])
+    const [costsData, sponsorsData] = await Promise.all([costsRes.json(), sponsorsRes.json()])
     setCosts(costsData)
     setSponsors(sponsorsData)
-    setSimpleForecasts(forecastData)
     setLoading(false)
   }, [])
 
@@ -308,28 +229,6 @@ export default function FinanzenPage() {
 
   const costsForDay = (dayKey: string | null) => costs.filter(c => c.eventDay === dayKey)
 
-  // Revenue from SimpleForecast
-  const calcForecastDay = (dayKey: string, scenario: string) => {
-    const f = simpleForecasts.find(sf => sf.eventDay === dayKey && sf.scenario === scenario)
-    if (!f) return { umsatz: 0, eintritt: 0, wareneinsatz: 0, rohertrag: 0 }
-    const umsatz = f.visitors * f.revenuePerPerson
-    const eintritt = f.visitors * f.entryFee
-    const wareneinsatz = umsatz * (f.costPercent / 100)
-    return { umsatz, eintritt, wareneinsatz, rohertrag: umsatz - wareneinsatz + eintritt }
-  }
-
-  const calcScenarioRevenue = (scenario: string) => {
-    let umsatz = 0, eintritt = 0, wareneinsatz = 0, rohertrag = 0
-    for (const day of EVENT_DAYS) {
-      const c = calcForecastDay(day.key, scenario)
-      umsatz += c.umsatz
-      eintritt += c.eintritt
-      wareneinsatz += c.wareneinsatz
-      rohertrag += c.rohertrag
-    }
-    return { umsatz, eintritt, wareneinsatz, rohertrag }
-  }
-
   // Status breakdown
   const statusGroups = {
     confirmed: costs.filter(c => ['fix', 'bezahlt', 'zugesagt'].includes(c.status)).reduce((s, c) => s + c.projected, 0),
@@ -390,8 +289,6 @@ export default function FinanzenPage() {
   }, [filterOpen])
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="text-gray-400">Laden...</div></div>
-
-  const currentScenario = SCENARIOS.find(s => s.key === selectedScenario)!
 
   return (
     <>
@@ -771,21 +668,6 @@ export default function FinanzenPage() {
       {/* ── UMSÄTZE TAB ── */}
       {tab === 'umsaetze' && (
         <div className="space-y-5">
-
-          {/* Unterseiten */}
-          <div className="flex gap-2">
-            {([['matrix', '💶', 'Umsätze'], ['vergleich', '⚖️', 'Vergleich'], ['bericht', '📈', 'Bericht']] as const).map(([k, ic, l]) => (
-              <button key={k} onClick={() => setUmsatzView(k)}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-xs font-bold border transition-all ${
-                  umsatzView === k ? 'bg-indigo-500 border-indigo-500 text-white shadow-md' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-                }`}>
-                <span>{ic}</span> {l}
-              </button>
-            ))}
-          </div>
-
-          {/* ── Unterseite: Umsatz-Matrix ── */}
-          {umsatzView === 'matrix' && (<>
             <div className="grid grid-cols-3 gap-2 sm:gap-4">
               {[
                 { label: 'Umsatz brutto', value: umsatzGesamt.brutto, accent: '#2563EB' },
@@ -870,10 +752,13 @@ export default function FinanzenPage() {
                 <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-cyan-600 mr-1.5 align-[-1px]" /><b>7 %</b> (Essen, Eintritt): {fmtEur(ustSplit[0].brutto)} brutto → <b className="text-gray-900">{fmtEur(ustSplit[0].ust)} USt</b></span>
               </div>
             </div>
-          </>)}
+        </div>
+      )}
 
-          {/* ── Unterseite: Vergleich Umsätze vs. Kosten ── */}
-          {umsatzView === 'vergleich' && (() => {
+      {/* ── VERGLEICH TAB ── */}
+      {tab === 'vergleich' && (
+        <div className="space-y-5">
+          {(() => {
             const rows = UMSATZ_DAYS.map(d => {
               const u = umsatzTag(d.key).brutto
               const k = kostenTag(d.key) + (umlegen ? umlageTag(d.key) : 0)
@@ -951,9 +836,13 @@ export default function FinanzenPage() {
               </div>
             </>)
           })()}
+        </div>
+      )}
 
-          {/* ── Unterseite: Gesamtbericht ── */}
-          {umsatzView === 'bericht' && (() => {
+      {/* ── BERICHT TAB ── */}
+      {tab === 'bericht' && (
+        <div className="space-y-5">
+          {(() => {
             const KOSTEN_BEREICHE = [
               ...UMSATZ_DAYS.map(d => ({ key: d.key as string | null, label: `${d.icon} ${d.short.split(' ')[0]}` })),
               { key: null, label: '📦 Allgemein' },
@@ -1124,98 +1013,6 @@ export default function FinanzenPage() {
         </div>
       )}
 
-      {/* ── ROHERTRAG / PROGNOSE TAB ── */}
-      {tab === 'prognose' && (
-        <div className="space-y-4">
-          {/* Szenario-Auswahl */}
-          <div className="flex gap-2">
-            {SCENARIOS.map(sc => (
-              <button key={sc.key} onClick={() => setSelectedScenario(sc.key)}
-                className={`flex-1 py-2 rounded-full text-xs font-medium transition-all ${
-                  selectedScenario === sc.key ? sc.headerBg + ' text-white shadow-md' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                }`}>
-                {sc.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Wareneinsatz global */}
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between">
-            <div>
-              <div className="text-xs font-bold text-amber-700">Wareneinsatz-Anteil</div>
-              <div className="text-[10px] text-amber-600">% des Umsatzes als Selbstkosten</div>
-            </div>
-            <div className="flex items-center gap-1">
-              <input type="number" min="0" max="100"
-                value={getForecastEntry(FORECAST_DAYS[0].key, selectedScenario).costPercent || ''}
-                onChange={e => { const v = +e.target.value || 0; FORECAST_DAYS.forEach(d => setForecastField(d.key, selectedScenario, 'costPercent', v)) }}
-                className="w-14 border border-amber-300 rounded-lg px-2 py-1.5 text-sm text-center text-gray-900 font-bold bg-white" />
-              <span className="text-sm font-bold text-amber-700">%</span>
-            </div>
-          </div>
-
-          {/* Tages-Karten (Mobile First) */}
-          {FORECAST_DAYS.map(day => {
-            const e = getForecastEntry(day.key, selectedScenario)
-            const umsatz = e.visitors * e.revenuePerPerson
-            const eintritt = e.visitors * e.entryFee
-            const wareneinsatz = umsatz * (e.costPercent / 100)
-            const rohertrag = umsatz - wareneinsatz + eintritt
-            const isSa = day.key.startsWith('saturday')
-            return (
-              <div key={day.key} className={`rounded-xl border p-3 ${isSa ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-sm text-gray-900">{day.icon} {day.label}</span>
-                  <span className="text-sm font-bold text-emerald-600">{fmtEur(rohertrag)}</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label className="text-[10px] text-gray-500 font-medium">Besucher</label>
-                    <input type="number" min="0" value={e.visitors || ''}
-                      onChange={ev => setForecastField(day.key, selectedScenario, 'visitors', +ev.target.value || 0)}
-                      className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-center text-gray-900" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-500 font-medium">€/Person</label>
-                    <input type="number" min="0" step="1" value={e.revenuePerPerson || ''}
-                      onChange={ev => setForecastField(day.key, selectedScenario, 'revenuePerPerson', +ev.target.value || 0)}
-                      className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-center text-gray-900" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-500 font-medium">Eintritt</label>
-                    <input type="number" min="0" step="0.5" value={e.entryFee || ''}
-                      onChange={ev => setForecastField(day.key, selectedScenario, 'entryFee', +ev.target.value || 0)}
-                      className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-center text-gray-900" />
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-
-          {/* Gesamt + Speichern */}
-          {(() => {
-            const t = calcScenarioRevenue(selectedScenario)
-            const visitors = FORECAST_DAYS.reduce((s, d) => s + getForecastEntry(d.key, selectedScenario).visitors, 0)
-            return (
-              <div className={`rounded-xl p-3 flex items-center justify-between ${currentScenario.headerBg}`}>
-                <div>
-                  <div className="font-bold text-sm text-white">Gesamt Rohertrag</div>
-                  <div className="text-[10px] text-white/70">{fmtNum(visitors)} Besucher</div>
-                </div>
-                <div className="text-xl font-bold text-white">{fmtEur(t.rohertrag)}</div>
-              </div>
-            )
-          })()}
-
-          {hasForecastChanges && (
-            <button onClick={saveForecast} disabled={savingForecast}
-              className="w-full py-3 rounded-xl bg-blue-600 text-white font-medium text-sm hover:bg-blue-700">
-              {savingForecast ? 'Speichern...' : 'Änderungen speichern'}
-            </button>
-          )}
-        </div>
-      )}
-
       {/* ── SPENDEN TAB ── */}
       {tab === 'sponsoring' && (
         <div className="space-y-6">
@@ -1315,117 +1112,13 @@ export default function FinanzenPage() {
         </div>
       )}
 
-      {/* ── ERGEBNIS TAB ── */}
-      {tab === 'ergebnis' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {SCENARIOS.map(sc => {
-              const rev = calcScenarioRevenue(sc.key)
-              const totalRevenue = rev.rohertrag + totalSponsoring
-              const profit = totalRevenue - totalCosts
-              const isRealistic = sc.key === 'realistic'
-
-              return (
-                <div key={sc.key} className={`bg-white rounded-xl border-2 p-5 ${isRealistic ? 'border-blue-300 shadow-lg shadow-blue-100' : sc.border}`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className={`text-sm font-semibold ${sc.color}`}>{sc.label}</span>
-                    {isRealistic && <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">Empfohlen</span>}
-                  </div>
-
-                  <div className={`text-3xl font-bold mb-4 ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {profit >= 0 ? '+' : ''}{fmtEur(profit)}
-                  </div>
-
-                  <div className="space-y-2 text-sm">
-                    <div className="font-semibold text-gray-700 text-xs uppercase tracking-wider">Einnahmen</div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Rohertrag (Umsatz − Wareneinsatz)</span>
-                      <span className="font-medium text-gray-900">{fmtEur(rev.rohertrag)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">davon Eintritt</span>
-                      <span className="font-medium text-gray-500">{fmtEur(rev.eintritt)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Spenden</span>
-                      <span className="font-medium text-gray-900">{fmtEur(totalSponsoring)}</span>
-                    </div>
-                    <div className="flex justify-between font-bold text-gray-900 border-t pt-2">
-                      <span>Gesamt Einnahmen</span>
-                      <span>{fmtEur(totalRevenue)}</span>
-                    </div>
-
-                    <div className="font-semibold text-gray-700 text-xs uppercase tracking-wider pt-2">Ausgaben</div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Kosten (alle Positionen)</span>
-                      <span className="font-medium text-gray-900">{fmtEur(totalCosts)}</span>
-                    </div>
-                    <div className={`flex justify-between font-bold border-t pt-2 ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      <span>Ergebnis</span>
-                      <span>{profit >= 0 ? '+' : ''}{fmtEur(profit)}</span>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          {simpleForecasts.length > 0 && (
-            <div className="bg-white rounded-lg shadow border overflow-hidden">
-              <div className="bg-gray-50 border-b px-4 py-3">
-                <h3 className="font-semibold text-gray-900">Rohertrag pro Tag & Szenario</h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-gray-50">
-                      <th className="px-4 py-2 text-left font-medium text-gray-600">Tag</th>
-                      {SCENARIOS.map(sc => (
-                        <th key={sc.key} className={`px-4 py-2 text-right font-medium ${sc.color}`}>{sc.label}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {EVENT_DAYS.map(day => (
-                      <tr key={day.key} className="border-b">
-                        <td className="px-4 py-2">
-                          <span className="mr-1">{day.icon}</span>
-                          <span className="font-medium text-gray-900">{day.label}</span>
-                        </td>
-                        {SCENARIOS.map(sc => (
-                          <td key={sc.key} className="px-4 py-2 text-right font-medium text-gray-900">
-                            {fmtEur(calcForecastDay(day.key, sc.key).rohertrag)}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                    <tr className="bg-gray-50 font-bold">
-                      <td className="px-4 py-2 text-gray-900">Gesamt</td>
-                      {SCENARIOS.map(sc => {
-                        const rev = calcScenarioRevenue(sc.key)
-                        return (
-                          <td key={sc.key} className={`px-4 py-2 text-right ${sc.color}`}>
-                            {fmtEur(rev.rohertrag)}
-                          </td>
-                        )
-                      })}
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </div>
 
     {/* ═══════ DRUCK- / PDF-ANSICHT (nur beim Drucken sichtbar, DIN A4) ═══════ */}
     {(() => {
       const today = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
       const dueLabel = (v: string) => DUE_DATE_OPTIONS.find(d => d.value === v)?.label ?? v
-      const realisticRev = calcScenarioRevenue('realistic')
-      const realisticProfit = realisticRev.rohertrag + totalSponsoring - totalCosts
-      const PDF_TITLES: Record<string, string> = { kosten: 'Kostenübersicht', ergebnis: 'Gewinn / Ergebnis', prognose: 'Rohertrag-Prognose', sponsoring: 'Spenden', umsaetze: 'Gesamtbericht Finanzen' }
+      const PDF_TITLES: Record<string, string> = { kosten: 'Kostenübersicht', sponsoring: 'Spenden', umsaetze: 'Umsätze', vergleich: 'Umsätze vs. Kosten', bericht: 'Gesamtbericht Finanzen' }
       const pdfTitle = PDF_TITLES[tab] ?? 'Finanzplanung'
 
       // Gemeinsame Tabellen-Styles – hell, passend zur Web-Oberfläche
@@ -1584,8 +1277,8 @@ export default function FinanzenPage() {
             )
           })()}
 
-          {/* ── UMSÄTZE / GESAMTBERICHT ── */}
-          {tab === 'umsaetze' && (
+          {/* ── UMSÄTZE / VERGLEICH / GESAMTBERICHT ── */}
+          {(tab === 'umsaetze' || tab === 'vergleich' || tab === 'bericht') && (
             <>
               <div style={{ display: 'flex', gap: 10, marginBottom: 18 }} className="print-avoid-break">
                 {kpiCard('Umsatz brutto', fmtEur(umsatzGesamt.brutto), '#2563EB')}
@@ -1595,7 +1288,7 @@ export default function FinanzenPage() {
                 {kpiCard('Ergebnis', `${festErgebnis >= 0 ? '+' : '−'}${fmtEur(Math.abs(festErgebnis))}`, festErgebnis >= 0 ? '#16A34A' : '#DC2626')}
               </div>
 
-              <div className="print-avoid-break" style={{ marginBottom: 22 }}>
+              {(tab === 'vergleich' || tab === 'bericht') && (<div className="print-avoid-break" style={{ marginBottom: 22 }}>
                 {sectionTitle('Tagesvergleich — Umsätze & Kosten', '#4F46E5')}
                 <table className="w-full" style={{ borderCollapse: 'collapse' }}>
                   <thead>
@@ -1648,9 +1341,9 @@ export default function FinanzenPage() {
                     </tr>
                   </tbody>
                 </table>
-              </div>
+              </div>)}
 
-              <div className="print-avoid-break" style={{ marginBottom: 22 }}>
+              {(tab === 'umsaetze' || tab === 'bericht') && (<div className="print-avoid-break" style={{ marginBottom: 22 }}>
                 {sectionTitle('Umsätze nach Standort (brutto)', '#2563EB')}
                 <table className="w-full" style={{ borderCollapse: 'collapse' }}>
                   <thead>
@@ -1680,96 +1373,7 @@ export default function FinanzenPage() {
                     </tr>
                   </tbody>
                 </table>
-              </div>
-            </>
-          )}
-
-          {/* ── GEWINN / ERGEBNIS ── */}
-          {tab === 'ergebnis' && (
-            <>
-              <div style={{ display: 'flex', gap: 10, marginBottom: 18 }} className="print-avoid-break">
-                {kpiCard('Einnahmen (realistisch)', fmtEur(realisticRev.rohertrag + totalSponsoring), '#2563EB', 'Rohertrag + Spenden')}
-                {kpiCard('Ausgaben', fmtEur(totalCosts), '#DC2626', `${costs.length} Positionen`)}
-                {kpiCard('Ergebnis (realistisch)', `${realisticProfit >= 0 ? '+' : ''}${fmtEur(realisticProfit)}`, realisticProfit >= 0 ? '#16A34A' : '#DC2626', 'Einnahmen − Ausgaben')}
-              </div>
-
-              <div className="print-avoid-break" style={{ marginBottom: 22 }}>
-                {sectionTitle('Ergebnis je Szenario', '#16A34A')}
-                <table className="w-full" style={{ borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th style={cTh}>Szenario</th>
-                      <th style={cThR}>Rohertrag</th>
-                      <th style={cThR}>Spenden</th>
-                      <th style={cThR}>Einnahmen</th>
-                      <th style={cThR}>Kosten</th>
-                      <th style={cThR}>Ergebnis</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {SCENARIOS.map(sc => {
-                      const rev = calcScenarioRevenue(sc.key)
-                      const einnahmen = rev.rohertrag + totalSponsoring
-                      const profit = einnahmen - totalCosts
-                      return (
-                        <tr key={sc.key}>
-                          <td style={cTd}><span className={`inline-block px-2 py-0.5 rounded font-bold ${sc.bg} ${sc.color}`}>{sc.label}</span></td>
-                          <td style={cTdR}>{fmtEur(rev.rohertrag)}</td>
-                          <td style={cTdR}>{fmtEur(totalSponsoring)}</td>
-                          <td style={cTdR}>{fmtEur(einnahmen)}</td>
-                          <td style={cTdR}>{fmtEur(totalCosts)}</td>
-                          <td style={{ ...cTdR, fontWeight: 700, color: profit >= 0 ? '#15803D' : '#DC2626' }}>{profit >= 0 ? '+' : ''}{fmtEur(profit)}</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-
-          {/* ── ROHERTRAG-PROGNOSE ── */}
-          {tab === 'prognose' && (
-            <>
-              <div style={{ display: 'flex', gap: 10, marginBottom: 18 }} className="print-avoid-break">
-                {SCENARIOS.map(sc => {
-                  const rev = calcScenarioRevenue(sc.key)
-                  const accent = sc.key === 'pessimistic' ? '#DC2626' : sc.key === 'optimistic' ? '#16A34A' : '#2563EB'
-                  return <div key={sc.key} style={{ flex: 1 }}>{kpiCard(`Rohertrag ${sc.label.toLowerCase()}`, fmtEur(rev.rohertrag), accent)}</div>
-                })}
-              </div>
-
-              {simpleForecasts.length > 0 ? (
-                <div className="print-avoid-break" style={{ marginBottom: 22 }}>
-                  {sectionTitle('Rohertrag pro Tag & Szenario', '#2563EB')}
-                  <table className="w-full" style={{ borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr>
-                        <th style={cTh}>Tag</th>
-                        {SCENARIOS.map(sc => <th key={sc.key} style={cThR}>{sc.label}</th>)}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {EVENT_DAYS.map((day, i) => (
-                        <tr key={day.key} style={zebra(i)}>
-                          <td style={cTd}>{day.icon} {day.label}</td>
-                          {SCENARIOS.map(sc => (
-                            <td key={sc.key} style={cTdR}>{fmtEur(calcForecastDay(day.key, sc.key).rohertrag)}</td>
-                          ))}
-                        </tr>
-                      ))}
-                      <tr style={{ background: '#EFF6FF', fontWeight: 700 }}>
-                        <td style={cTd}>Gesamt</td>
-                        {SCENARIOS.map(sc => (
-                          <td key={sc.key} style={{ ...cTdR, color: '#2563EB' }}>{fmtEur(calcScenarioRevenue(sc.key).rohertrag)}</td>
-                        ))}
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p style={{ color: '#9CA3AF' }}>Noch keine Prognosedaten erfasst.</p>
-              )}
+              </div>)}
             </>
           )}
 
