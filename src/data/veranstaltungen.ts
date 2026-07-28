@@ -22,6 +22,7 @@ export interface VeranstaltungsTag {
 export interface Veranstaltung {
   id: VeranstaltungId // technischer Kurzname, Teil der URL
   titel: string // Anzeigename im Menü
+  icon: string // Emoji für Menü/Kacheln
   jahr: number // Sortierung/Archivierung
   zeitraum: string // Datum als Text, z.B. "9.–12. Juli 2026"
   status: VeranstaltungStatus
@@ -53,6 +54,7 @@ export const VERANSTALTUNGEN: Veranstaltung[] = [
   {
     id: 'jubilaeum-2026',
     titel: '70 Jahre Jubiläum 2026',
+    icon: '🎉',
     jahr: 2026,
     zeitraum: '9.–12. Juli 2026',
     status: 'abgeschlossen',
@@ -69,6 +71,7 @@ export const VERANSTALTUNGEN: Veranstaltung[] = [
   {
     id: 'sommerfest-2027',
     titel: 'DJK Sommerfest 2027',
+    icon: '☀️',
     jahr: 2027,
     zeitraum: 'Sommer 2027',
     status: 'geplant',

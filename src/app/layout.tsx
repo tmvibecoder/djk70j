@@ -16,8 +16,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "DJK Fest Planung - 70 Jahre",
-  description: "Planungs-App für das 70-Jahre DJK Fest",
+  title: "DJK Events",
+  description: "Veranstaltungs-Planung des DJK SG Ottenhofen e.V.",
 };
 
 export default function RootLayout({
