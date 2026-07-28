@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { UMSATZ_ENTRIES, UMSATZ_DAYS, UmsatzDayKey } from '@/lib/umsaetze'
+import { UMSAETZE, UmsatzDayKey } from '@/lib/umsaetze'
+import { Veranstaltung } from '@/data/veranstaltungen'
 
 interface CostItem {
   id: string
@@ -69,21 +70,6 @@ const DUE_DATE_OPTIONS = [
   { value: 'paid', label: 'Bereits bezahlt', icon: '✅', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
 ]
 
-const EVENT_DAY_OPTIONS = [
-  { value: '', label: 'Allgemein (kein Tag)' },
-  { value: 'thursday', label: 'Donnerstag' },
-  { value: 'friday', label: 'Freitag' },
-  { value: 'saturday', label: 'Samstag' },
-  { value: 'sunday', label: 'Sonntag' },
-]
-
-const ACCORDION_DAYS = [
-  { key: 'friday', label: 'Freitag', date: '10.07.', event: 'Disco-Party mit DJ Josh', icon: '🎶' },
-  { key: 'saturday', label: 'Samstag', date: '11.07.', event: 'Festprogramm + Festzeltparty', icon: '🎉' },
-  { key: 'sunday', label: 'Sonntag', date: '12.07.', event: 'Bayrischer Festsonntag', icon: '⛪' },
-  { key: null, label: 'Allgemein', date: '', event: 'Tagesunabhängig', icon: '📦' },
-]
-
 const fmtEur = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
 const fmtEur0 = (v: number) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 const fmtNum = (v: number) => v.toLocaleString('de-DE', { maximumFractionDigits: 0 })
@@ -107,7 +93,29 @@ function getStatusBadge(status: string) {
   return opt
 }
 
-export default function FinanzenPage() {
+// Freundlicher Hinweis statt leerer Tabellen, solange eine Veranstaltung
+// noch keine Umsatzzahlen hat.
+function KeineZahlenHinweis({ text }: { text: string }) {
+  return (
+    <div className="bg-white rounded-xl border border-dashed border-gray-300 p-8 text-center">
+      <div className="text-3xl mb-2">🌱</div>
+      <div className="font-semibold text-gray-900">Die Planung startet demnächst.</div>
+      <div className="text-sm text-gray-500 mt-1">{text}</div>
+    </div>
+  )
+}
+
+// Vorlage für die Finanzplanung einer Veranstaltung — alles
+// Veranstaltungsspezifische kommt über das event-Objekt aus dem Register.
+export default function FinanzplanungView({ event }: { event: Veranstaltung }) {
+  // Umsätze und Festtage der Veranstaltung (leer = noch keine Zahlen/Planung)
+  const UMSATZ_ENTRIES = UMSAETZE[event.id] ?? []
+  const UMSATZ_DAYS = event.tage
+  const EVENT_DAY_OPTIONS = [
+    { value: '', label: 'Allgemein (kein Tag)' },
+    ...event.tage.map(t => ({ value: t.key, label: t.label.split(' ')[0] })),
+  ]
+
   const [tab, setTab] = useState('umsaetze')
   const [costs, setCosts] = useState<CostItem[]>([])
   const [sponsors, setSponsors] = useState<Sponsor[]>([])
@@ -132,14 +140,14 @@ export default function FinanzenPage() {
 
   const loadAll = useCallback(async () => {
     const [costsRes, sponsorsRes] = await Promise.all([
-      fetch('/api/costs'),
-      fetch('/api/sponsors'),
+      fetch(`/api/costs?event=${event.id}`),
+      fetch(`/api/sponsors?event=${event.id}`),
     ])
     const [costsData, sponsorsData] = await Promise.all([costsRes.json(), sponsorsRes.json()])
     setCosts(costsData)
     setSponsors(sponsorsData)
     setLoading(false)
-  }, [])
+  }, [event.id])
 
   useEffect(() => { loadAll() }, [loadAll])
 
@@ -164,7 +172,7 @@ export default function FinanzenPage() {
     if (editCostId) {
       await fetch('/api/costs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editCostId, ...body }) })
     } else {
-      await fetch('/api/costs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      await fetch('/api/costs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, eventId: event.id }) })
     }
     setCostForm({ ...EMPTY_COST_FORM })
     setEditCostId(null)
@@ -202,7 +210,7 @@ export default function FinanzenPage() {
     if (editSponsorId) {
       await fetch('/api/sponsors', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editSponsorId, ...sponsorForm }) })
     } else {
-      await fetch('/api/sponsors', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sponsorForm) })
+      await fetch('/api/sponsors', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...sponsorForm, eventId: event.id }) })
     }
     setSponsorForm({ name: '', amount: 0, received: false, notes: '' })
     setEditSponsorId(null)
@@ -228,6 +236,22 @@ export default function FinanzenPage() {
   const totalSponsoringReceived = sponsors.filter(sp => sp.received).reduce((s, sp) => s + sp.amount, 0)
 
   const costsForDay = (dayKey: string | null) => costs.filter(c => c.eventDay === dayKey)
+
+  // Kosten-Akkordeon: Festtage mit Positionen + immer „Allgemein".
+  // (Tage ohne Positionen bleiben ausgeblendet — wie bisher, wo der
+  // Donnerstag ohne direkte Kosten nicht gelistet war.)
+  const ACCORDION_DAYS: { key: string | null; label: string; date: string; event: string; icon: string }[] = [
+    ...event.tage
+      .filter(t => costsForDay(t.key).length > 0)
+      .map(t => ({
+        key: t.key as string | null,
+        label: t.label.split(' ')[0],
+        date: t.label.split(' ')[1] ?? '',
+        event: t.event,
+        icon: t.icon,
+      })),
+    { key: null, label: 'Allgemein', date: '', event: 'Tagesunabhängig', icon: '📦' },
+  ]
 
   // Status breakdown
   const statusGroups = {
@@ -302,6 +326,11 @@ export default function FinanzenPage() {
             <span>📄</span> PDF exportieren
           </button>
         </div>
+        {event.standNote && (
+          <div className="mt-2 inline-block rounded-lg bg-amber-50 border border-amber-200 px-3 py-1.5 text-xs font-semibold text-amber-800">
+            Stand: {event.standNote}
+          </div>
+        )}
         <div className="flex gap-2 mt-4 overflow-x-auto pb-1">
           {TABS.map(t => {
             const style = TAB_STYLES[t.accent]
@@ -666,7 +695,10 @@ export default function FinanzenPage() {
       )}
 
       {/* ── UMSÄTZE TAB ── */}
-      {tab === 'umsaetze' && (
+      {tab === 'umsaetze' && UMSATZ_ENTRIES.length === 0 && (
+        <KeineZahlenHinweis text="Hier erscheinen die Umsätze, sobald Zahlen vorliegen." />
+      )}
+      {tab === 'umsaetze' && UMSATZ_ENTRIES.length > 0 && (
         <div className="space-y-5">
             <div className="grid grid-cols-3 gap-2 sm:gap-4">
               {[
@@ -756,7 +788,10 @@ export default function FinanzenPage() {
       )}
 
       {/* ── VERGLEICH TAB ── */}
-      {tab === 'vergleich' && (
+      {tab === 'vergleich' && UMSATZ_ENTRIES.length === 0 && (
+        <KeineZahlenHinweis text="Hier erscheint der Vergleich von Umsätzen und Kosten, sobald Zahlen vorliegen." />
+      )}
+      {tab === 'vergleich' && UMSATZ_ENTRIES.length > 0 && (
         <div className="space-y-5">
           {(() => {
             const rows = UMSATZ_DAYS.map(d => {
@@ -840,7 +875,10 @@ export default function FinanzenPage() {
       )}
 
       {/* ── BERICHT TAB ── */}
-      {tab === 'bericht' && (
+      {tab === 'bericht' && UMSATZ_ENTRIES.length === 0 && (
+        <KeineZahlenHinweis text="Hier erscheint der Gesamtbericht, sobald Zahlen vorliegen." />
+      )}
+      {tab === 'bericht' && UMSATZ_ENTRIES.length > 0 && (
         <div className="space-y-5">
           {(() => {
             const KOSTEN_BEREICHE = [
@@ -850,9 +888,9 @@ export default function FinanzenPage() {
             return (<>
               <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 flex items-center gap-4">
                 <div className="border-l-4 border-indigo-600 pl-4">
-                  <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-amber-600">DJK Ottenhofen e.V. · 70-Jahre-Jubiläumsfest</div>
+                  <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-amber-600">DJK Ottenhofen e.V. · {event.titel}</div>
                   <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 mt-0.5">Gesamtbericht Finanzen</h2>
-                  <div className="text-[11px] text-gray-400 mt-0.5">Fest vom 09.–12.07.2026 · über „PDF exportieren“ oben druckbar</div>
+                  <div className="text-[11px] text-gray-400 mt-0.5">{event.zeitraum} · über „PDF exportieren“ oben druckbar</div>
                 </div>
               </div>
 
@@ -1116,6 +1154,8 @@ export default function FinanzenPage() {
 
     {/* ═══════ DRUCK- / PDF-ANSICHT (nur beim Drucken sichtbar, DIN A4) ═══════ */}
     {(() => {
+      // Ohne Umsatzzahlen gibt es für diese Reiter nichts zu drucken
+      if (UMSATZ_ENTRIES.length === 0 && ['umsaetze', 'vergleich', 'bericht'].includes(tab)) return null
       const today = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
       const dueLabel = (v: string) => DUE_DATE_OPTIONS.find(d => d.value === v)?.label ?? v
       const PDF_TITLES: Record<string, string> = { kosten: 'Kostenübersicht', sponsoring: 'Spenden', umsaetze: 'Umsätze', vergleich: 'Umsätze vs. Kosten', bericht: 'Gesamtbericht Finanzen' }
@@ -1158,7 +1198,7 @@ export default function FinanzenPage() {
           {/* Kopfband – hell, passend zum neuen Web-Frontend */}
           <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, padding: '14px 18px', marginBottom: 16 }}>
             <div style={{ borderLeft: '4px solid #4F46E5', paddingLeft: 14 }}>
-              <p style={{ color: '#CA8A04', fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', margin: 0 }}>DJK Ottenhofen e.V. · 70-Jahre-Jubiläumsfest</p>
+              <p style={{ color: '#CA8A04', fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', margin: 0 }}>DJK Ottenhofen e.V. · {event.titel}</p>
               <h1 style={{ color: '#111827', fontSize: 21, fontWeight: 800, margin: '3px 0 0' }}>{pdfTitle}</h1>
               <p style={{ color: '#9CA3AF', fontSize: 10, margin: '3px 0 0' }}>Stand: {today}</p>
             </div>
@@ -1418,7 +1458,7 @@ export default function FinanzenPage() {
           )}
 
           <div style={{ marginTop: 18, paddingTop: 8, borderTop: '1px solid #E5E7EB', fontSize: 9, color: '#9CA3AF', textAlign: 'center' }}>
-            DJK Ottenhofen e.V. · 70-Jahre-Jubiläumsfest · {pdfTitle} · erstellt am {today}
+            DJK Ottenhofen e.V. · {event.titel} · {pdfTitle} · erstellt am {today}
           </div>
         </div>
       )
