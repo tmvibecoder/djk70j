@@ -1,14 +1,22 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { DEFAULT_EVENT_ID } from '@/data/veranstaltungen'
 
-export async function GET() {
-  const costs = await prisma.costItem.findMany({ orderBy: { createdAt: 'asc' } })
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const eventId = searchParams.get('event') ?? DEFAULT_EVENT_ID
+  const costs = await prisma.costItem.findMany({
+    where: { eventId },
+    orderBy: { createdAt: 'asc' },
+  })
   return NextResponse.json(costs)
 }
 
 export async function POST(req: Request) {
   const data = await req.json()
-  const cost = await prisma.costItem.create({ data })
+  const cost = await prisma.costItem.create({
+    data: { ...data, eventId: data.eventId ?? DEFAULT_EVENT_ID },
+  })
   return NextResponse.json(cost, { status: 201 })
 }
 
