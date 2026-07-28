@@ -1,13 +1,17 @@
 import s from './abschlussbericht.module.css'
+import AnmerkungenPanel from './AnmerkungenPanel'
 
 // Protokoll der Abschlussbesprechung zum 70-Jahre-Jubiläumsfest 2026.
 // Inhalt 1:1 aus dem gelieferten HTML-Dokument übernommen; einzige inhaltliche
 // Änderung: In der Maßnahmenliste (TOP 4) ist die leere Spalte „Verantwortlich"
 // entfernt — die Verantwortlichen werden laut Hinweis unter der Tabelle in der
 // Vorstandssitzung am 13. August festgelegt.
-export default function AbschlussberichtView() {
+// Der Anmerkungs-Balken liegt bewusst AUSSERHALB von .va-sheet: dessen
+// overflow:hidden würde position:sticky sonst aushebeln.
+export default function AbschlussberichtView({ eventId }: { eventId: string }) {
   return (
     <section className={s.va}>
+      <AnmerkungenPanel eventId={eventId} />
       <article className={s['va-sheet']}>
         <header className={s['va-head']}>
           <div className={s['va-marke']}>DJK <span>Ottenhofen</span> e.&nbsp;V.</div>

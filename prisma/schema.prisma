@@ -228,6 +228,19 @@ model CostItem {
   @@index([eventId])
 }
 
+// Anmerkungen von Besuchern zum Abschlussbericht (TOP-Punkt + optionaler Unterpunkt)
+model BerichtAnmerkung {
+  id         String   @id @default(cuid())
+  eventId    String   @default("jubilaeum-2026") // Veranstaltung (src/data/veranstaltungen.ts)
+  name       String   // wer die Anmerkung formuliert hat
+  top        String   // z.B. "top3"
+  unterpunkt String?  // z.B. "3.4 · Infrastruktur & Abläufe", null = ganzer TOP
+  text       String
+  createdAt  DateTime @default(now())
+
+  @@index([eventId])
+}
+
 // Sponsoren & Zuschüsse
 model Sponsor {
   id        String   @id @default(cuid())

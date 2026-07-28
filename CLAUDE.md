@@ -55,6 +55,10 @@ Pages prüfen zusätzlich das Bereichs-Gate (`event.bereiche.includes(...)`).
 sie holen ihre Daten mit `?event=<id>` und schreiben `eventId` in POST-Bodies.
 `AbschlussberichtView.tsx` (Server) + `abschlussbericht.module.css` (gekapseltes
 CSS Module; Vereinsfarben aus den `--djk-*`-Variablen in `globals.css`).
+`AnmerkungenPanel.tsx` (Client): sticky Anmerkungs-Balken im Abschlussbericht —
+Formular (Name, TOP inkl. „Sonstiges", abhängiger Unterpunkt, Text) + für alle
+sichtbare Liste. Liegt bewusst außerhalb von `.va-sheet` (overflow:hidden würde
+sticky brechen); `<main>` darf deshalb auch kein overflow-auto bekommen.
 
 **Umsätze** sind bewusst NICHT in der DB: `src/lib/umsaetze.ts` exportiert
 `UMSAETZE` als Record je Veranstaltung (Jubiläum = Endstand Kassen-Excel
@@ -79,6 +83,8 @@ tragen `eventId String @default("jubilaeum-2026")` (+ Index). `Beschluss` /
   `Task`, `TaskAssignment`, `Beschluss`.
 - **Finanzen:** `CostItem` (vatRate/amountEntry/dueDate/costType/status/eventDay),
   `Sponsor`.
+- **Abschlussbericht:** `BerichtAnmerkung` (name, top z.B. "top3"/"sonstiges",
+  unterpunkt?, text) — Besucher-Anmerkungen, für alle sichtbar.
 - **Ohne UI (Daten bleiben erhalten):** `Product`, `Inventory`, `SalesEntry`,
   `SalesEstimate` (frühere Warenwirtschaft, UI im Juli 2026 entfernt),
   `Team`, `Participant` (Watt-Turnier), `SimpleForecast`, `EntryForecast`,
@@ -88,7 +94,7 @@ tragen `eventId String @default("jubilaeum-2026")` (+ Index). `Beschluss` /
 
 - **Auth:** `auth/login` (nur Passwort, gegen alle User-Hashes), `auth/logout`.
 - **Event-gescoped** (GET `?event=`, POST-Body `eventId`, Default `jubilaeum-2026`):
-  `bereiche[/id]`, `personen[/id]`, `tasks[/id]`, `costs`, `sponsors`.
+  `bereiche[/id]`, `personen[/id]`, `tasks[/id]`, `costs`, `sponsors`, `anmerkungen`.
 - `[id]`-Routen sind unverändert ungescoped (cuid ist global eindeutig).
 
 ## Authentifizierung
