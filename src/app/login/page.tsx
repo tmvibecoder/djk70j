@@ -38,7 +38,7 @@ function LoginForm() {
     >
       <div className="text-center">
         <p className="text-yellow-500 text-xs font-semibold tracking-widest uppercase">DJK Ottenhofen e.V.</p>
-        <h1 className="text-2xl font-bold text-gray-900 mt-1">70-Jahre Jubiläumsfest</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mt-1">DJK Events</h1>
         <p className="text-sm text-gray-500 mt-1">Bitte einloggen</p>
       </div>
 

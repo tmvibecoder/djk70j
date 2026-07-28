@@ -1,9 +1,14 @@
-// Umsätze 70-Jahre-Fest — Endstand aus der Kassen-Excel „Umsatz 70JF" (Stand 22.07.2026).
+// Umsätze je Veranstaltung (Schlüssel = VeranstaltungId aus src/data/veranstaltungen.ts).
+// Eine Veranstaltung ohne Eintrag hat schlicht noch keine Zahlen ([]).
+//
+// jubilaeum-2026: Endstand aus der Kassen-Excel „Umsatz 70JF" (Stand 22.07.2026).
 // brutto = Umsatz laut Kassenzählung; ust/netto sind 1:1 aus der Excel übernommen
 // (dort bei Zeilen mit Entnahmen teils auf den Umsatz abzüglich Entnahmen gerechnet,
 // deshalb ergibt netto + ust nicht überall exakt brutto).
 
-export type UmsatzDayKey = 'thursday' | 'friday' | 'saturday' | 'sunday'
+import { VeranstaltungId } from '@/data/veranstaltungen'
+
+export type UmsatzDayKey = string
 
 export interface UmsatzEntry {
   standort: string
@@ -14,14 +19,7 @@ export interface UmsatzEntry {
   netto: number
 }
 
-export const UMSATZ_DAYS: { key: UmsatzDayKey; label: string; short: string; icon: string; event: string }[] = [
-  { key: 'thursday', label: 'Donnerstag 09.07.', short: 'Do 09.07.', icon: '🃏', event: 'Watt-Turnier' },
-  { key: 'friday', label: 'Freitag 10.07.', short: 'Fr 10.07.', icon: '🎶', event: 'Disco-Party' },
-  { key: 'saturday', label: 'Samstag 11.07.', short: 'Sa 11.07.', icon: '🎉', event: 'Festprogramm + Festzeltparty' },
-  { key: 'sunday', label: 'Sonntag 12.07.', short: 'So 12.07.', icon: '⛪', event: 'Bayrischer Festsonntag' },
-]
-
-export const UMSATZ_ENTRIES: UmsatzEntry[] = [
+const UMSATZ_ENTRIES_JUBILAEUM_2026: UmsatzEntry[] = [
   // Donnerstag 09.07.
   { standort: 'Schankwagen', ustRate: 19, day: 'thursday', brutto: 938.6, ust: 149.8605, netto: 788.7395 },
   { standort: 'Essen', ustRate: 7, day: 'thursday', brutto: 1248.6, ust: 81.6841, netto: 1166.9159 },
@@ -44,3 +42,8 @@ export const UMSATZ_ENTRIES: UmsatzEntry[] = [
   { standort: 'Gottesdienst Getränke', ustRate: 19, day: 'sunday', brutto: 931.2, ust: 148.679, netto: 782.521 },
   { standort: 'Kaffee u. Kuchen', ustRate: 19, day: 'sunday', brutto: 726.1, ust: 115.9319, netto: 610.1681 },
 ]
+
+export const UMSAETZE: Partial<Record<VeranstaltungId, UmsatzEntry[]>> = {
+  'jubilaeum-2026': UMSATZ_ENTRIES_JUBILAEUM_2026,
+  // 'sommerfest-2027': hier eintragen, sobald Zahlen vorliegen
+}

@@ -1,10 +1,12 @@
-# DJK Ottenhofen – 70 Jahre (Fest-Planungs-App)
+# DJK Events (Veranstaltungs-App DJK SG Ottenhofen)
 
-Interne Orga- und Planungs-App für das 70-jährige Jubiläumsfest des **DJK Ottenhofen e.V.**
-(Finanzplanung, Festplanung, Warenwirtschaft). Next.js 14 + Prisma/SQLite, passwortgeschützt.
+Interne Orga- und Planungs-App für die Veranstaltungen des **DJK SG Ottenhofen e.V.**
+(je Veranstaltung: Festplanung, Finanzplanung, ggf. Abschlussbericht).
+Next.js 14 + Prisma/SQLite, passwortgeschützt.
 
 - **Live:** https://djk-ottenhofen-event.de
-- **Festzeitraum:** 9.–12. Juli 2026 (Do–So)
+- **Veranstaltungen:** 70 Jahre Jubiläum 2026 (abgeschlossen), DJK Sommerfest 2027 (geplant)
+- **Neue Veranstaltung anlegen:** siehe [`ANLEITUNG-NEUE-VERANSTALTUNG.md`](./ANLEITUNG-NEUE-VERANSTALTUNG.md)
 
 > **📖 Die vollständige Projekt-Doku steht in [`CLAUDE.md`](./CLAUDE.md)** — Architektur, Datenmodell,
 > Module, Auth, Seeds, Deployment und Stolpersteine. Diese README ist nur der Kurz-Einstieg.
@@ -14,10 +16,11 @@ Interne Orga- und Planungs-App für das 70-jährige Jubiläumsfest des **DJK Ott
 ```bash
 npm install
 npx prisma generate
-npx prisma db push            # Schema → frische SQLite-DB
-npx tsx prisma/seed-user.ts   # Login-User DJKalle anlegen
-npm run db:seed               # Festplanung + Watt-Turnier seeden
-npm run dev                   # http://localhost:3000
+npx prisma db push               # Schema → frische SQLite-DB
+npx tsx prisma/seed-user.ts      # Login-User DJKalle anlegen
+npm run db:seed                  # Festplanung Jubiläum 2026 seeden
+npm run db:seed:sommerfest-2027  # Startzustand Sommerfest 2027
+npm run dev                      # http://localhost:3000
 ```
 
 Eine `.env` mit `DATABASE_URL` (z. B. `file:./dev.db`) und `AUTH_SECRET` ist erforderlich.

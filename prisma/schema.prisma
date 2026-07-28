@@ -123,6 +123,7 @@ model Participant {
 // Aufgaben
 model Task {
   id          String    @id @default(cuid())
+  eventId     String    @default("jubilaeum-2026") // Veranstaltung (src/data/veranstaltungen.ts)
   title       String
   description String?
   detail      String?
@@ -141,6 +142,7 @@ model Task {
   @@index([bereichId])
   @@index([status])
   @@index([eventDay])
+  @@index([eventId])
 }
 
 // ─── Protokolle ──────────────────────────────────────────────────────────────
@@ -148,6 +150,7 @@ model Task {
 // Bereiche aus den Sitzungs-Protokollen (Musik, Getränke, Zelt, …)
 model Bereich {
   id              String   @id @default(cuid())
+  eventId         String   @default("jubilaeum-2026") // Veranstaltung (src/data/veranstaltungen.ts)
   name            String
   icon            String   // emoji
   verantwortliche String   // Freitext, z.B. "Hundi, Mäx, Festausschuss"
@@ -157,11 +160,14 @@ model Bereich {
 
   tasks       Task[]
   beschluesse Beschluss[]
+
+  @@index([eventId])
 }
 
 // Personen (Festausschuss-Mitglieder), separat von User für mögliches späteres Login
 model Person {
   id         String   @id @default(cuid())
+  eventId    String   @default("jubilaeum-2026") // Veranstaltung (src/data/veranstaltungen.ts)
   name       String
   initials   String
   color      String   // hex
@@ -171,6 +177,8 @@ model Person {
   updatedAt  DateTime @updatedAt
 
   assignments TaskAssignment[]
+
+  @@index([eventId])
 }
 
 // M:N Task ↔ Person
@@ -203,6 +211,7 @@ model Beschluss {
 // Kostenpositionen (Zeltmiete, Band, Security, etc.)
 model CostItem {
   id          String   @id @default(cuid())
+  eventId     String   @default("jubilaeum-2026") // Veranstaltung (src/data/veranstaltungen.ts)
   name        String
   projected   Float    @default(0)        // Brutto-Betrag; Netto/MwSt werden über vatRate abgeleitet
   actual      Float?
@@ -215,17 +224,22 @@ model CostItem {
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([eventId])
 }
 
 // Sponsoren & Zuschüsse
 model Sponsor {
   id        String   @id @default(cuid())
+  eventId   String   @default("jubilaeum-2026") // Veranstaltung (src/data/veranstaltungen.ts)
   name      String
   amount    Float    @default(0)
   received  Boolean  @default(false)
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([eventId])
 }
 
 // Vereinfachte Prognose (Besucher × Umsatz/Person)

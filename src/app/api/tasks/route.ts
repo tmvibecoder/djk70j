@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
+import { DEFAULT_EVENT_ID } from '@/data/veranstaltungen'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -8,7 +9,9 @@ export async function GET(request: NextRequest) {
   const category = searchParams.get('category')
   const bereichId = searchParams.get('bereichId')
 
-  const where: Record<string, unknown> = {}
+  const where: Record<string, unknown> = {
+    eventId: searchParams.get('event') ?? DEFAULT_EVENT_ID,
+  }
   if (eventDay) where.eventDay = eventDay
   if (status) where.status = status
   if (category) where.category = category
@@ -35,6 +38,7 @@ export async function POST(request: NextRequest) {
 
   const task = await prisma.task.create({
     data: {
+      eventId: body.eventId ?? DEFAULT_EVENT_ID,
       title: body.title,
       description: body.description || null,
       detail: body.detail || null,

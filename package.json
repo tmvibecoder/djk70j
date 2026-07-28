@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "db:seed": "npx tsx prisma/seed.ts",
-    "db:reset": "npx prisma migrate reset --force && npm run db:seed"
+    "db:seed:sommerfest-2027": "npx tsx prisma/seed-sommerfest-2027.ts",
+    "db:reset": "npx prisma db push --force-reset && npm run db:seed"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -17,8 +18,7 @@
     "next": "14.2.35",
     "prisma": "^5.22.0",
     "react": "^18",
-    "react-dom": "^18",
-    "recharts": "^3.8.1"
+    "react-dom": "^18"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
