@@ -404,6 +404,204 @@
   font-weight: 700;
 }
 
+/* ---------- Anmerkungen (Besucher-Hinweise zum Protokoll) ---------- */
+/* Bleibt beim Scrollen immer sichtbar: klebt 60px unter der Fenster-Oberkante,
+   also direkt unterhalb der sticky App-Kopfzeile (h-14 = 56px). */
+.anm-sticky {
+  position: sticky;
+  top: 60px;
+  z-index: 25;
+  max-width: 850px;
+  margin: 0 auto 14px;
+}
+.anm-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--djk-gelb);
+  color: var(--djk-schwarz);
+  border: 2px solid var(--djk-schwarz);
+  cursor: pointer;
+  padding: 12px 18px;
+  font-family: var(--font-archivo), Arial, sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: left;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+.anm-bar:hover {
+  background: var(--djk-gelb-tief);
+}
+.anm-bar .anm-count {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  background: var(--djk-schwarz);
+  color: var(--djk-gelb);
+  padding: 3px 9px;
+}
+.anm-panel {
+  background: #fffde7;
+  border: 2px solid var(--djk-schwarz);
+  border-top: none;
+  padding: 18px 18px 22px;
+  max-height: calc(100vh - 170px);
+  overflow-y: auto;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+}
+.anm-title {
+  font-family: var(--font-archivo), Arial, sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 3px;
+}
+.anm-sub {
+  font-size: 13px;
+  color: var(--djk-grau);
+  margin: 0 0 14px;
+}
+.anm-label {
+  font-family: var(--font-archivo), Arial, sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--djk-grau);
+  display: block;
+  margin: 0 0 5px;
+}
+.anm-row {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+@media (min-width: 640px) {
+  .anm-row2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.anm-input,
+.anm-select,
+.anm-area {
+  width: 100%;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--djk-schwarz);
+  background: #fff;
+  border: 2px solid var(--djk-schwarz);
+  border-radius: 0;
+  padding: 9px 11px;
+}
+.anm-area {
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.55;
+}
+.anm-input:focus,
+.anm-select:focus,
+.anm-area:focus {
+  outline: 3px solid var(--djk-gelb-tief);
+  outline-offset: 1px;
+}
+.anm-hint {
+  font-size: 12.5px;
+  color: var(--djk-grau);
+  margin-top: 4px;
+}
+.anm-submit {
+  font-family: var(--font-archivo), Arial, sans-serif;
+  font-weight: 800;
+  font-size: 12.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  background: var(--djk-schwarz);
+  color: var(--djk-gelb);
+  border: 2px solid var(--djk-schwarz);
+  padding: 11px 18px;
+}
+.anm-submit:hover {
+  color: #fff;
+}
+.anm-submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.anm-cancel {
+  font-family: var(--font-archivo), Arial, sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  background: transparent;
+  color: #555;
+  border: 2px solid #bbb;
+  padding: 11px 15px;
+}
+.anm-success {
+  border: 2px solid var(--djk-schwarz);
+  background: #f2fbf1;
+  padding: 12px 14px;
+  font-size: 14.5px;
+  margin-top: 12px;
+}
+.anm-sec {
+  font-family: var(--font-archivo), Arial, sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--djk-grau);
+  margin: 18px 0 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--djk-linie);
+}
+.anm-item {
+  background: #fff;
+  border: 1px solid var(--djk-linie);
+  border-left: 5px solid var(--djk-gelb);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.anm-item-who {
+  font-weight: 700;
+  font-size: 13.5px;
+}
+.anm-item-date {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--djk-grau);
+}
+.anm-item-where {
+  display: inline-block;
+  font-family: var(--font-archivo), Arial, sans-serif;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--djk-hellgrau);
+  padding: 2px 7px;
+  margin: 4px 0 6px;
+}
+.anm-item-text {
+  font-size: 13.5px;
+  color: #333;
+  margin: 0;
+  white-space: pre-wrap;
+}
+.anm-empty {
+  font-size: 13.5px;
+  color: var(--djk-grau);
+  font-style: italic;
+}
+
 @media (max-width: 680px) {
   .va {
     padding: 0 0 40px;
@@ -432,6 +630,9 @@
 }
 
 @media print {
+  .anm-sticky {
+    display: none;
+  }
   .va {
     background: #fff;
     padding: 0;
