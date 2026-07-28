@@ -4,6 +4,11 @@ import { BEREICHE, PERSONEN } from '../src/data/protokolle'
 
 const prisma = new PrismaClient()
 
+// ⚠️ Dieser Seed betrifft AUSSCHLIESSLICH das Jubiläum 2026 (eventId
+// 'jubilaeum-2026'). Andere Veranstaltungen (z.B. sommerfest-2027) bleiben
+// unangetastet — deleteMany ist entsprechend gescoped.
+const EVENT_ID = 'jubilaeum-2026'
+
 async function main() {
   console.log('Seeding database...')
 
@@ -11,14 +16,14 @@ async function main() {
   // NICHT angefasst werden: User, Product, Inventory, SalesEntry, SalesEstimate.
   // Damit bleibt der Warenwirtschafts-Katalog (Getränkepreise etc.) und der
   // Login-User bei jedem Re-Seed erhalten.
-  await prisma.taskAssignment.deleteMany()
-  await prisma.beschluss.deleteMany()
-  await prisma.task.deleteMany()
-  await prisma.bereich.deleteMany()
-  await prisma.person.deleteMany()
+  await prisma.taskAssignment.deleteMany({ where: { task: { eventId: EVENT_ID } } })
+  await prisma.beschluss.deleteMany({ where: { bereich: { eventId: EVENT_ID } } })
+  await prisma.task.deleteMany({ where: { eventId: EVENT_ID } })
+  await prisma.bereich.deleteMany({ where: { eventId: EVENT_ID } })
+  await prisma.person.deleteMany({ where: { eventId: EVENT_ID } })
   await prisma.participant.deleteMany()
   await prisma.team.deleteMany()
-  console.log('Cleared Festplanung + Watt-Turnier (User/Warenwirtschaft unverändert)')
+  console.log('Cleared Festplanung Jubiläum 2026 + Watt-Turnier (User/Warenwirtschaft/andere Events unverändert)')
 
   // ─── PERSONEN (Festausschuss) ───────────────────────────────────────────────
 
@@ -28,6 +33,7 @@ async function main() {
     const isCatchAll = p.id === 'helferx'
     const created = await prisma.person.create({
       data: {
+        eventId: EVENT_ID,
         name: p.name,
         initials: p.initials,
         color: p.color,
@@ -68,6 +74,7 @@ async function main() {
     const b = BEREICHE[bIdx]
     const bereich = await prisma.bereich.create({
       data: {
+        eventId: EVENT_ID,
         name: b.name,
         icon: b.icon,
         verantwortliche: b.verantwortliche,
@@ -86,6 +93,7 @@ async function main() {
     for (const a of b.aufgaben) {
       const task = await prisma.task.create({
         data: {
+          eventId: EVENT_ID,
           title: a.titel,
           detail: a.detail || null,
           status: a.status,
