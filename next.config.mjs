@@ -5,6 +5,7 @@ const nextConfig = {
   async redirects() {
     return [
       { source: '/finanzen', destination: '/jubilaeum-2026/finanzplanung', permanent: true },
+      { source: '/festplanung', destination: '/jubilaeum-2026/festplanung', permanent: true },
     ]
   },
 };

@@ -12,6 +12,7 @@ interface Props {
   personen: PersonDTO[]
   defaultBereichId?: string // für „+ Neue Aufgabe" pro Bereich
   onDelete?: (task: TaskDTO) => void
+  eventId: string // Veranstaltung, zu der neue Aufgaben gehören
 }
 
 export default function ProtokollAufgabeModal({
@@ -23,6 +24,7 @@ export default function ProtokollAufgabeModal({
   personen,
   defaultBereichId,
   onDelete,
+  eventId,
 }: Props) {
   const [title, setTitle] = useState('')
   const [detail, setDetail] = useState('')
@@ -67,6 +69,7 @@ export default function ProtokollAufgabeModal({
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        eventId,
         title: title.trim(),
         detail: detail.trim() || null,
         status,

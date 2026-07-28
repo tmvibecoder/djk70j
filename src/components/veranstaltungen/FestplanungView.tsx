@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import ProtokollAufgabeModal from '@/components/ProtokollAufgabeModal'
+import { Veranstaltung } from '@/data/veranstaltungen'
 import {
   bereichStats,
   globalStats,
@@ -12,11 +13,14 @@ import {
 
 type ViewMode = 'bereich' | 'person'
 
-const STORAGE_VIEW = 'djk-festplanung-view'
-const STORAGE_OPEN_BEREICH = 'djk-festplanung-open-bereich'
-const STORAGE_OPEN_PERSON = 'djk-festplanung-open-person'
+// Vorlage für die Festplanung einer Veranstaltung — Daten kommen
+// event-gescoped aus der DB (/api/bereiche?event=…).
+export default function FestplanungView({ event }: { event: Veranstaltung }) {
+  // UI-Zustand je Veranstaltung getrennt merken
+  const STORAGE_VIEW = `djk-festplanung-view:${event.id}`
+  const STORAGE_OPEN_BEREICH = `djk-festplanung-open-bereich:${event.id}`
+  const STORAGE_OPEN_PERSON = `djk-festplanung-open-person:${event.id}`
 
-export default function FestplanungPage() {
   const [bereiche, setBereiche] = useState<BereichDTO[]>([])
   const [personen, setPersonen] = useState<PersonDTO[]>([])
   const [loading, setLoading] = useState(true)
@@ -30,14 +34,14 @@ export default function FestplanungPage() {
 
   const loadData = useCallback(async () => {
     const [bRes, pRes] = await Promise.all([
-      fetch('/api/bereiche'),
-      fetch('/api/personen'),
+      fetch(`/api/bereiche?event=${event.id}`),
+      fetch(`/api/personen?event=${event.id}`),
     ])
     const [bData, pData] = await Promise.all([bRes.json(), pRes.json()])
     setBereiche(bData)
     setPersonen(pData)
     setLoading(false)
-  }, [])
+  }, [event.id])
 
   useEffect(() => {
     loadData()
@@ -55,7 +59,7 @@ export default function FestplanungPage() {
     } catch {
       // Storage nicht verfügbar — defaults beibehalten
     }
-  }, [])
+  }, [STORAGE_VIEW, STORAGE_OPEN_BEREICH, STORAGE_OPEN_PERSON])
 
   const switchView = (v: ViewMode) => {
     setView(v)
@@ -201,6 +205,17 @@ export default function FestplanungPage() {
           <span>Nach Person</span>
         </button>
       </div>
+
+      {/* Leerzustand: noch keine Bereiche für diese Veranstaltung angelegt */}
+      {bereiche.length === 0 && (
+        <div className="bg-white rounded-xl border border-dashed border-gray-300 p-8 text-center">
+          <div className="text-3xl mb-2">🌱</div>
+          <div className="font-semibold text-gray-900">Die Planung startet demnächst.</div>
+          <div className="text-sm text-gray-500 mt-1">
+            Für diese Veranstaltung sind noch keine Bereiche angelegt — siehe ANLEITUNG-NEUE-VERANSTALTUNG.md im Projekt.
+          </div>
+        </div>
+      )}
 
       {/* ── Bereich View ── */}
       {view === 'bereich' && (
@@ -371,6 +386,7 @@ export default function FestplanungPage() {
         personen={personen}
         defaultBereichId={defaultBereichId}
         onDelete={deleteTask}
+        eventId={event.id}
       />
     </div>
   )
