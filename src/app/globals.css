@@ -5,6 +5,15 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Vereinsfarben DJK SG Ottenhofen — zentrale Stelle für alle Seiten
+     (verwendet u.a. vom Abschlussbericht) */
+  --djk-gelb: #FFF200;
+  --djk-gelb-tief: #E0D400;
+  --djk-schwarz: #000000;
+  --djk-grau: #6B6B6B;
+  --djk-hellgrau: #F4F2ED;
+  --djk-linie: #D8D5CD;
 }
 
 body {

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Archivo, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import { Navigation } from "@/components/Navigation";
 import { AppHeader } from "@/components/AppHeader";
@@ -13,6 +14,19 @@ const geistMono = localFont({
   src: "./fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
   weight: "100 900",
+});
+// Schriften des Abschlussberichts — zentral eingebunden, beim Build
+// self-hosted (keine Laufzeit-Requests an Google)
+const archivo = Archivo({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
+  variable: "--font-archivo",
+});
+const sourceSans = Source_Sans_3({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-source-sans",
 });
 
 export const metadata: Metadata = {
@@ -28,7 +42,7 @@ export default function RootLayout({
   return (
     <html lang="de">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} ${archivo.variable} ${sourceSans.variable} antialiased min-h-screen`}
       >
         <div className="flex min-h-screen">
           <Navigation />
