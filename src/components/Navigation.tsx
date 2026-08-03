@@ -123,6 +123,19 @@ export function Navigation() {
               </li>
             )
           })}
+
+          {/* Dauerhafte Bereiche (unabhängig von Veranstaltungen) */}
+          <li className="pt-4 mt-2 border-t border-gray-800">
+            <Link
+              href="/werbebanden"
+              onClick={() => setMobileOpen(false)}
+              title={collapsed ? 'Werbebanden' : undefined}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 text-gray-400 hover:bg-gray-800 hover:text-white ${collapsed ? 'justify-center' : ''}`}
+            >
+              <span className="text-lg shrink-0">🏟️</span>
+              {!collapsed && <span className="truncate">Werbebanden</span>}
+            </Link>
+          </li>
         </ul>
       </nav>
 
@@ -161,8 +174,8 @@ export function Navigation() {
     </div>
   )
 
-  // Auf der Login-Seite keine Sidebar
-  if (pathname === '/login') return null
+  // Auf der Login-Seite und im Werbebanden-Bereich (eigenes Layout) keine Sidebar
+  if (pathname === '/login' || pathname.startsWith('/werbebanden')) return null
 
   return (
     <>

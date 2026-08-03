@@ -292,3 +292,101 @@ model EntryForecast {
 
   @@unique([eventDay, scenario])
 }
+
+// ─── Werbebanden (dauerhafter Bereich /werbebanden, unabhängig von Veranstaltungen) ───
+
+// Werbepartner (Mieter einer Werbebande am Sportplatz)
+model Werbepartner {
+  id                      String    @id @default(cuid())
+  firma                   String
+  ansprechpartner         String?   // allgemeiner Kontakt (aus der Excel-Spalte "Name")
+  ansprechpartnerBande    String?   // Ansprechpartner für die Werbebande selbst
+  ansprechpartnerRechnung String?   // Ansprechpartner für die Rechnung
+  strasse                 String?
+  plz                     String?
+  ort                     String?
+  telefon                 String?
+  email                   String?
+  istLaenge               Float     @default(0)  // tatsächliche Länge der Bande in m
+  berechneteLaenge        Float     @default(0)  // abgerechnete lfd. Meter (kann von Ist abweichen)
+  preisProMeter           Float     @default(40) // netto; 0 = Gratisbande (z.B. DJK-Logo, Fanclub)
+  vertragsbeginn          DateTime?
+  bandeErneuert           Int?      // Jahr der letzten Bandenerneuerung
+  rechnungsversand        String    @default("post") // "post" | "uebergabe" | "email"
+  abschnitt               Int?      // 1..3 = Platzabschnitte, 4 = Zusatzfläche 17,5 m
+  positionNr              Int?      // Reihenfolge innerhalb des Abschnitts
+  kuendigungZum           DateTime? // "Kündigung zum"
+  status                  String    @default("aktiv") // "aktiv" | "gekuendigt"
+  bemerkung               String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  dateien    WerbepartnerDatei[]
+  rechnungen WerbebandenRechnung[]
+
+  @@index([status])
+}
+
+// Hochgeladene Dateien je Partner (Bandenfoto, unterschriebener Vertrag, Kündigungsschreiben)
+model WerbepartnerDatei {
+  id        String       @id @default(cuid())
+  partnerId String
+  partner   Werbepartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  art       String       // "foto" | "vertrag" | "kuendigung"
+  dateiname String       // Original-Dateiname
+  pfad      String       // Pfad relativ zu uploads/werbebanden/
+  mimeType  String
+  groesse   Int          // Bytes
+  createdAt DateTime     @default(now())
+
+  @@index([partnerId])
+}
+
+// Jahresrechnung — Snapshot der Partnerdaten zum Rechnungszeitpunkt,
+// nachträglich frei editierbar (bewusste Entscheidung des Nutzers)
+model WerbebandenRechnung {
+  id               String        @id @default(cuid())
+  partnerId        String?
+  partner          Werbepartner? @relation(fields: [partnerId], references: [id], onDelete: SetNull)
+  saison           String        // z.B. "2025/2026"
+  jahr             Int           // Nummernkreis-Jahr, z.B. 2026
+  laufnummer       Int           // 1, 2, … (je Jahr fortlaufend)
+  nummer           String        @unique // z.B. "2026/B/0001"
+  datum            DateTime      @default(now())
+  firma            String
+  ansprechpartner  String?
+  strasse          String?
+  plz              String?
+  ort              String?
+  laenge           Float         @default(0) // abgerechnete lfd. Meter
+  preisProMeter    Float         @default(0)
+  netto            Float         @default(0)
+  mwstSatz         Float         @default(19)
+  mwst             Float         @default(0)
+  brutto           Float         @default(0)
+  zahlungszielTage Int           @default(14)
+  status           String        @default("erstellt") // "erstellt" | "versendet" | "bezahlt"
+  bemerkung        String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@unique([jahr, laufnummer])
+  @@index([saison])
+  @@index([partnerId])
+}
+
+// DJK-Stammdaten für Rechnungen + Bereichs-Passwort (Singleton, id "werbebanden")
+model WerbebandenEinstellung {
+  id                    String   @id @default("werbebanden")
+  vereinsname           String   @default("DJK SG Ottenhofen e.V.")
+  kassierName           String   @default("")
+  absenderzeile         String   @default("") // kleine Absenderzeile über dem Adressfeld
+  bankName              String   @default("")
+  iban                  String   @default("")
+  bic                   String   @default("")
+  zahlungszielTage      Int      @default(14)
+  standardPreisProMeter Float    @default(40)
+  mwstSatz              Float    @default(19)
+  passwordHash          String   @default("") // bcrypt-Hash des Bereichs-Passworts
+  updatedAt             DateTime @updatedAt
+}

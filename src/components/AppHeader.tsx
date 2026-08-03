@@ -23,7 +23,7 @@ export function AppHeader() {
     return () => clearInterval(id)
   }, [])
 
-  if (pathname === '/login') return null
+  if (pathname === '/login' || pathname.startsWith('/werbebanden')) return null
 
   // Veranstaltung + Bereich aus der URL ableiten (/[eventId]/[bereich])
   const [, seg1, seg2] = pathname.split('/')
