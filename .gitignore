@@ -33,6 +33,9 @@ yarn-error.log*
 *.db
 *.db-journal
 
+# Werbebanden-Uploads (liegen nur auf dem Server, überleben Deploys wie die DB)
+/uploads/
+
 # vercel
 .vercel
 
