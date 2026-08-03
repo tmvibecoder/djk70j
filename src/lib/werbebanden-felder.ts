@@ -86,5 +86,9 @@ export function einstellungenDaten(body: Record<string, unknown>) {
     zahlungszielTage: Math.round(num(body, 'zahlungszielTage', 14) ?? 14),
     standardPreisProMeter: num(body, 'standardPreisProMeter', 40) ?? 40,
     mwstSatz: num(body, 'mwstSatz', 19) ?? 19,
+    kopfKontaktblock: str(body, 'kopfKontaktblock') ?? '',
+    fusszeileSpalte1: str(body, 'fusszeileSpalte1') ?? '',
+    fusszeileSpalte2: str(body, 'fusszeileSpalte2') ?? '',
+    fusszeileSpalte3: str(body, 'fusszeileSpalte3') ?? '',
   }
 }

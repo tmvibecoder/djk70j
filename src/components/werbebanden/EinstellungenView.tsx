@@ -18,19 +18,20 @@ export function EinstellungenView() {
           vereinsname: e.vereinsname ?? '',
           kassierName: e.kassierName ?? '',
           absenderzeile: e.absenderzeile ?? '',
-          bankName: e.bankName ?? '',
-          iban: e.iban ?? '',
-          bic: e.bic ?? '',
           zahlungszielTage: String(e.zahlungszielTage ?? 14),
           standardPreisProMeter: String(e.standardPreisProMeter ?? 40),
           mwstSatz: String(e.mwstSatz ?? 19),
+          kopfKontaktblock: e.kopfKontaktblock ?? '',
+          fusszeileSpalte1: e.fusszeileSpalte1 ?? '',
+          fusszeileSpalte2: e.fusszeileSpalte2 ?? '',
+          fusszeileSpalte3: e.fusszeileSpalte3 ?? '',
         }),
       )
   }, [])
 
   if (!form) return <p className="text-sm text-gray-500 py-8 text-center">Lade Einstellungen…</p>
 
-  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...(f as Record<string, string>), [k]: e.target.value }))
 
   const speichere = async () => {
@@ -73,12 +74,59 @@ export function EinstellungenView() {
                 placeholder="DJK SG Ottenhofen e.V. · Herdweger Str. 4 · 85570 Ottenhofen"
               />
             </div>
-            <Input label="Bank" value={form.bankName} onChange={set('bankName')} />
-            <Input label="IBAN" value={form.iban} onChange={set('iban')} />
-            <Input label="BIC" value={form.bic} onChange={set('bic')} />
             <Input label="Zahlungsziel (Tage)" inputMode="numeric" value={form.zahlungszielTage} onChange={set('zahlungszielTage')} />
             <Input label="Standardpreis pro Meter (€ netto)" inputMode="decimal" value={form.standardPreisProMeter} onChange={set('standardPreisProMeter')} />
             <Input label="MwSt.-Satz (%)" inputMode="decimal" value={form.mwstSatz} onChange={set('mwstSatz')} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="!py-3">
+          <h2 className="font-bold text-gray-900">Briefkopf & Fußzeile der Rechnung</h2>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-gray-500">
+            Übernommen aus der offiziellen Briefvorlage — eine Zeile pro Textzeile.
+            Die Logos (Wappen links, DJK-Verbandslogo rechts) sind fest eingebaut.
+          </p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Kontaktblock rechts oben (Kassier)</label>
+            <textarea
+              value={form.kopfKontaktblock}
+              onChange={set('kopfKontaktblock')}
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Fußzeile links (Anschrift)</label>
+              <textarea
+                value={form.fusszeileSpalte1}
+                onChange={set('fusszeileSpalte1')}
+                rows={5}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Fußzeile Mitte (Register/Vorstand)</label>
+              <textarea
+                value={form.fusszeileSpalte2}
+                onChange={set('fusszeileSpalte2')}
+                rows={5}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Fußzeile rechts (Banken)</label>
+              <textarea
+                value={form.fusszeileSpalte3}
+                onChange={set('fusszeileSpalte3')}
+                rows={5}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -106,9 +106,13 @@ der Middleware-Matcher schließt URLs mit Punkt aus, eine Endung in der URL
 würde die Auth umgehen!
 
 **Rechnungs-PDF:** `src/lib/rechnung-pdf.ts` mit **pdf-lib** (kein headless
-Chrome), Layout nach dem alten Serienbrief. Rechnungslauf
-(`api/werbebanden/rechnungen/lauf`) überspringt Partner, die für die Saison
-schon eine Rechnung haben.
+Chrome), Layout nach der offiziellen Briefvorlage (DJK_Vorlage_Brief.docx):
+Wappen links + DJK-Verbandslogo rechts (Base64 in `src/lib/rechnung-assets.ts`),
+Kassier-Kontaktblock und dreispaltige Fußzeile (Anschrift | Register/Vorstand |
+Banken) kommen editierbar aus `WerbebandenEinstellung` (kopfKontaktblock,
+fusszeileSpalte1–3; Seed rüstet leere Felder nach, überschreibt aber nie
+Nutzereingaben). Rechnungslauf (`api/werbebanden/rechnungen/lauf`) überspringt
+Partner, die für die Saison schon eine Rechnung haben.
 
 **Platzabschnitte** in `src/data/werbebanden.ts`: 34 m / 26,88 m / 18 m +
 17,5 m Zusatzfläche. Die Platzübersicht rechnet mit **Ist-Längen** (physisch),
