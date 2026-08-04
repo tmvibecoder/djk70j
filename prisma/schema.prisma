@@ -388,5 +388,11 @@ model WerbebandenEinstellung {
   standardPreisProMeter Float    @default(40)
   mwstSatz              Float    @default(19)
   passwordHash          String   @default("") // bcrypt-Hash des Bereichs-Passworts
+  // Briefkopf/Fußzeile der Rechnungs-PDF (mehrzeilig, editierbar — Inhalte
+  // aus der offiziellen Briefvorlage; Logos liegen in src/lib/rechnung-assets.ts)
+  kopfKontaktblock      String   @default("") // rechts oben (Kassier, Mobil, E-Mail)
+  fusszeileSpalte1      String   @default("") // Anschrift/Kontakt
+  fusszeileSpalte2      String   @default("") // Register/Steuer/Vorsitzender
+  fusszeileSpalte3      String   @default("") // Bankverbindungen
   updatedAt             DateTime @updatedAt
 }

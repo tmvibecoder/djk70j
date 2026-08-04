@@ -74,6 +74,10 @@ export interface EinstellungenDto {
   zahlungszielTage: number
   standardPreisProMeter: number
   mwstSatz: number
+  kopfKontaktblock: string
+  fusszeileSpalte1: string
+  fusszeileSpalte2: string
+  fusszeileSpalte3: string
 }
 
 // "2026-07-01T00:00:00.000Z" → "2026-07-01" (für <input type="date">)

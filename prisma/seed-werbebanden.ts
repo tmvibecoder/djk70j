@@ -80,9 +80,32 @@ const RECHNUNGS_SAISON = '2025/2026'
 const RECHNUNGS_JAHR = 2026
 const RECHNUNGS_DATUM = new Date('2026-08-02')
 
+// Briefkopf/Fußzeile aus der offiziellen Briefvorlage (DJK_Vorlage_Brief.docx,
+// Erstseiten-Variante). Wird nur gesetzt, wenn das Feld noch leer ist —
+// Nutzeränderungen bleiben unangetastet.
+const KOPF_KONTAKTBLOCK = `Kassier
+Alexander Reisner
+Mobil: +49 (151) 53 96 43 30
+E-Mail: kassier@djk-ottenhofen.de`
+const FUSSZEILE_1 = `DJK SG Ottenhofen e.V.
+Herdweger Str. 4
+85570 Ottenhofen
+Tel.: +49 (81 21) 4 81 14 (Sportheim)
+www.djk-ottenhofen.de | info@djk-ottenhofen.de`
+const FUSSZEILE_2 = `Vereinsregister VR 110054
+Amtsgericht München
+Steuer Nr.: 114/107/80048
+Finanzamt Erding
+1. Vorsitzender Uwe Klempt`
+const FUSSZEILE_3 = `Bankverbindungen
+Sparkasse Erding - Dorfen
+DE04 7005 1995 0000 3100 78 | BYLADEM1ERD
+VR-Bank Erding eG
+DE67 7016 9605 0007 4079 63 | GENODEF1ISE`
+
 async function main() {
   // 1. Einstellungen: nur anlegen, nie Nutzeränderungen überschreiben
-  await prisma.werbebandenEinstellung.upsert({
+  const einstellung = await prisma.werbebandenEinstellung.upsert({
     where: { id: 'werbebanden' },
     create: {
       id: 'werbebanden',
@@ -93,9 +116,28 @@ async function main() {
       standardPreisProMeter: 40,
       mwstSatz: MWST_SATZ,
       passwordHash: bcrypt.hashSync('keymaster', 10),
+      kopfKontaktblock: KOPF_KONTAKTBLOCK,
+      fusszeileSpalte1: FUSSZEILE_1,
+      fusszeileSpalte2: FUSSZEILE_2,
+      fusszeileSpalte3: FUSSZEILE_3,
     },
     update: {},
   })
+
+  // Nachrüstung für Bestands-Installationen: neue Briefkopf-Felder nur
+  // befüllen, solange sie leer sind (überschreibt keine Nutzereingaben)
+  const nachruestung: Record<string, string> = {}
+  if (!einstellung.kopfKontaktblock) nachruestung.kopfKontaktblock = KOPF_KONTAKTBLOCK
+  if (!einstellung.fusszeileSpalte1) nachruestung.fusszeileSpalte1 = FUSSZEILE_1
+  if (!einstellung.fusszeileSpalte2) nachruestung.fusszeileSpalte2 = FUSSZEILE_2
+  if (!einstellung.fusszeileSpalte3) nachruestung.fusszeileSpalte3 = FUSSZEILE_3
+  if (Object.keys(nachruestung).length > 0) {
+    await prisma.werbebandenEinstellung.update({
+      where: { id: 'werbebanden' },
+      data: nachruestung,
+    })
+    console.log(`Werbebanden-Seed: Briefkopf-Felder nachgerüstet (${Object.keys(nachruestung).join(', ')}).`)
+  }
 
   // 2. Partner + Rechnungen nur beim allerersten Lauf
   const vorhanden = await prisma.werbepartner.count()
