@@ -17,9 +17,10 @@ URLs und Daten-Scoping folgen automatisch. **Kein Copy-Paste von Seitencode.**
 - Veranstaltungen aktuell: `jubilaeum-2026` (abgeschlossen, inkl. Abschlussbericht),
   `sommerfest-2027` (geplant)
 
-Daneben gibt es den **dauerhaften Bereich `/werbebanden`** (Bandenwerbung am
-Sportplatz) mit **eigenem Nur-Passwort-Login**, unabhängig von den
-Veranstaltungen — siehe Abschnitt „Werbebanden-Bereich".
+Daneben gibt es zwei **dauerhafte Bereiche** unabhängig von den Veranstaltungen:
+`/werbebanden` (Bandenwerbung am Sportplatz, eigener Nur-Passwort-Login) und
+`/djk-info` (Vereinszeitschrift-Verwaltung, eigener 3-Rollen-Login) — siehe
+Abschnitte „Werbebanden-Bereich" und „DJK-Info-Bereich".
 
 ## Tech-Stack
 
@@ -122,6 +123,76 @@ die Abrechnung mit den **lfd. Metern** (können abweichen).
 Einstellungen per upsert (`update: {}` — überschreibt nie Nutzeränderungen),
 Partner + Rechnungen 2025/2026 aus der Excel nur beim allerersten Lauf.
 
+## DJK-Info-Bereich (`/djk-info`, dauerhaft)
+
+Verwaltung der **Vereinszeitschrift „DJK Info"** (3 Ausgaben/Jahr, ~29
+Anzeigenkunden, 896 Hefte Verteilung) — ersetzt Excel „Abrechnung DJK Info"
++ Word-Verteilerlisten. Aufbau nach dem Werbebanden-Muster: eigener
+Routen-Baum mit `InfoShell` (Tabs: Kunden | Ausgaben | Rechnungen |
+Verteilung | Einstellungen), Client-Views in `src/components/djk-info/`,
+Sidebar/AppHeader blenden sich auf `/djk-info/**` aus.
+
+**Auth mit 3 Rollen (`src/lib/info-auth.ts`):** Login-Dropdown wählt die
+Rolle, jede Rolle hat ein eigenes Passwort (bcrypt-Hashes in
+`InfoEinstellung`; Start per Seed: Kassier `kassenbuch`, Redakteur
+`druckfrisch`, Leser `leseratte`). Cookie `djk_info_auth` mit der Rolle im
+signierten Payload. **Die drei Cookie-Payload-Formate der App sind bewusst
+paarweise disjunkt** (Middleware prüft nur Signaturen, keine DB — die
+Domain-Trennung im Payload verhindert Token-Übertragung zwischen Bereichen;
+gemeinsame Krypto-Helfer in `src/lib/hmac.ts`, dort NICHTS vereinheitlichen):
+
+| Bereich | Cookie | signierter Payload |
+|---|---|---|
+| App | `djk_auth` | `${userId}.${ts}` |
+| Werbebanden | `djk_banden_auth` | `banden-auth:${ts}` |
+| DJK-Info | `djk_info_auth` | `info-auth:${rolle}:${ts}` |
+
+App-Cookie zählt im Info-Bereich als Kassier; Banden-Cookie öffnet den
+Info-Bereich NICHT (und umgekehrt). **Rollen-Matrix** (`darf()`; die
+Middleware prüft nur „eingeloggt", jede schreibende Route gated serverseitig
+per `erfordereRolle`):
+
+| Aktion | Kassier | Redakteur | Leser |
+|---|---|---|---|
+| Lesen (alle Bereiche außer Einstellungen) | ✓ | ✓ | ✓ |
+| Schaltungs-Matrix, Ausgaben anlegen/ändern, Druckrechnungs-Upload | ✓ | ✓ | — |
+| Kunden, Rechnungen, Verteilung, Dateien, Einstellungen (inkl. GET), Druckkosten-Feld | ✓ | — | — |
+
+**Modelle (Präfix `Info`):** `InfoKunde`, `InfoPreis` (Preistabelle
+290/230/195/155/110/90 € netto/Jahr), `InfoAusgabe` (jahr+nummer, z.B.
+„2026-1"), `InfoSchaltung` (Kunde × Ausgabe, Basis der Abrechnung),
+`InfoRechnung` (editierbarer Snapshot, Nummernkreis **`JJJJ/I/NNNN`** —
+getrennt vom Banden-Kreis `JJJJ/B/NNNN`, beide über
+`src/lib/rechnungsnummer.ts`), `InfoDatei` (Kunde ODER Ausgabe),
+`InfoVerteilgebiet`/`InfoStrasse`/`InfoVerteiler` (Heftzahlen überall
+editierbar; Gebietssumme wird bewusst NICHT aus den Straßen erzwungen),
+`InfoEinstellung` (Singleton „djk-info").
+
+**Rechnungsbetrag:** `netto = round(jahresNetto × n ÷ 3, 2)` — NIE den
+gerundeten Einzelpreis × n rechnen (290 ÷ 3 → 96,67 × 3 = 290,01!). Helfer
+`anteiligerNetto()` in `src/data/djk-info.ts`. Rechnungs-PDF
+(`src/lib/info-rechnung-pdf.ts`) und Banden-PDF teilen sich die
+Briefvorlagen-Primitive in **`src/lib/pdf-brief.ts`** (Wappen + Verbandslogo
+aus `rechnung-assets.ts`, editierbarer Kontaktblock/Fußzeile aus den
+Einstellungen).
+
+**Verteilungs-PDFs** (`src/lib/verteilung-pdf.ts`, Route
+`/api/djk-info/verteilung/pdf?ziel=…`): DIN-A4-Listen für die Austräger —
+`gesamt` (Übersicht), `alle` (Sammel-PDF, je Bereich eine Seite),
+`ottenhofen` (4 Gebiets-Handzettel mit Straßenlisten), `auslagen`,
+`postversand`, `<gebietId>` (einzeln).
+
+**Uploads** in `uploads/djk-info/<kundeId|ausgabeId>/` (gitignored, wie
+Banden), Auslieferung NUR über `/api/djk-info/dateien/<id>` ohne
+Dateiendung (Middleware-Punkt-Matcher!). Kunden-Arten: vertrag, anzeige
+(nur Bild), kuendigung; Ausgaben-Arten: druckrechnung, heft.
+
+**Seed `prisma/seed-djk-info.ts`** (+ Daten in `seed-djk-info-daten.ts`,
+läuft beim Auto-Deploy, idempotent): Einstellungen/Preise/Ausgaben per
+upsert; 32 Kunden, 83 Schaltungen 2025 und 30 historische Rechnungen aus
+der Abrechnungs-Excel sowie Gebiete/Straßen/Verteilerliste aus den
+Word-Dokumenten nur beim allerersten Lauf.
+
 ## Datenmodell (`prisma/schema.prisma`)
 
 SQLite. **Event-Scoping:** `CostItem`, `Sponsor`, `Bereich`, `Person`, `Task`
@@ -139,6 +210,9 @@ tragen `eventId String @default("jubilaeum-2026")` (+ Index). `Beschluss` /
   unterpunkt?, text) — Besucher-Anmerkungen, für alle sichtbar.
 - **Werbebanden (ohne Event-Scoping, dauerhaft):** `Werbepartner`,
   `WerbepartnerDatei`, `WerbebandenRechnung`, `WerbebandenEinstellung`.
+- **DJK-Info (ohne Event-Scoping, dauerhaft):** `InfoKunde`, `InfoPreis`,
+  `InfoAusgabe`, `InfoSchaltung`, `InfoRechnung`, `InfoDatei`,
+  `InfoVerteilgebiet`, `InfoStrasse`, `InfoVerteiler`, `InfoEinstellung`.
 - **Ohne UI (Daten bleiben erhalten):** `Product`, `Inventory`, `SalesEntry`,
   `SalesEstimate` (frühere Warenwirtschaft, UI im Juli 2026 entfernt),
   `Team`, `Participant` (Watt-Turnier), `SimpleForecast`, `EntryForecast`,
@@ -189,6 +263,10 @@ npm run dev                      # http://localhost:3000
 - **`seed-werbebanden.ts`** (`npm run db:seed:werbebanden`) — Werbebanden-Startdaten
   (Einstellungen + Partner + Rechnungen 2025/2026 aus der Excel); idempotent.
   **Läuft beim Auto-Deploy.**
+- **`seed-djk-info.ts`** (`npm run db:seed:djk-info`) — DJK-Info-Startdaten
+  (Einstellungen inkl. Rollen-Passwörter, Preise, Ausgaben, Kunden +
+  Schaltungen + Rechnungen 2025, Verteilgebiete/Straßen/Verteiler);
+  idempotent. **Läuft beim Auto-Deploy.**
 - **`seed-anfangsbestand-2026-07-07.ts`** — Inventur-Anfangsbestand Fest 2026
   (Warenwirtschaft-Daten; UI entfernt, Skript bleibt marker-geschützt im Deploy).
 - `db:reset` = `prisma db push --force-reset && db:seed` (die alten
@@ -243,7 +321,8 @@ Sommerfest-2027-Seed (beide idempotent), `npm run build`, `pm2 restart`.
   eine veraltete Kopie mit Port 3000. Alter systemd-Dienst `djk-fest.service` verwaist.
 - **Datei-Downloads nie mit Dateiendung in der URL** ausliefern — der
   Middleware-Matcher (`.*\..*`) lässt URLs mit Punkt ungeprüft durch
-  (gedacht für statische Assets). Deshalb streamt `/api/werbebanden/dateien/<id>`
-  über die cuid-ID ohne Endung.
+  (gedacht für statische Assets). Deshalb streamen `/api/werbebanden/dateien/<id>`,
+  `/api/djk-info/dateien/<id>` und die Verteilungs-PDF-Routen über IDs/Query
+  ohne Endung.
 - **`uploads/` liegt nur auf dem Server** (gitignored, wie `dev.db`) — bei
   Server-Umzügen mitsichern.

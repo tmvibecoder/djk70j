@@ -603,7 +603,7 @@ function PdfModal({ onClose }: { onClose: () => void }) {
           </a>
         </div>
         <p className="text-xs text-gray-500">
-          Einzelne PDFs gibt es auch direkt über die „📄 PDF"-Knöpfe an jeder Karte bzw. jedem Gebiet.
+          Einzelne PDFs gibt es auch direkt über die „📄 PDF&quot;-Knöpfe an jeder Karte bzw. jedem Gebiet.
         </p>
         <div className="flex justify-end">
           <Button variant="secondary" onClick={onClose}>Schließen</Button>

@@ -51,7 +51,7 @@ export function EinstellungenView() {
   if (verboten) {
     return (
       <p className="text-sm text-gray-500 py-8 text-center">
-        Die Einstellungen sind der Rolle „Erfasser &amp; Kassier" vorbehalten.
+        Die Einstellungen sind der Rolle „Erfasser &amp; Kassier&quot; vorbehalten.
       </p>
     )
   }
