@@ -136,6 +136,17 @@ export function Navigation() {
               {!collapsed && <span className="truncate">Werbebanden</span>}
             </Link>
           </li>
+          <li>
+            <Link
+              href="/djk-info"
+              onClick={() => setMobileOpen(false)}
+              title={collapsed ? 'DJK Info' : undefined}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 text-gray-400 hover:bg-gray-800 hover:text-white ${collapsed ? 'justify-center' : ''}`}
+            >
+              <span className="text-lg shrink-0">📰</span>
+              {!collapsed && <span className="truncate">DJK Info</span>}
+            </Link>
+          </li>
         </ul>
       </nav>
 
@@ -175,7 +186,7 @@ export function Navigation() {
   )
 
   // Auf der Login-Seite und im Werbebanden-Bereich (eigenes Layout) keine Sidebar
-  if (pathname === '/login' || pathname.startsWith('/werbebanden')) return null
+  if (pathname === '/login' || pathname.startsWith('/werbebanden') || pathname.startsWith('/djk-info')) return null
 
   return (
     <>
