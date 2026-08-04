@@ -1,12 +1,16 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { formatRechnungsnummer, naechsteLaufnummer } from '@/lib/rechnungsnummer'
+import { erfordereRolle } from '@/lib/session'
 
 // Rechnungslauf: erzeugt für die gewählten Partner je eine Rechnung der
 // Saison als Snapshot der aktuellen Partnerdaten. Beträge werden serverseitig
 // berechnet (Netto = lfd. Meter × Preis/Meter, MwSt darauf) — danach sind
 // alle Felder über die Bearbeiten-Seite frei änderbar.
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const verboten = await erfordereRolle(req, 'werbebanden', 'bearbeiten')
+  if (verboten) return verboten
+
   const body = await req.json().catch(() => ({}))
   const saison: string = typeof body.saison === 'string' ? body.saison.trim() : ''
   const jahr: number = Number.isInteger(body.jahr) ? body.jahr : new Date().getFullYear()

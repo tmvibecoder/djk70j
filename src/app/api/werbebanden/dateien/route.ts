@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import {
   MAX_UPLOAD_BYTES,
@@ -8,9 +8,13 @@ import {
   relativerPfad,
   speichereUpload,
 } from '@/lib/uploads'
+import { erfordereRolle } from '@/lib/session'
 
 // Multipart-Upload: Felder partnerId, art ("foto" | "vertrag" | "kuendigung"), file
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const verboten = await erfordereRolle(req, 'werbebanden', 'bearbeiten')
+  if (verboten) return verboten
+
   const form = await req.formData().catch(() => null)
   if (!form) return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 })
 

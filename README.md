@@ -6,8 +6,11 @@ Next.js 14 + Prisma/SQLite, passwortgeschützt.
 
 - **Live:** https://djk-ottenhofen-event.de
 - **Veranstaltungen:** 70 Jahre Jubiläum 2026 (abgeschlossen), DJK Sommerfest 2027 (geplant)
-- **Dauerhafte Bereiche** (eigene Passwort-Logins): `/werbebanden` (Bandenwerbung)
-  und `/schluessel` (Schlüsselverwaltung mit Finger-Signatur + PDF-Belegen)
+- **Dauerhafte Bereiche** (unabhängig von Veranstaltungen, ein zentraler Benutzer-Login
+  mit Rollen je Bereich): `/werbebanden` (Bandenwerbung am Sportplatz), `/schluessel`
+  (Schlüsselverwaltung mit Finger-Signatur + PDF-Belegen) und `/djk-info`
+  (Vereinszeitschrift: Anzeigenkunden, Rechnungen, Ausgaben, Heft-Verteilung mit
+  DIN-A4-PDFs)
 - **Neue Veranstaltung anlegen:** siehe [`ANLEITUNG-NEUE-VERANSTALTUNG.md`](./ANLEITUNG-NEUE-VERANSTALTUNG.md)
 
 > **📖 Die vollständige Projekt-Doku steht in [`CLAUDE.md`](./CLAUDE.md)** — Architektur, Datenmodell,
@@ -19,9 +22,11 @@ Next.js 14 + Prisma/SQLite, passwortgeschützt.
 npm install
 npx prisma generate
 npx prisma db push               # Schema → frische SQLite-DB
-npx tsx prisma/seed-user.ts      # Login-User DJKalle anlegen
+npx tsx prisma/seed-user.ts      # Systemverwalter "Admin" anlegen
 npm run db:seed                  # Festplanung Jubiläum 2026 seeden
 npm run db:seed:sommerfest-2027  # Startzustand Sommerfest 2027
+npm run db:seed:werbebanden      # Werbebanden-Startdaten
+npm run db:seed:djk-info         # DJK-Info-Startdaten (Kunden, Verteilung)
 npm run dev                      # http://localhost:3000
 ```
 

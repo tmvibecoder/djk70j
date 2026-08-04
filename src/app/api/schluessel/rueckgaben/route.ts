@@ -1,13 +1,17 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { parseNum } from '@/lib/schluessel-felder'
+import { erfordereRolle } from '@/lib/session'
 
 // Schlüssel-Rückgabe: schließt die gewählten aktiven Ausgaben ab (Exemplar →
 // Archiv, Journal-Eintrag), bucht ggf. Pfand aus der Pfandkasse aus und legt
 // einen Rückgabe-Beleg (offen) zum Signieren an. ABUS-Kopien sind anonym —
 // zurückgebucht wird das konkrete Ausgabe-Exemplar, fachlich also
 // „irgendeine" Kopie des Typs.
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const verboten = await erfordereRolle(req, 'schluessel', 'bearbeiten')
+  if (verboten) return verboten
+
   const body = await req.json().catch(() => ({}))
   const personId = typeof body.personId === 'string' ? body.personId : ''
   const ausgabeIds: string[] = Array.isArray(body.ausgabeIds)

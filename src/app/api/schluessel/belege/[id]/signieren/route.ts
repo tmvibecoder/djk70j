@@ -1,14 +1,18 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { belegHash, BelegPayload } from '@/lib/beleg-hash'
 import { erzeugeBelegPdf } from '@/lib/beleg-pdf'
 import { speichereDatei, unterschriftPfad, pdfPfad } from '@/lib/schluessel-dateien'
+import { erfordereRolle } from '@/lib/session'
 
 // Signieren eines offenen Belegs: Unterschrift-PNG speichern, kanonischen
 // Payload einfrieren, SHA-256-Prüfsumme bilden, PDF erzeugen. Erst danach
 // wechselt der Beleg auf „signiert". Bereits signierte Belege sind
 // unveränderlich (409).
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const verboten = await erfordereRolle(req, 'schluessel', 'bearbeiten')
+  if (verboten) return verboten
+
   const body = await req.json().catch(() => ({}))
   const dataUrl: string = typeof body.unterschrift === 'string' ? body.unterschrift : ''
   const prefix = 'data:image/png;base64,'

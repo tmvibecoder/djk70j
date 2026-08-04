@@ -4,6 +4,7 @@ import { Archivo, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import { Navigation } from "@/components/Navigation";
 import { AppHeader } from "@/components/AppHeader";
+import { getSessionUserFromCookies, darf } from "@/lib/session";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -34,18 +35,27 @@ export const metadata: Metadata = {
   description: "Veranstaltungs-Planung des DJK SG Ottenhofen e.V.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getSessionUserFromCookies();
+  const sichtbarkeit = {
+    veranstaltungen: darf(session, "veranstaltungen", "lesen"),
+    werbebanden: darf(session, "werbebanden", "lesen"),
+    schluessel: darf(session, "schluessel", "lesen"),
+    "djk-info": darf(session, "djk-info", "lesen"),
+    istAdmin: session?.istAdmin ?? false,
+  };
+
   return (
     <html lang="de">
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${archivo.variable} ${sourceSans.variable} antialiased min-h-screen`}
       >
         <div className="flex min-h-screen">
-          <Navigation />
+          <Navigation sichtbarkeit={sichtbarkeit} />
           <div className="flex-1 flex flex-col min-w-0 bg-gray-50">
             <AppHeader />
             {/* Kein overflow-auto: es würde nie greifen (die Seite scrollt im

@@ -1,10 +1,14 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
+import { erfordereRolle } from '@/lib/session'
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const verboten = await erfordereRolle(request, 'veranstaltungen', 'bearbeiten')
+  if (verboten) return verboten
+
   const { id } = await params
   const body = await request.json()
 
@@ -44,6 +48,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const verboten = await erfordereRolle(request, 'veranstaltungen', 'bearbeiten')
+  if (verboten) return verboten
+
   const { id } = await params
   await prisma.task.delete({
     where: { id },

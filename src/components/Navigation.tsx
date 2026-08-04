@@ -15,7 +15,21 @@ import {
 // „Veranstaltung wechseln"-Auswahlmenü zusammengeklappt werden, statt die
 // Sidebar immer länger zu machen — bei aktuell 2 Einträgen noch unnötig.
 
-export function Navigation() {
+interface Sichtbarkeit {
+  veranstaltungen: boolean
+  werbebanden: boolean
+  schluessel: boolean
+  'djk-info': boolean
+  istAdmin: boolean
+}
+
+const DAUERHAFTE_BEREICHE = [
+  { key: 'werbebanden' as const, href: '/werbebanden', icon: '🏟️', label: 'Werbebanner' },
+  { key: 'schluessel' as const, href: '/schluessel', icon: '🔑', label: 'Schlüssel' },
+  { key: 'djk-info' as const, href: '/djk-info', icon: '📰', label: 'DJK Info' },
+]
+
+export function Navigation({ sichtbarkeit }: { sichtbarkeit: Sichtbarkeit | null }) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -41,6 +55,10 @@ export function Navigation() {
   // Aktive Veranstaltung = erstes Pfad-Segment (nicht startsWith, um
   // Fehlmatches bei ähnlichen IDs zu vermeiden)
   const activeEventId = pathname.split('/')[1] || null
+
+  const sichtbareDauerhafteBereiche = sichtbarkeit
+    ? DAUERHAFTE_BEREICHE.filter(b => sichtbarkeit[b.key])
+    : []
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
@@ -77,7 +95,7 @@ export function Navigation() {
           </li>
 
           {/* Veranstaltungen (neueste zuerst), Bereiche der aktiven aufgeklappt */}
-          {VERANSTALTUNGEN_SORTIERT.map((event) => {
+          {sichtbarkeit?.veranstaltungen && VERANSTALTUNGEN_SORTIERT.map((event) => {
             const eventActive = activeEventId === event.id
             return (
               <li key={event.id} className="pt-2">
@@ -124,29 +142,50 @@ export function Navigation() {
             )
           })}
 
-          {/* Dauerhafte Bereiche (unabhängig von Veranstaltungen) */}
+          {/* Dauerhafte Bereiche (unabhängig von Veranstaltungen), nur mit Rolle sichtbar */}
+          {sichtbareDauerhafteBereiche.map((b, i) => (
+            <li key={b.key} className={i === 0 ? 'pt-4 mt-2 border-t border-gray-800' : undefined}>
+              <Link
+                href={b.href}
+                onClick={() => setMobileOpen(false)}
+                title={collapsed ? b.label : undefined}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 text-gray-400 hover:bg-gray-800 hover:text-white ${collapsed ? 'justify-center' : ''}`}
+              >
+                <span className="text-lg shrink-0">{b.icon}</span>
+                {!collapsed && <span className="truncate">{b.label}</span>}
+              </Link>
+            </li>
+          ))}
+
+          {/* Konto / Verwaltung */}
           <li className="pt-4 mt-2 border-t border-gray-800">
             <Link
-              href="/werbebanden"
+              href="/mein-konto"
               onClick={() => setMobileOpen(false)}
-              title={collapsed ? 'Werbebanden' : undefined}
+              title={collapsed ? 'Mein Konto' : undefined}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 text-gray-400 hover:bg-gray-800 hover:text-white ${collapsed ? 'justify-center' : ''}`}
             >
-              <span className="text-lg shrink-0">🏟️</span>
-              {!collapsed && <span className="truncate">Werbebanden</span>}
+              <span className="text-lg shrink-0">👤</span>
+              {!collapsed && <span className="truncate">Mein Konto</span>}
             </Link>
           </li>
-          <li>
-            <Link
-              href="/schluessel"
-              onClick={() => setMobileOpen(false)}
-              title={collapsed ? 'Schlüssel' : undefined}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 text-gray-400 hover:bg-gray-800 hover:text-white ${collapsed ? 'justify-center' : ''}`}
-            >
-              <span className="text-lg shrink-0">🔑</span>
-              {!collapsed && <span className="truncate">Schlüssel</span>}
-            </Link>
-          </li>
+          {sichtbarkeit?.istAdmin && (
+            <li>
+              <Link
+                href="/admin/benutzer"
+                onClick={() => setMobileOpen(false)}
+                title={collapsed ? 'Adminbereich' : undefined}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+                  pathname.startsWith('/admin')
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25'
+                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                } ${collapsed ? 'justify-center' : ''}`}
+              >
+                <span className="text-lg shrink-0">🛠️</span>
+                {!collapsed && <span className="truncate">Adminbereich</span>}
+              </Link>
+            </li>
+          )}
         </ul>
       </nav>
 
@@ -186,7 +225,13 @@ export function Navigation() {
   )
 
   // Auf der Login-Seite und in Bereichen mit eigenem Layout keine Sidebar
-  if (pathname === '/login' || pathname.startsWith('/werbebanden') || pathname.startsWith('/schluessel')) return null
+  if (
+    pathname === '/login' ||
+    pathname.startsWith('/werbebanden') ||
+    pathname.startsWith('/schluessel') ||
+    pathname.startsWith('/djk-info')
+  )
+    return null
 
   return (
     <>

@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { belegHash } from '@/lib/beleg-hash'
 import { leseDatei } from '@/lib/schluessel-dateien'
+import { erfordereRolle } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,7 +10,10 @@ export const dynamic = 'force-dynamic'
 // Beleg wird die Prüfsumme aus den gespeicherten Artefakten (payloadJson +
 // Unterschrift-PNG + Zeitstempel) neu berechnet und mit der abgelegten
 // verglichen. Vereinsgroße Datenmenge — die Datei-Reads sind unkritisch.
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const verboten = await erfordereRolle(req, 'schluessel', 'lesen')
+  if (verboten) return verboten
+
   const belege = await prisma.schluesselBeleg.findMany({
     orderBy: { createdAt: 'desc' },
     include: {

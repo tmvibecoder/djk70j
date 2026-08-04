@@ -1,9 +1,13 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { partnerDaten } from '@/lib/werbebanden-felder'
 import { loescheUpload } from '@/lib/uploads'
+import { erfordereRolle } from '@/lib/session'
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const verboten = await erfordereRolle(req, 'werbebanden', 'lesen')
+  if (verboten) return verboten
+
   const partner = await prisma.werbepartner.findUnique({
     where: { id: params.id },
     include: {
@@ -15,7 +19,10 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   return NextResponse.json(partner)
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const verboten = await erfordereRolle(req, 'werbebanden', 'bearbeiten')
+  if (verboten) return verboten
+
   const body = await req.json().catch(() => ({}))
   const daten = partnerDaten(body)
   if (!daten.firma) {
@@ -25,7 +32,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   return NextResponse.json(partner)
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const verboten = await erfordereRolle(req, 'werbebanden', 'bearbeiten')
+  if (verboten) return verboten
+
   // Dateien auch von der Platte löschen (DB-Zeilen fallen per Cascade)
   const dateien = await prisma.werbepartnerDatei.findMany({ where: { partnerId: params.id } })
   await prisma.werbepartner.delete({ where: { id: params.id } })

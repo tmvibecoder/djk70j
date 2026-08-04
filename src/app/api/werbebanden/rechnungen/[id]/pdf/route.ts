@@ -1,8 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { erzeugeRechnungPdf } from '@/lib/rechnung-pdf'
+import { erfordereRolle } from '@/lib/session'
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const verboten = await erfordereRolle(req, 'werbebanden', 'lesen')
+  if (verboten) return verboten
+
   const rechnung = await prisma.werbebandenRechnung.findUnique({ where: { id: params.id } })
   if (!rechnung) return NextResponse.json({ error: 'Nicht gefunden' }, { status: 404 })
 

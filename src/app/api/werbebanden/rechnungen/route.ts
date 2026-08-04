@@ -1,9 +1,13 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { rechnungDaten } from '@/lib/werbebanden-felder'
 import { formatRechnungsnummer, naechsteLaufnummer } from '@/lib/rechnungsnummer'
+import { erfordereRolle } from '@/lib/session'
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
+  const verboten = await erfordereRolle(req, 'werbebanden', 'lesen')
+  if (verboten) return verboten
+
   const { searchParams } = new URL(req.url)
   const saison = searchParams.get('saison')
   const rechnungen = await prisma.werbebandenRechnung.findMany({
@@ -15,7 +19,10 @@ export async function GET(req: Request) {
 }
 
 // Einzelne Rechnung anlegen (Nummer wird automatisch vergeben)
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const verboten = await erfordereRolle(req, 'werbebanden', 'bearbeiten')
+  if (verboten) return verboten
+
   const body = await req.json().catch(() => ({}))
   const daten = rechnungDaten(body)
   if (!daten.saison || !daten.firma) {

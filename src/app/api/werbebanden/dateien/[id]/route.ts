@@ -1,12 +1,17 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { leseUpload, loescheUpload } from '@/lib/uploads'
+import { erfordereRolle } from '@/lib/session'
 
 // Auslieferung bewusst OHNE Dateiendung in der URL: Der Middleware-Matcher
 // schließt Pfade mit Punkt aus (statische Assets) — eine Endung in der URL
 // würde die Login-Prüfung umgehen. Die cuid-ID enthält nie einen Punkt,
-// dadurch läuft jeder Abruf durch die Middleware.
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+// dadurch läuft jeder Abruf durch die Middleware. Middleware prüft nur
+// „eingeloggt" — die Bereichs-Rolle wird hier explizit geprüft.
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const verboten = await erfordereRolle(req, 'werbebanden', 'lesen')
+  if (verboten) return verboten
+
   const datei = await prisma.werbepartnerDatei.findUnique({ where: { id: params.id } })
   if (!datei || !datei.pfad) {
     return NextResponse.json({ error: 'Nicht gefunden' }, { status: 404 })
@@ -26,7 +31,10 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   })
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const verboten = await erfordereRolle(req, 'werbebanden', 'bearbeiten')
+  if (verboten) return verboten
+
   const datei = await prisma.werbepartnerDatei.findUnique({ where: { id: params.id } })
   if (!datei) return NextResponse.json({ error: 'Nicht gefunden' }, { status: 404 })
   await prisma.werbepartnerDatei.delete({ where: { id: datei.id } })

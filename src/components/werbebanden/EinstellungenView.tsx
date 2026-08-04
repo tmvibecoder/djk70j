@@ -6,7 +6,6 @@ import { EinstellungenDto } from './typen'
 
 export function EinstellungenView() {
   const [form, setForm] = useState<Record<string, string> | null>(null)
-  const [neuesPasswort, setNeuesPasswort] = useState('')
   const [speichern, setSpeichern] = useState(false)
   const [meldung, setMeldung] = useState<{ art: 'ok' | 'fehler'; text: string } | null>(null)
 
@@ -40,7 +39,7 @@ export function EinstellungenView() {
     const res = await fetch('/api/werbebanden/einstellungen', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, neuesPasswort }),
+      body: JSON.stringify(form),
     })
     setSpeichern(false)
     if (!res.ok) {
@@ -48,8 +47,7 @@ export function EinstellungenView() {
       setMeldung({ art: 'fehler', text: j.error || 'Speichern fehlgeschlagen' })
       return
     }
-    setNeuesPasswort('')
-    setMeldung({ art: 'ok', text: neuesPasswort ? 'Gespeichert — das neue Passwort gilt ab dem nächsten Login.' : 'Gespeichert.' })
+    setMeldung({ art: 'ok', text: 'Gespeichert.' })
   }
 
   return (
@@ -128,25 +126,6 @@ export function EinstellungenView() {
               />
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="!py-3">
-          <h2 className="font-bold text-gray-900">Zugang</h2>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-xs text-gray-500">
-            Das Bereichs-Passwort gilt für alle, die die Bandenwerbung verwalten.
-            Leer lassen, um es unverändert zu behalten.
-          </p>
-          <Input
-            label="Neues Passwort (min. 6 Zeichen)"
-            type="password"
-            value={neuesPasswort}
-            onChange={e => setNeuesPasswort(e.target.value)}
-            autoComplete="new-password"
-          />
         </CardContent>
       </Card>
 

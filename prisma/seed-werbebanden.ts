@@ -1,7 +1,7 @@
 // Startdaten für den Werbebanden-Bereich, übernommen aus der Excel
 // „Abrechnung DJK Bandenwerbung 2026" (Stand August 2026):
-// - Einstellungen (Singleton) inkl. Start-Passwort — upsert mit leerem update,
-//   damit spätere Änderungen des Nutzers nie überschrieben werden
+// - Einstellungen (Singleton) — upsert mit leerem update, damit spätere
+//   Änderungen des Nutzers nie überschrieben werden
 // - 18 aktive Partner (+ 1 Interessent) mit Platz-Zuordnung aus dem Blatt „Neu"
 // - Gekündigt-Historie
 // - die 15 Rechnungen der Saison 2025/2026 (Nummernkreis 2026/B/0001 ff.)
@@ -9,7 +9,6 @@
 // Idempotent: Existieren bereits Partner, wird nur die Einstellung geprüft —
 // dadurch kann das Skript gefahrlos bei jedem Deploy laufen.
 import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
 import 'dotenv/config'
 
 const prisma = new PrismaClient()
@@ -115,7 +114,6 @@ async function main() {
       zahlungszielTage: 14,
       standardPreisProMeter: 40,
       mwstSatz: MWST_SATZ,
-      passwordHash: bcrypt.hashSync('keymaster', 10),
       kopfKontaktblock: KOPF_KONTAKTBLOCK,
       fusszeileSpalte1: FUSSZEILE_1,
       fusszeileSpalte2: FUSSZEILE_2,

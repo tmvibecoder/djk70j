@@ -1,10 +1,14 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
+import { erfordereRolle } from '@/lib/session'
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const verboten = await erfordereRolle(request, 'veranstaltungen', 'lesen')
+  if (verboten) return verboten
+
   const { id } = await params
   const bereich = await prisma.bereich.findUnique({
     where: { id },
@@ -24,6 +28,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const verboten = await erfordereRolle(request, 'veranstaltungen', 'bearbeiten')
+  if (verboten) return verboten
+
   const { id } = await params
   const body = await request.json()
   const bereich = await prisma.bereich.update({
@@ -39,9 +46,12 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const verboten = await erfordereRolle(request, 'veranstaltungen', 'bearbeiten')
+  if (verboten) return verboten
+
   const { id } = await params
   await prisma.bereich.delete({ where: { id } })
   return NextResponse.json({ success: true })

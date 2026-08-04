@@ -7,7 +7,8 @@ Sie ist die zentrale Projekt-Doku; ergänzend gibt es `README.md` (kurz) und
 ## Projekt-Überblick
 
 Interne **Orga- und Planungs-App** für die Veranstaltungen des **DJK SG Ottenhofen e.V.**
-Kein öffentliches Tool — nur der Festausschuss meldet sich an (ein gemeinsames Passwort).
+Kein öffentliches Tool — Zugang nur über **persönliche Benutzerkonten** mit
+Bereichs-Rollen (siehe „Authentifizierung").
 
 Seit dem Umbau Juli 2026 ist die App **mehrveranstaltungsfähig**: Eine Veranstaltung
 ist ein Eintrag im Register `src/data/veranstaltungen.ts`; Menü, Übersichtsseite,
@@ -17,11 +18,11 @@ URLs und Daten-Scoping folgen automatisch. **Kein Copy-Paste von Seitencode.**
 - Veranstaltungen aktuell: `jubilaeum-2026` (abgeschlossen, inkl. Abschlussbericht),
   `sommerfest-2027` (geplant)
 
-Daneben gibt es zwei **dauerhafte Bereiche** mit jeweils **eigenem
-Nur-Passwort-Login**, unabhängig von den Veranstaltungen:
-`/werbebanden` (Bandenwerbung am Sportplatz, live seit 03.08.2026) und
-`/schluessel` (Schlüsselverwaltung, live seit 04.08.2026) — siehe die
-Abschnitte „Werbebanden-Bereich" und „Schlüssel-Bereich".
+Daneben gibt es drei **dauerhafte Bereiche** unabhängig von den Veranstaltungen:
+`/werbebanden` (Bandenwerbung am Sportplatz), `/schluessel` (Schlüsselverwaltung)
+und `/djk-info` (Vereinszeitschrift-Verwaltung) — siehe die Abschnitte
+„Werbebanden-Bereich", „Schlüssel-Bereich" und „DJK-Info-Bereich". Der Zugriff
+läuft über ein einheitliches Benutzer-/Rollensystem, siehe „Authentifizierung".
 
 ## Tech-Stack
 
@@ -85,13 +86,9 @@ Routen-Baum mit eigenem Layout (`src/app/werbebanden/layout.tsx` →
 Einstellungen). Sidebar/AppHeader der Event-App blenden sich auf
 `/werbebanden/**` aus; für App-Nutzer gibt es in der Sidebar den Punkt „Werbebanden".
 
-**Eigene Auth (`src/lib/banden-auth.ts`):** Nur-Passwort-Login, Cookie
-`djk_banden_auth`. **Wichtig:** HMAC-Payload ist `banden-auth:${ts}` — bewusst
-anderes Format als das App-Cookie, sonst würde ein Banden-Token die ganze App
-öffnen (Middleware prüft nur Signaturen, keine DB). Banden-Cookie öffnet NUR
-`/werbebanden/**`; App-Cookie öffnet zusätzlich auch den Banden-Bereich.
-Das Bereichs-Passwort liegt als bcrypt-Hash in `WerbebandenEinstellung`
-(Start: `keymaster`, per Seed; änderbar über die Einstellungs-Seite).
+**Auth:** über das zentrale Benutzer-/Rollensystem (Bereich `werbebanden`,
+siehe „Authentifizierung") — kein eigenes Bereichs-Passwort mehr. Der
+Einstellungen-Tab erscheint nur für Rolle `verwalten`.
 
 **Modelle:** `Werbepartner` (Kontakte, Ist-Länge vs. abgerechnete lfd. Meter,
 Preis/m netto, Abschnitt 1–4 + PositionNr, Status aktiv/gekuendigt, Kündigung),
@@ -135,12 +132,9 @@ eigener Routen-Baum `src/app/schluessel/` → `SchluesselShell` mit Tabs
 Bestand | Inhaber | Ausgabe | Schließplan | Belege | ⚙️, Views in
 `src/components/schluessel/`.
 
-**Eigene Auth (`src/lib/schluessel-auth.ts`):** Nur-Passwort-Login, Cookie
-`djk_schluessel_auth`, HMAC-Payload `schluessel-auth:${ts}` (Domain-Präfix
-wie beim Banden-Cookie — verhindert Cookie-Umkopieren zwischen Bereichen).
-Schlüssel-Cookie öffnet NUR `/schluessel/**`; App-Cookie öffnet den Bereich
-zusätzlich. Hash in `SchluesselEinstellung` (Start: `schluessel2026` per
-Seed — **nach dem ersten Login ändern**, Einstellungs-Seite).
+**Auth:** über das zentrale Benutzer-/Rollensystem (Bereich `schluessel`,
+siehe „Authentifizierung") — kein eigenes Bereichs-Passwort mehr.
+Einstellungen + Pfandkasse nur für Rolle `verwalten`.
 
 **Modelle** (alle `Schluessel…`-Präfix): `SchluesselTyp` (system
 abus/transponder/schrank/sonstige + code, `@@unique([system, code])`) →
@@ -173,7 +167,7 @@ Matcher-Falle wie bei den Banden-Uploads).
 
 **⚠️ Echtdaten:** Das Repo ist öffentlich — `seed-schluessel.ts` legt bewusst
 NUR das neutrale Grundgerüst an (GHS/GS1–GS6 ohne Gruppenbezeichnungen,
-Transponder-Typ, Start-Passwort). Inhaber, Schließmatrix, Schloss-/
+Transponder-Typ). Inhaber, Schließmatrix, Schloss-/
 Transponder-Nummern werden in der App gepflegt oder einmalig über ein
 **privates, NICHT eingechecktes Importskript** eingespielt (liegt fertig
 lokal bei Thomas, `~/Claude/Projects/djk70j-schluessel-echtdaten/`:
@@ -181,6 +175,62 @@ Extraktion aus den Original-Excel/PDF-Quellen + idempotenter Import mit
 Leer-Bestand-Guard; zum Einspielen werden Skript + JSON untracked in den
 App-Ordner kopiert, per `npx tsx` ausgeführt und wieder gelöscht — kein
 pm2-Restart nötig). Keine echten Anlagen- oder Personendaten in Commits!
+
+## DJK-Info-Bereich (`/djk-info`, dauerhaft)
+
+Verwaltung der **Vereinszeitschrift „DJK Info"** (3 Ausgaben/Jahr, ~29
+Anzeigenkunden, 896 Hefte Verteilung) — ersetzt Excel „Abrechnung DJK Info"
++ Word-Verteilerlisten. Aufbau nach dem Werbebanden-Muster: eigener
+Routen-Baum mit `InfoShell` (Tabs: Kunden | Ausgaben | Rechnungen |
+Verteilung | Einstellungen), Client-Views in `src/components/djk-info/`,
+Sidebar/AppHeader blenden sich auf `/djk-info/**` aus.
+
+**Auth:** über das zentrale Benutzer-/Rollensystem (Bereich `djk-info`, siehe
+„Authentifizierung") — die früheren drei Rollen-Passwörter sind abgeschafft;
+die alte Kassier/Redakteur/Leser-Semantik entspricht jetzt
+verwalten/bearbeiten/lesen. **Rollen-Matrix** (jede Route gated serverseitig
+per `erfordereRolle`, die Shell blendet Bedienelemente nur zusätzlich aus):
+
+| Aktion | verwalten | bearbeiten | lesen |
+|---|---|---|---|
+| Lesen (alle Bereiche außer Einstellungen) | ✓ | ✓ | ✓ |
+| Schaltungs-Matrix, Ausgaben anlegen/ändern, Druckrechnungs-Upload | ✓ | ✓ | — |
+| Kunden, Rechnungen, Verteilung, Dateien, Einstellungen (inkl. GET), Druckkosten-Feld | ✓ | — | — |
+
+**Modelle (Präfix `Info`):** `InfoKunde`, `InfoPreis` (Preistabelle
+290/230/195/155/110/90 € netto/Jahr), `InfoAusgabe` (jahr+nummer, z.B.
+„2026-1"), `InfoSchaltung` (Kunde × Ausgabe, Basis der Abrechnung),
+`InfoRechnung` (editierbarer Snapshot, Nummernkreis **`JJJJ/I/NNNN`** —
+getrennt vom Banden-Kreis `JJJJ/B/NNNN`, beide über
+`src/lib/rechnungsnummer.ts`), `InfoDatei` (Kunde ODER Ausgabe),
+`InfoVerteilgebiet`/`InfoStrasse`/`InfoVerteiler` (Heftzahlen überall
+editierbar; Gebietssumme wird bewusst NICHT aus den Straßen erzwungen),
+`InfoEinstellung` (Singleton „djk-info").
+
+**Rechnungsbetrag:** `netto = round(jahresNetto × n ÷ 3, 2)` — NIE den
+gerundeten Einzelpreis × n rechnen (290 ÷ 3 → 96,67 × 3 = 290,01!). Helfer
+`anteiligerNetto()` in `src/data/djk-info.ts`. Rechnungs-PDF
+(`src/lib/info-rechnung-pdf.ts`) und Banden-PDF teilen sich die
+Briefvorlagen-Primitive in **`src/lib/pdf-brief.ts`** (Wappen + Verbandslogo
+aus `rechnung-assets.ts`, editierbarer Kontaktblock/Fußzeile aus den
+Einstellungen).
+
+**Verteilungs-PDFs** (`src/lib/verteilung-pdf.ts`, Route
+`/api/djk-info/verteilung/pdf?ziel=…`): DIN-A4-Listen für die Austräger —
+`gesamt` (Übersicht), `alle` (Sammel-PDF, je Bereich eine Seite),
+`ottenhofen` (4 Gebiets-Handzettel mit Straßenlisten), `auslagen`,
+`postversand`, `<gebietId>` (einzeln).
+
+**Uploads** in `uploads/djk-info/<kundeId|ausgabeId>/` (gitignored, wie
+Banden), Auslieferung NUR über `/api/djk-info/dateien/<id>` ohne
+Dateiendung (Middleware-Punkt-Matcher!). Kunden-Arten: vertrag, anzeige
+(nur Bild), kuendigung; Ausgaben-Arten: druckrechnung, heft.
+
+**Seed `prisma/seed-djk-info.ts`** (+ Daten in `seed-djk-info-daten.ts`,
+läuft beim Auto-Deploy, idempotent): Einstellungen/Preise/Ausgaben per
+upsert; 32 Kunden, 83 Schaltungen 2025 und 30 historische Rechnungen aus
+der Abrechnungs-Excel sowie Gebiete/Straßen/Verteilerliste aus den
+Word-Dokumenten nur beim allerersten Lauf.
 
 ## Datenmodell (`prisma/schema.prisma`)
 
@@ -190,7 +240,10 @@ tragen `eventId String @default("jubilaeum-2026")` (+ Index). `Beschluss` /
 **additiv mit Default** sein (Deploy nutzt `prisma db push`, kein `migrate`;
 `prisma/migrations/` ist veraltet und wird nicht verwendet).
 
-- **Auth:** `User` (Login-Passwort-Hashes).
+- **Auth:** `User` (username?, passwordHash?, istAdmin, aktiv, tokenVersion —
+  „login-fähig" = username UND passwordHash gesetzt; die alten
+  Warenwirtschafts-Zeilen ohne username bleiben unangetastet) +
+  `UserBereichsRolle` (userId × bereich → rolle, `@@unique([userId, bereich])`).
 - **Festplanung:** `Bereich`, `Person` (`isCatchAll` = „Nicht zugewiesen"),
   `Task`, `TaskAssignment`, `Beschluss`.
 - **Finanzen:** `CostItem` (vatRate/amountEntry/dueDate/costType/status/eventDay),
@@ -204,6 +257,9 @@ tragen `eventId String @default("jubilaeum-2026")` (+ Index). `Beschluss` /
   `SchluesselPerson`, `SchluesselBeleg`, `SchluesselAusgabe`,
   `SchluesselBestandsAenderung`, `SchluesselPfandBuchung`,
   `SchluesselEinstellung`.
+- **DJK-Info (ohne Event-Scoping, dauerhaft):** `InfoKunde`, `InfoPreis`,
+  `InfoAusgabe`, `InfoSchaltung`, `InfoRechnung`, `InfoDatei`,
+  `InfoVerteilgebiet`, `InfoStrasse`, `InfoVerteiler`, `InfoEinstellung`.
 - **Ohne UI (Daten bleiben erhalten):** `Product`, `Inventory`, `SalesEntry`,
   `SalesEstimate` (frühere Warenwirtschaft, UI im Juli 2026 entfernt),
   `Team`, `Participant` (Watt-Turnier), `SimpleForecast`, `EntryForecast`,
@@ -211,18 +267,52 @@ tragen `eventId String @default("jubilaeum-2026")` (+ Index). `Beschluss` /
 
 ## API-Routen (`src/app/api/.../route.ts`)
 
-- **Auth:** `auth/login` (nur Passwort, gegen alle User-Hashes), `auth/logout`.
+- **Auth:** `auth/login` (username + password), `auth/logout`,
+  `mein-konto/passwort` (PUT), `admin/benutzer[...]` (nur istAdmin).
 - **Event-gescoped** (GET `?event=`, POST-Body `eventId`, Default `jubilaeum-2026`):
   `bereiche[/id]`, `personen[/id]`, `tasks[/id]`, `costs`, `sponsors`, `anmerkungen`.
 - `[id]`-Routen sind unverändert ungescoped (cuid ist global eindeutig).
 
-## Authentifizierung
+## Authentifizierung (einheitliches Benutzer-/Rollensystem, seit 08/2026)
 
-- Reines **Passwort-Login**; Session = HMAC-Cookie `djk_auth` (`lib/auth.ts`),
-  30 Tage, signiert mit **`AUTH_SECRET`** (Web-Crypto, edge-kompatibel).
-- `src/middleware.ts` schützt alles außer `/login` + Auth-APIs — auch alle
-  neuen `/[eventId]`-Routen (Matcher greift automatisch).
-- Seed-User: **`DJKalle` / `DJKistsuper`** (Rolle admin).
+**Ein zentraler Login für alles** — die früheren separaten Bereichs-Passwörter
+(Werbebanden/Schlüssel) und Rollen-Passwörter (DJK-Info) sind abgeschafft.
+
+- **Login** `/login`: Dropdown mit allen aktiven Benutzern (`User.username` +
+  `passwordHash` gesetzt) + Passwort. Ein Cookie **`djk_session`**
+  (`${userId}.${ts}.${tokenVersion}.${hmac}`, `lib/auth.ts` + `lib/hmac.ts`,
+  `AUTH_SECRET`, 30 Tage).
+- **Zwei Schichten:** `src/middleware.ts` (Edge, kein Prisma!) prüft NUR
+  „eingeloggt ja/nein" (Signatur + Ablauf). Die Autorisierung passiert in
+  **`src/lib/session.ts`** (Node): `getSessionUser()` lädt bei jedem Request
+  frisch `User` + `UserBereichsRolle` aus der DB → Rollenänderungen wirken
+  sofort. `tokenVersion`-Abgleich Cookie ↔ DB invalidiert Sessions bei
+  Passwort-Reset/Deaktivierung. Reine Konstanten (Bereiche/Rollen/Labels)
+  liegen in **`lib/bereiche.ts`** (auch aus Client-Components importierbar —
+  `session.ts` re-exportiert sie, darf aber NIE in Client-Code importiert
+  werden, sonst bricht der Build an next/headers).
+- **Rollenmodell:** je Bereich (`veranstaltungen` | `werbebanden` |
+  `schluessel` | `djk-info`) eine Rolle `lesen` < `bearbeiten` < `verwalten`
+  (Rang-Vergleich in `darf()`). Kein Eintrag = kein Zugriff, Kachel/Sidebar
+  unsichtbar. `User.istAdmin` = Systemverwalter (alles + `/admin/benutzer`).
+  Veranstaltungen: `bearbeiten` = Festplanung, `verwalten` = zusätzlich
+  Finanzen/Kosten/Sponsoren.
+- **WICHTIG — jede API-Route gated selbst:** Da die Middleware keine Bereiche
+  mehr kennt, beginnt JEDE Route (auch GETs!) mit
+  `const verboten = await erfordereRolle(req, '<bereich>', '<aktion>'); if (verboten) return verboten`.
+  Neue Route ohne diesen Guard = für alle eingeloggten Nutzer offen!
+  Layout-Gates (`darf(...)` → `redirect('/')`) sind nur UX, kein Schutz.
+- **Selbstverwaltung:** `/mein-konto` (eigenes Passwort ändern, erhöht
+  `tokenVersion` und stellt das eigene Cookie neu aus). **Adminbereich:**
+  `/admin/benutzer` (anlegen, Rollen je Bereich, Passwort-Reset,
+  Deaktivieren statt Löschen — `SalesEntry.enteredBy`-FKs); Kachel/Sidebar
+  nur für `istAdmin` sichtbar.
+- Seed-User: **`Admin` / `spielwiese`** (`istAdmin`, `prisma/seed-user.ts`,
+  läuft beim Auto-Deploy; Passwort wird nie überschrieben — **nach dem ersten
+  Login über /mein-konto ändern**). Alle weiteren Konten legt der Admin über
+  den Adminbereich an — NIE echte Namen/Passwörter ins Repo (öffentlich!).
+  Der Alt-User `DJKalle` bleibt in Bestands-DBs liegen, ist aber ohne
+  `istAdmin`/Rollen wirkungslos (per Adminbereich deaktivierbar).
 
 ## Umgebungsvariablen (`.env`, gitignored)
 
@@ -240,6 +330,8 @@ npx prisma db push               # Schema → SQLite
 npx tsx prisma/seed-user.ts      # Login-User
 npm run db:seed                  # Festplanung Jubiläum (+ Watt-Demo)
 npm run db:seed:sommerfest-2027  # Startzustand Sommerfest
+npm run db:seed:werbebanden      # Werbebanden-Startdaten
+npm run db:seed:djk-info         # DJK-Info-Startdaten
 npm run dev                      # http://localhost:3000
 ```
 
@@ -250,13 +342,19 @@ npm run dev                      # http://localhost:3000
 - **`seed-sommerfest-2027.ts`** — Standard-Bereiche + Catch-All-Person für 2027;
   idempotent (no-op, sobald Bereiche existieren). **Läuft beim Auto-Deploy.**
   Vorlage für künftige Veranstaltungen (siehe ANLEITUNG-NEUE-VERANSTALTUNG.md).
-- **`seed-user.ts`** — idempotenter Login-User-Seed.
+- **`seed-user.ts`** — idempotenter Admin-Login-Seed (`Admin`, istAdmin;
+  Passwort nur beim allerersten Anlegen, repariert istAdmin/aktiv falls nötig).
+  **Läuft beim Auto-Deploy** (stellt nach dem Rollensystem-Umbau sicher,
+  dass immer ein Admin-Login existiert).
 - **`seed-werbebanden.ts`** (`npm run db:seed:werbebanden`) — Werbebanden-Startdaten
   (Einstellungen + Partner + Rechnungen 2025/2026 aus der Excel); idempotent.
   **Läuft beim Auto-Deploy.**
 - **`seed-schluessel.ts`** (`npm run db:seed:schluessel`) — Schlüssel-Grundgerüst
-  (Einstellungen inkl. Start-Passwort, Typen GHS/GS1–GS6/Transponder — bewusst
-  OHNE Echtdaten, Repo ist öffentlich); idempotent. **Läuft beim Auto-Deploy.**
+  (Einstellungen, Typen GHS/GS1–GS6/Transponder — bewusst OHNE Echtdaten, Repo
+  ist öffentlich); idempotent. **Läuft beim Auto-Deploy.**
+- **`seed-djk-info.ts`** (`npm run db:seed:djk-info`) — DJK-Info-Startdaten
+  (Einstellungen, Preise, Ausgaben, Kunden + Schaltungen + Rechnungen 2025,
+  Verteilgebiete/Straßen/Verteiler); idempotent. **Läuft beim Auto-Deploy.**
 - **`seed-anfangsbestand-2026-07-07.ts`** — Inventur-Anfangsbestand Fest 2026
   (Warenwirtschaft-Daten; UI entfernt, Skript bleibt marker-geschützt im Deploy).
 - `db:reset` = `prisma db push --force-reset && db:seed` (die alten
@@ -311,8 +409,9 @@ Sommerfest-2027-Seed (beide idempotent), `npm run build`, `pm2 restart`.
   eine veraltete Kopie mit Port 3000. Alter systemd-Dienst `djk-fest.service` verwaist.
 - **Datei-Downloads nie mit Dateiendung in der URL** ausliefern — der
   Middleware-Matcher (`.*\..*`) lässt URLs mit Punkt ungeprüft durch
-  (gedacht für statische Assets). Deshalb streamt `/api/werbebanden/dateien/<id>`
-  über die cuid-ID ohne Endung.
+  (gedacht für statische Assets). Deshalb streamen `/api/werbebanden/dateien/<id>`,
+  `/api/djk-info/dateien/<id>` und die Verteilungs-PDF-Routen über IDs/Query
+  ohne Endung.
 - **`uploads/` liegt nur auf dem Server** (gitignored, wie `dev.db`) — bei
   Server-Umzügen mitsichern.
 - **Frische Worktrees/Checkouts brauchen lokales Setup:** `.env`, `dev.db`
@@ -327,3 +426,18 @@ Sommerfest-2027-Seed (beide idempotent), `npm run build`, `pm2 restart`.
   NICHT aus (erst neu bauen), und gegen `next dev` hängt headless Chrome
   (HMR-WebSocket hält `--virtual-time-budget` offen) — Screenshots daher
   immer gegen den Prod-Server.
+- **Parameterlose GET-API-Routen brauchen `export const dynamic = 'force-dynamic'`**
+  — sonst führt Next sie beim Build aus und friert die Antwort statisch ein
+  (betroffen z.B. `einstellungen`, `djk-info/preise`, `djk-info/verteilung`).
+- **Einstellungs-PUTs ersetzen ALLE Felder** (Feld-Whitelist mit Defaults in
+  `*-felder.ts`) — ein Teil-PUT leert die nicht mitgeschickten Felder. Die
+  Views schicken deshalb immer das komplette Formular; die Seeds rüsten nur
+  leere Briefkopf-Felder nach, ersetzen also keinen verlorenen Inhalt.
+- **`npm run build` zerschießt einen parallel laufenden `npm run dev`**
+  (gemeinsames `.next/` → 404 auf alle Chunks, Seiten ohne JS). Dev-Server
+  danach neu starten.
+- **Browser-Verifikation ohne Dauer-Dependency:** `npm install --no-save
+  puppeteer-core` + System-Chrome (`/Applications/Google Chrome.app/...`);
+  `package.json` bleibt unverändert, `node_modules` ist gitignored. Beim
+  Login der Bereiche auf die URL warten (`waitForFunction`), nicht auf ein
+  Navigationsevent — `router.push` ist SPA-Navigation.

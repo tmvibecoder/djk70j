@@ -1,10 +1,14 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { exemplarDaten } from '@/lib/schluessel-felder'
+import { erfordereRolle } from '@/lib/session'
 
 // Statuswechsel/Änderung eines Exemplars — landet im Bestands-Journal.
 // „ausgegeben" wird nur über den Ausgabe-Flow gesetzt, nicht hier.
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const verboten = await erfordereRolle(req, 'schluessel', 'bearbeiten')
+  if (verboten) return verboten
+
   const body = await req.json().catch(() => ({}))
   const alt = await prisma.schluesselExemplar.findUnique({
     where: { id: params.id },
@@ -41,7 +45,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 }
 
 // Löschen nur ohne Ausgabe-Historie (sonst Journal-Korrektur statt Löschung)
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const verboten = await erfordereRolle(req, 'schluessel', 'bearbeiten')
+  if (verboten) return verboten
+
   const anzahl = await prisma.schluesselAusgabe.count({ where: { exemplarId: params.id } })
   if (anzahl > 0) {
     return NextResponse.json(

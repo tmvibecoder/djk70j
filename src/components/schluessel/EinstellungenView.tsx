@@ -1,7 +1,7 @@
 'use client'
 
-// Einstellungen: Vorgaben (Standard-Pfand, Ausgeber-Name), Bereichs-Passwort
-// ändern, Pfandkasse (Bestand aus Buchungssumme + manuelle Buchung).
+// Einstellungen: Vorgaben (Standard-Pfand, Ausgeber-Name),
+// Pfandkasse (Bestand aus Buchungssumme + manuelle Buchung).
 
 import { useEffect, useState } from 'react'
 import { datumKurz } from './typen'
@@ -16,7 +16,6 @@ interface PfandBuchung {
 export function EinstellungenView() {
   const [standardPfand, setStandardPfand] = useState('20')
   const [ausgeberName, setAusgeberName] = useState('')
-  const [neuesPasswort, setNeuesPasswort] = useState('')
   const [meldung, setMeldung] = useState<string | null>(null)
   const [fehler, setFehler] = useState<string | null>(null)
 
@@ -51,14 +50,13 @@ export function EinstellungenView() {
     const res = await fetch('/api/schluessel/einstellungen', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ standardPfand, ausgeberName, neuesPasswort }),
+      body: JSON.stringify({ standardPfand, ausgeberName }),
     })
     if (!res.ok) {
       const j = await res.json().catch(() => ({}))
       setFehler(j.error || 'Speichern fehlgeschlagen')
       return
     }
-    setNeuesPasswort('')
     setMeldung('Gespeichert.')
     await laden()
   }
@@ -101,18 +99,6 @@ export function EinstellungenView() {
             <input
               value={ausgeberName}
               onChange={e => setAusgeberName(e.target.value)}
-              className="mt-0.5 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
-            />
-          </label>
-          <label className="block mb-3">
-            <span className="text-[10px] font-semibold text-gray-500 uppercase">
-              Neues Bereichs-Passwort (leer = unverändert)
-            </span>
-            <input
-              type="password"
-              value={neuesPasswort}
-              onChange={e => setNeuesPasswort(e.target.value)}
-              autoComplete="new-password"
               className="mt-0.5 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
             />
           </label>

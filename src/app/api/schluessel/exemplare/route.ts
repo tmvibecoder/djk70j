@@ -1,11 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { exemplarDaten, parseNum } from '@/lib/schluessel-felder'
+import { erfordereRolle } from '@/lib/session'
 
 // Exemplare anlegen: entweder `anzahl` gleiche (ABUS-Kopien sind anonym)
 // oder mit `nummer` ein einzelnes (Transponder). Jede Anlage landet im
 // Bestands-Journal.
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const verboten = await erfordereRolle(req, 'schluessel', 'bearbeiten')
+  if (verboten) return verboten
+
   const body = await req.json().catch(() => ({}))
   const typId = typeof body.typId === 'string' ? body.typId : ''
   if (!typId) {
