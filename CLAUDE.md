@@ -87,7 +87,8 @@ Einstellungen). Sidebar/AppHeader der Event-App blenden sich auf
 `djk_banden_auth`. **Wichtig:** HMAC-Payload ist `banden-auth:${ts}` — bewusst
 anderes Format als das App-Cookie, sonst würde ein Banden-Token die ganze App
 öffnen (Middleware prüft nur Signaturen, keine DB). Banden-Cookie öffnet NUR
-`/werbebanden/**`; App-Cookie öffnet zusätzlich auch den Banden-Bereich.
+`/werbebanden/**`; das App-Cookie öffnet den Banden-Bereich NICHT — auch
+App-Angemeldete müssen `keymaster` eingeben (bewusste zweite Hürde, seit 04.08.2026).
 Das Bereichs-Passwort liegt als bcrypt-Hash in `WerbebandenEinstellung`
 (Start: `keymaster`, per Seed; änderbar über die Einstellungs-Seite).
 

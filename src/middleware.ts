@@ -32,13 +32,13 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
   if (isBandenPublic(pathname)) return NextResponse.next()
 
-  // Werbebanden-Bereich: Banden-Cookie ODER App-Cookie öffnet ihn.
-  // Wichtig: Das Banden-Cookie öffnet umgekehrt NIE die restliche App
+  // Werbebanden-Bereich: NUR das eigene Banden-Cookie öffnet ihn — auch
+  // App-Angemeldete müssen das Bereichs-Passwort eingeben (zweite Hürde).
+  // Das Banden-Cookie öffnet umgekehrt NIE die restliche App
   // (eigenes Payload-Format, siehe src/lib/banden-auth.ts).
   if (isBandenPath(pathname)) {
     const bandenOk = await verifyBandenSession(req.cookies.get(BANDEN_COOKIE)?.value)
-    const appOk = !bandenOk && (await verifySession(req.cookies.get(SESSION_COOKIE)?.value)) !== null
-    if (bandenOk || appOk) return NextResponse.next()
+    if (bandenOk) return NextResponse.next()
 
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
