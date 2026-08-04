@@ -26,20 +26,20 @@ model User {
 
 // Produkte (Getränke & Speisen)
 model Product {
-  id            String   @id @default(cuid())
-  name          String
-  purchasePrice Float    // Einkaufspreis
-  salePrice     Float    // Verkaufspreis
-  unit          String   // z.B. "Flasche", "Kiste", "Stück"
-  category      String   // z.B. "Bier", "Softdrinks", "Wein", "Speisen"
-  isActive      Boolean  @default(true)
+  id             String   @id @default(cuid())
+  name           String
+  purchasePrice  Float // Einkaufspreis
+  salePrice      Float // Verkaufspreis
+  unit           String // z.B. "Flasche", "Kiste", "Stück"
+  category       String // z.B. "Bier", "Softdrinks", "Wein", "Speisen"
+  isActive       Boolean  @default(true)
   // Warenwirtschaft: Trennung Katalog (Verkaufsware) vs. Inventur (eingekaufte Ware)
-  trackInventory Boolean @default(false) // true = erscheint in der Inventur statt im Katalog
-  packSize       Int     @default(0)     // Gebindegröße (z.B. 12 = Träger à 12); 0 = Einzelware
-  packLabel      String?                 // Bezeichnung des Gebindes, z.B. "Träger"
-  isCritical     Boolean @default(false) // kritisches Getränk → in der Inventur hervorgehoben, häufiger zählen
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  trackInventory Boolean  @default(false) // true = erscheint in der Inventur statt im Katalog
+  packSize       Int      @default(0) // Gebindegröße (z.B. 12 = Träger à 12); 0 = Einzelware
+  packLabel      String? // Bezeichnung des Gebindes, z.B. "Träger"
+  isCritical     Boolean  @default(false) // kritisches Getränk → in der Inventur hervorgehoben, häufiger zählen
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   inventories     Inventory[]
   salesEstimates  SalesEstimate[]
@@ -52,11 +52,11 @@ model SalesEntry {
   id        String   @id @default(cuid())
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  quantity  Int      // Verkaufte Menge in dieser Eintragung
-  eventDay  String   // "thursday", "friday", "saturday", "sunday"
-  enteredBy String?  // User ID oder Name des Erfassers
+  quantity  Int // Verkaufte Menge in dieser Eintragung
+  eventDay  String // "thursday", "friday", "saturday", "sunday"
+  enteredBy String? // User ID oder Name des Erfassers
   user      User?    @relation(fields: [enteredBy], references: [id], onDelete: SetNull)
-  notes     String?  // Optionale Notiz
+  notes     String? // Optionale Notiz
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -69,13 +69,13 @@ model Inventory {
   id        String   @id @default(cuid())
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  quantity  Float    // Gesamtmenge in Flaschen/Stück (= packs * packSize + loose)
-  packs     Float?   // gezählte volle Gebinde (Träger), optional
-  loose     Float?   // gezählte lose Einzelflaschen, optional
-  session   String?  // Zählzeitpunkt-Key (z.B. "freitag", "samstag_spaet"); siehe COUNT_SESSIONS
+  quantity  Float // Gesamtmenge in Flaschen/Stück (= packs * packSize + loose)
+  packs     Float? // gezählte volle Gebinde (Träger), optional
+  loose     Float? // gezählte lose Einzelflaschen, optional
+  session   String? // Zählzeitpunkt-Key (z.B. "freitag", "samstag_spaet"); siehe COUNT_SESSIONS
   date      DateTime @default(now())
-  eventDay  String   // "thursday", "friday", "saturday", "sunday"
-  type      String   // "start", "end", "delivery", "count"
+  eventDay  String // "thursday", "friday", "saturday", "sunday"
+  type      String // "start", "end", "delivery", "count"
   notes     String?
   createdAt DateTime @default(now())
 
@@ -152,8 +152,8 @@ model Bereich {
   id              String   @id @default(cuid())
   eventId         String   @default("jubilaeum-2026") // Veranstaltung (src/data/veranstaltungen.ts)
   name            String
-  icon            String   // emoji
-  verantwortliche String   // Freitext, z.B. "Hundi, Mäx, Festausschuss"
+  icon            String // emoji
+  verantwortliche String // Freitext, z.B. "Hundi, Mäx, Festausschuss"
   ordering        Int      @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -170,7 +170,7 @@ model Person {
   eventId    String   @default("jubilaeum-2026") // Veranstaltung (src/data/veranstaltungen.ts)
   name       String
   initials   String
-  color      String   // hex
+  color      String // hex
   ordering   Int      @default(0)
   isCatchAll Boolean  @default(false) // true für "Helfer x"
   createdAt  DateTime @default(now())
@@ -213,14 +213,14 @@ model CostItem {
   id          String   @id @default(cuid())
   eventId     String   @default("jubilaeum-2026") // Veranstaltung (src/data/veranstaltungen.ts)
   name        String
-  projected   Float    @default(0)        // Brutto-Betrag; Netto/MwSt werden über vatRate abgeleitet
+  projected   Float    @default(0) // Brutto-Betrag; Netto/MwSt werden über vatRate abgeleitet
   actual      Float?
-  vatRate     Float    @default(0)        // MwSt-Satz in %: 0, 7 oder 19
+  vatRate     Float    @default(0) // MwSt-Satz in %: 0, 7 oder 19
   amountEntry String   @default("brutto") // "netto" | "brutto" – wie der Betrag zuletzt eingegeben wurde
   dueDate     String   @default("before") // "before", "during", "after", "paid"
-  costType    String   @default("fix")    // "fix", "variabel_getraenke", "variabel_sonstig", "unklar"
-  status      String   @default("offen")  // "fix", "bezahlt", "zugesagt", "geplant", "geschaetzt", "offen", "klaeren", "bestellen", "anfragen"
-  eventDay    String?                     // "thursday", "friday", "saturday", "sunday", null = Allgemein
+  costType    String   @default("fix") // "fix", "variabel_getraenke", "variabel_sonstig", "unklar"
+  status      String   @default("offen") // "fix", "bezahlt", "zugesagt", "geplant", "geschaetzt", "offen", "klaeren", "bestellen", "anfragen"
+  eventDay    String? // "thursday", "friday", "saturday", "sunday", null = Allgemein
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -232,9 +232,9 @@ model CostItem {
 model BerichtAnmerkung {
   id         String   @id @default(cuid())
   eventId    String   @default("jubilaeum-2026") // Veranstaltung (src/data/veranstaltungen.ts)
-  name       String   // wer die Anmerkung formuliert hat
-  top        String   // z.B. "top3"
-  unterpunkt String?  // z.B. "3.4 · Infrastruktur & Abläufe", null = ganzer TOP
+  name       String // wer die Anmerkung formuliert hat
+  top        String // z.B. "top3"
+  unterpunkt String? // z.B. "3.4 · Infrastruktur & Abläufe", null = ganzer TOP
   text       String
   createdAt  DateTime @default(now())
 
@@ -258,23 +258,23 @@ model Sponsor {
 // Vereinfachte Prognose (Besucher × Umsatz/Person)
 model SimpleForecast {
   id               String @id @default(cuid())
-  eventDay         String  // "thursday", "friday", "saturday_day", "saturday_night", "sunday"
-  scenario         String  // "pessimistic", "realistic", "optimistic"
-  visitors         Int     @default(0)
-  revenuePerPerson Float   @default(0)
-  entryFee         Float   @default(0)
-  costPercent      Float   @default(25)
+  eventDay         String // "thursday", "friday", "saturday_day", "saturday_night", "sunday"
+  scenario         String // "pessimistic", "realistic", "optimistic"
+  visitors         Int    @default(0)
+  revenuePerPerson Float  @default(0)
+  entryFee         Float  @default(0)
+  costPercent      Float  @default(25)
 
   @@unique([eventDay, scenario])
 }
 
 // Prognose-Szenarien (pro Produkt, pro Tag, pro Szenario) — Legacy
 model ForecastEntry {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  eventDay  String  // "thursday", "friday", "saturday", "sunday"
-  scenario  String  // "pessimistic", "realistic", "optimistic"
+  eventDay  String // "thursday", "friday", "saturday", "sunday"
+  scenario  String // "pessimistic", "realistic", "optimistic"
   quantity  Float   @default(0)
 
   @@unique([productId, eventDay, scenario])
@@ -284,11 +284,11 @@ model ForecastEntry {
 
 // Eintrittsprognose pro Tag und Szenario
 model EntryForecast {
-  id        String @id @default(cuid())
-  eventDay  String  // "thursday", "friday", "saturday", "sunday"
-  scenario  String  // "pessimistic", "realistic", "optimistic"
-  visitors  Int     @default(0)
-  entryFee  Float   @default(0)
+  id       String @id @default(cuid())
+  eventDay String // "thursday", "friday", "saturday", "sunday"
+  scenario String // "pessimistic", "realistic", "optimistic"
+  visitors Int    @default(0)
+  entryFee Float  @default(0)
 
   @@unique([eventDay, scenario])
 }
@@ -299,22 +299,22 @@ model EntryForecast {
 model Werbepartner {
   id                      String    @id @default(cuid())
   firma                   String
-  ansprechpartner         String?   // allgemeiner Kontakt (aus der Excel-Spalte "Name")
-  ansprechpartnerBande    String?   // Ansprechpartner für die Werbebande selbst
-  ansprechpartnerRechnung String?   // Ansprechpartner für die Rechnung
+  ansprechpartner         String? // allgemeiner Kontakt (aus der Excel-Spalte "Name")
+  ansprechpartnerBande    String? // Ansprechpartner für die Werbebande selbst
+  ansprechpartnerRechnung String? // Ansprechpartner für die Rechnung
   strasse                 String?
   plz                     String?
   ort                     String?
   telefon                 String?
   email                   String?
-  istLaenge               Float     @default(0)  // tatsächliche Länge der Bande in m
-  berechneteLaenge        Float     @default(0)  // abgerechnete lfd. Meter (kann von Ist abweichen)
+  istLaenge               Float     @default(0) // tatsächliche Länge der Bande in m
+  berechneteLaenge        Float     @default(0) // abgerechnete lfd. Meter (kann von Ist abweichen)
   preisProMeter           Float     @default(40) // netto; 0 = Gratisbande (z.B. DJK-Logo, Fanclub)
   vertragsbeginn          DateTime?
-  bandeErneuert           Int?      // Jahr der letzten Bandenerneuerung
+  bandeErneuert           Int? // Jahr der letzten Bandenerneuerung
   rechnungsversand        String    @default("post") // "post" | "uebergabe" | "email"
-  abschnitt               Int?      // 1..3 = Platzabschnitte, 4 = Zusatzfläche 17,5 m
-  positionNr              Int?      // Reihenfolge innerhalb des Abschnitts
+  abschnitt               Int? // 1..3 = Platzabschnitte, 4 = Zusatzfläche 17,5 m
+  positionNr              Int? // Reihenfolge innerhalb des Abschnitts
   kuendigungZum           DateTime? // "Kündigung zum"
   status                  String    @default("aktiv") // "aktiv" | "gekuendigt"
   bemerkung               String?
@@ -332,11 +332,11 @@ model WerbepartnerDatei {
   id        String       @id @default(cuid())
   partnerId String
   partner   Werbepartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  art       String       // "foto" | "vertrag" | "kuendigung"
-  dateiname String       // Original-Dateiname
-  pfad      String       // Pfad relativ zu uploads/werbebanden/
+  art       String // "foto" | "vertrag" | "kuendigung"
+  dateiname String // Original-Dateiname
+  pfad      String // Pfad relativ zu uploads/werbebanden/
   mimeType  String
-  groesse   Int          // Bytes
+  groesse   Int // Bytes
   createdAt DateTime     @default(now())
 
   @@index([partnerId])
@@ -348,9 +348,9 @@ model WerbebandenRechnung {
   id               String        @id @default(cuid())
   partnerId        String?
   partner          Werbepartner? @relation(fields: [partnerId], references: [id], onDelete: SetNull)
-  saison           String        // z.B. "2025/2026"
-  jahr             Int           // Nummernkreis-Jahr, z.B. 2026
-  laufnummer       Int           // 1, 2, … (je Jahr fortlaufend)
+  saison           String // z.B. "2025/2026"
+  jahr             Int // Nummernkreis-Jahr, z.B. 2026
+  laufnummer       Int // 1, 2, … (je Jahr fortlaufend)
   nummer           String        @unique // z.B. "2026/B/0001"
   datum            DateTime      @default(now())
   firma            String
@@ -395,4 +395,160 @@ model WerbebandenEinstellung {
   fusszeileSpalte2      String   @default("") // Register/Steuer/Vorsitzender
   fusszeileSpalte3      String   @default("") // Bankverbindungen
   updatedAt             DateTime @updatedAt
+}
+
+// ─── Schlüsselverwaltung (dauerhafter Bereich /schluessel, unabhängig von Veranstaltungen) ───
+
+// Schlüsseltyp: eine Schließung/Sorte, z.B. GHS, GS1, Einzelschlüssel 4,
+// Transponder Halle, Schrankschloss SY0005, Briefkasten
+model SchluesselTyp {
+  id          String  @id @default(cuid())
+  system      String // "abus" | "transponder" | "schrank" | "sonstige"
+  code        String // "GHS", "GS1".."GS6", "1".."27", "SY0005", "briefkasten", …
+  bezeichnung String  @default("")
+  kategorie   String  @default("") // ABUS: "general" | "gruppe" | "einzel"
+  sortier     Int     @default(0)
+  bemerkung   String?
+
+  exemplare     SchluesselExemplar[]
+  planEintraege SchluesselSchliessplanEintrag[]
+
+  @@unique([system, code])
+  @@index([system])
+}
+
+// Physisches Exemplar (Kopie) eines Typs. Bestand = groupBy(status),
+// keine redundanten Zähler. ABUS-Kopien sind anonym (keine Prägenummer) —
+// bei der Rückgabe wird deshalb einfach „irgendeine" Kopie zurückgebucht.
+model SchluesselExemplar {
+  id          String        @id @default(cuid())
+  typId       String
+  typ         SchluesselTyp @relation(fields: [typId], references: [id], onDelete: Cascade)
+  nummer      String? // Transponder-Nr. (20–73) bzw. Prägenummer, sonst null
+  status      String        @default("archiv") // "archiv" | "ausgegeben" | "keygarage" | "verloren" | "gesperrt"
+  lagerDetail String? // z.B. Keygarage-Gruppe
+  bemerkung   String?
+  createdAt   DateTime      @default(now())
+
+  ausgaben SchluesselAusgabe[]
+
+  @@index([typId, status])
+}
+
+// Tür/Schließzylinder der ABUS-Anlage (Zeile der Schließmatrix)
+model SchluesselTuer {
+  id      String  @id @default(cuid())
+  name    String
+  nummer  String? // Nummer des zugehörigen Einzelschlüssels
+  sortier Int     @default(0)
+
+  planEintraege SchluesselSchliessplanEintrag[]
+}
+
+// Schließmatrix: Eintrag = dieser Typ sperrt diese Tür
+model SchluesselSchliessplanEintrag {
+  id     String         @id @default(cuid())
+  tuerId String
+  tuer   SchluesselTuer @relation(fields: [tuerId], references: [id], onDelete: Cascade)
+  typId  String
+  typ    SchluesselTyp  @relation(fields: [typId], references: [id], onDelete: Cascade)
+
+  @@unique([tuerId, typId])
+}
+
+// Schlüsselinhaber — bewusst eigene Liste, getrennt vom Event-Modell Person
+// (Privatadressen, dauerhafte Daten)
+model SchluesselPerson {
+  id        String   @id @default(cuid())
+  name      String
+  bereich   String   @default("") // "Vorstand" | "Trainer" | "Pächter" | …
+  funktion  String   @default("")
+  adresse   String   @default("")
+  telefon   String   @default("")
+  email     String   @default("")
+  bemerkung String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ausgaben SchluesselAusgabe[]
+  belege   SchluesselBeleg[]
+
+  @@index([name])
+}
+
+// Empfangs-/Rückgabebestätigung: bündelt mehrere Ausgaben gegen EINE
+// Unterschrift. payloadJson ist der kanonische signierte String; hash =
+// SHA256(payloadJson + "\n" + SHA256(unterschriftPng) + "\n" + signiertAm-ISO).
+model SchluesselBeleg {
+  id               String           @id @default(cuid())
+  art              String // "ausgabe" | "rueckgabe"
+  status           String           @default("offen") // "offen" | "signiert"
+  personId         String
+  person           SchluesselPerson @relation(fields: [personId], references: [id], onDelete: Restrict)
+  payloadJson      String           @default("")
+  unterschriftPfad String? // relativ zu uploads/schluessel/
+  pdfPfad          String?
+  hash             String? // SHA-256 hex
+  signiertAm       DateTime?
+  signierToken     String? // Vorhalt für spätere öffentliche Sign-Links (v1 ungenutzt)
+  createdAt        DateTime         @default(now())
+
+  ausgaben   SchluesselAusgabe[] @relation("AusgabeBeleg")
+  rueckgaben SchluesselAusgabe[] @relation("RueckgabeBeleg")
+
+  @@index([personId])
+  @@index([status])
+}
+
+// Eine Schlüssel-Ausgabe (Exemplar an Person), inkl. späterer Rückgabe
+model SchluesselAusgabe {
+  id             String             @id @default(cuid())
+  exemplarId     String
+  exemplar       SchluesselExemplar @relation(fields: [exemplarId], references: [id], onDelete: Restrict)
+  personId       String
+  person         SchluesselPerson   @relation(fields: [personId], references: [id], onDelete: Restrict)
+  ausgabeDatum   DateTime           @default(now())
+  rueckgabeDatum DateTime?
+  pfandBetrag    Float              @default(0)
+  pfandZurueck   Float              @default(0)
+  status         String             @default("aktiv") // "aktiv" | "zurueck"
+  bemerkung      String?
+
+  ausgabeBelegId   String?
+  ausgabeBeleg     SchluesselBeleg? @relation("AusgabeBeleg", fields: [ausgabeBelegId], references: [id], onDelete: SetNull)
+  rueckgabeBelegId String?
+  rueckgabeBeleg   SchluesselBeleg? @relation("RueckgabeBeleg", fields: [rueckgabeBelegId], references: [id], onDelete: SetNull)
+
+  @@index([personId, status])
+  @@index([exemplarId, status])
+}
+
+// Journal der Bestandsänderungen (Verlust, Nachlieferung, Korrektur, Statuswechsel)
+model SchluesselBestandsAenderung {
+  id         String   @id @default(cuid())
+  typId      String?
+  exemplarId String?
+  art        String // "verlust" | "nachlieferung" | "korrektur" | "statuswechsel"
+  notiz      String   @default("")
+  createdAt  DateTime @default(now())
+
+  @@index([typId])
+}
+
+// Pfandkasse: Bestand = Summe aller Buchungen (+ Einzahlung, − Auszahlung)
+model SchluesselPfandBuchung {
+  id        String   @id @default(cuid())
+  betrag    Float
+  notiz     String   @default("")
+  belegId   String? // Beleg, aus dem die Buchung entstand (optional)
+  createdAt DateTime @default(now())
+}
+
+// Bereichs-Passwort + Vorgaben (Singleton, id "schluessel")
+model SchluesselEinstellung {
+  id            String   @id @default("schluessel")
+  passwordHash  String   @default("") // bcrypt-Hash des Bereichs-Passworts
+  standardPfand Float    @default(20)
+  ausgeberName  String   @default("") // Vorbelegung „ausgegeben durch" auf Belegen
+  updatedAt     DateTime @updatedAt
 }

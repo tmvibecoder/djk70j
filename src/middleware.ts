@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifySession, SESSION_COOKIE } from '@/lib/auth'
 import { verifyBandenSession, BANDEN_COOKIE } from '@/lib/banden-auth'
+import { verifySchluesselSession, SCHLUESSEL_COOKIE } from '@/lib/schluessel-auth'
 
 const PUBLIC_PATHS = [
   '/login',
@@ -13,6 +14,13 @@ const BANDEN_PUBLIC_PATHS = [
   '/werbebanden/login',
   '/api/werbebanden/auth/login',
   '/api/werbebanden/auth/logout',
+]
+
+// Schlüssel-Bereich: eigene Login-Seite + Auth-APIs sind öffentlich
+const SCHLUESSEL_PUBLIC_PATHS = [
+  '/schluessel/login',
+  '/api/schluessel/auth/login',
+  '/api/schluessel/auth/logout',
 ]
 
 function isPublic(pathname: string): boolean {
@@ -28,9 +36,36 @@ function isBandenPath(pathname: string): boolean {
     || pathname === '/api/werbebanden' || pathname.startsWith('/api/werbebanden/')
 }
 
+function isSchluesselPublic(pathname: string): boolean {
+  return SCHLUESSEL_PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
+}
+
+function isSchluesselPath(pathname: string): boolean {
+  return pathname === '/schluessel' || pathname.startsWith('/schluessel/')
+    || pathname === '/api/schluessel' || pathname.startsWith('/api/schluessel/')
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
   if (isBandenPublic(pathname)) return NextResponse.next()
+  if (isSchluesselPublic(pathname)) return NextResponse.next()
+
+  // Schlüssel-Bereich: Schlüssel-Cookie ODER App-Cookie öffnet ihn.
+  // Das Schlüssel-Cookie öffnet umgekehrt NIE die restliche App
+  // (eigenes Payload-Format, siehe src/lib/schluessel-auth.ts).
+  if (isSchluesselPath(pathname)) {
+    const schluesselOk = await verifySchluesselSession(req.cookies.get(SCHLUESSEL_COOKIE)?.value)
+    const appOk = !schluesselOk && (await verifySession(req.cookies.get(SESSION_COOKIE)?.value)) !== null
+    if (schluesselOk || appOk) return NextResponse.next()
+
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const url = req.nextUrl.clone()
+    url.pathname = '/schluessel/login'
+    url.searchParams.set('next', pathname)
+    return NextResponse.redirect(url)
+  }
 
   // Werbebanden-Bereich: Banden-Cookie ODER App-Cookie öffnet ihn.
   // Wichtig: Das Banden-Cookie öffnet umgekehrt NIE die restliche App

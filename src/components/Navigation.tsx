@@ -136,6 +136,17 @@ export function Navigation() {
               {!collapsed && <span className="truncate">Werbebanden</span>}
             </Link>
           </li>
+          <li>
+            <Link
+              href="/schluessel"
+              onClick={() => setMobileOpen(false)}
+              title={collapsed ? 'Schlüssel' : undefined}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 text-gray-400 hover:bg-gray-800 hover:text-white ${collapsed ? 'justify-center' : ''}`}
+            >
+              <span className="text-lg shrink-0">🔑</span>
+              {!collapsed && <span className="truncate">Schlüssel</span>}
+            </Link>
+          </li>
         </ul>
       </nav>
 
@@ -174,8 +185,8 @@ export function Navigation() {
     </div>
   )
 
-  // Auf der Login-Seite und im Werbebanden-Bereich (eigenes Layout) keine Sidebar
-  if (pathname === '/login' || pathname.startsWith('/werbebanden')) return null
+  // Auf der Login-Seite und in Bereichen mit eigenem Layout keine Sidebar
+  if (pathname === '/login' || pathname.startsWith('/werbebanden') || pathname.startsWith('/schluessel')) return null
 
   return (
     <>

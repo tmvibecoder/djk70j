@@ -122,6 +122,60 @@ die Abrechnung mit den **lfd. Metern** (können abweichen).
 Einstellungen per upsert (`update: {}` — überschreibt nie Nutzeränderungen),
 Partner + Rechnungen 2025/2026 aus der Excel nur beim allerersten Lauf.
 
+## Schlüssel-Bereich (`/schluessel`, dauerhaft)
+
+Verwaltung der drei Schließsysteme des Vereins (ABUS-Anlage Sportheim,
+Transponder Sporthalle, Schrankschlösser/Sonstige): Bestand, Inhaber,
+Ausgabe/Rückgabe gegen Pfand mit **Finger-Signatur am Handy** und
+Empfangsbestätigung als PDF. Aufbau 1:1 nach dem Werbebanden-Muster
+(UI = Mockup „Variante 2 Kompakt-Tabellen" aus PR #40, Akzentfarbe Amber):
+eigener Routen-Baum `src/app/schluessel/` → `SchluesselShell` mit Tabs
+Bestand | Inhaber | Ausgabe | Schließplan | Belege | ⚙️, Views in
+`src/components/schluessel/`.
+
+**Eigene Auth (`src/lib/schluessel-auth.ts`):** Nur-Passwort-Login, Cookie
+`djk_schluessel_auth`, HMAC-Payload `schluessel-auth:${ts}` (Domain-Präfix
+wie beim Banden-Cookie — verhindert Cookie-Umkopieren zwischen Bereichen).
+Schlüssel-Cookie öffnet NUR `/schluessel/**`; App-Cookie öffnet den Bereich
+zusätzlich. Hash in `SchluesselEinstellung` (Start: `schluessel2026` per
+Seed — **nach dem ersten Login ändern**, Einstellungs-Seite).
+
+**Modelle** (alle `Schluessel…`-Präfix): `SchluesselTyp` (system
+abus/transponder/schrank/sonstige + code, `@@unique([system, code])`) →
+`SchluesselExemplar` (physische Kopie; status archiv/ausgegeben/keygarage/
+verloren/gesperrt; Bestand = groupBy, keine Zähler), `SchluesselTuer` +
+`SchluesselSchliessplanEintrag` (Schließmatrix), `SchluesselPerson` (eigene
+Inhaberliste, getrennt vom Event-Modell `Person`), `SchluesselBeleg` (bündelt
+mehrere Ausgaben gegen EINE Unterschrift; zwei benannte Relationen
+AusgabeBeleg/RueckgabeBeleg), `SchluesselAusgabe`,
+`SchluesselBestandsAenderung` (Journal), `SchluesselPfandBuchung`
+(Pfandkasse = Summe), `SchluesselEinstellung` (Singleton "schluessel").
+
+**Signatur + Hash:** `SignaturPad.tsx` (handgerollter Canvas, Pointer Events,
+`touch-action: none`, dpr-Skalierung — keine Dependency). Beim Signieren
+(`api/schluessel/belege/[id]/signieren`) wird der kanonische Beleg-Inhalt als
+exakter String in `payloadJson` eingefroren und
+`hash = SHA256(payloadJson + "\n" + SHA256(pngBytes) + "\n" + signiertAm-ISO)`
+gebildet (`src/lib/beleg-hash.ts`). Die Beleg-Liste rechnet den Hash
+serverseitig nach (✓ unverändert / ⚠ Abweichung). Gehasht wird Inhalt +
+Unterschrift, nicht die PDF (nur Darstellung). Fachliche Buchung (Exemplar-
+Status, Pfandkasse) passiert schon beim Anlegen des Belegs — abgebrochene
+Signaturen bleiben als „offene" Belege nachsignierbar (Tab Belege).
+
+**Beleg-PDF:** `src/lib/beleg-pdf.ts` (pdf-lib, Briefkopf-Logos aus
+`rechnung-assets.ts`), Unterschrift per `embedPng`, Fußzeile mit
+Signaturzeitpunkt + SHA-256. Ablage `uploads/schluessel/belege/` via
+`src/lib/schluessel-dateien.ts` (gitignored, überlebt Deploys). Auslieferung
+über `/api/schluessel/belege/<id>/pdf` — **ohne Dateiendung** (Middleware-
+Matcher-Falle wie bei den Banden-Uploads).
+
+**⚠️ Echtdaten:** Das Repo ist öffentlich — `seed-schluessel.ts` legt bewusst
+NUR das neutrale Grundgerüst an (GHS/GS1–GS6 ohne Gruppenbezeichnungen,
+Transponder-Typ, Start-Passwort). Inhaber, Schließmatrix, Schloss-/
+Transponder-Nummern werden in der App gepflegt oder einmalig über ein
+privates, NICHT eingechecktes Skript importiert. Keine echten Anlagen- oder
+Personendaten in Commits!
+
 ## Datenmodell (`prisma/schema.prisma`)
 
 SQLite. **Event-Scoping:** `CostItem`, `Sponsor`, `Bereich`, `Person`, `Task`
@@ -139,6 +193,11 @@ tragen `eventId String @default("jubilaeum-2026")` (+ Index). `Beschluss` /
   unterpunkt?, text) — Besucher-Anmerkungen, für alle sichtbar.
 - **Werbebanden (ohne Event-Scoping, dauerhaft):** `Werbepartner`,
   `WerbepartnerDatei`, `WerbebandenRechnung`, `WerbebandenEinstellung`.
+- **Schlüssel (ohne Event-Scoping, dauerhaft):** `SchluesselTyp`,
+  `SchluesselExemplar`, `SchluesselTuer`, `SchluesselSchliessplanEintrag`,
+  `SchluesselPerson`, `SchluesselBeleg`, `SchluesselAusgabe`,
+  `SchluesselBestandsAenderung`, `SchluesselPfandBuchung`,
+  `SchluesselEinstellung`.
 - **Ohne UI (Daten bleiben erhalten):** `Product`, `Inventory`, `SalesEntry`,
   `SalesEstimate` (frühere Warenwirtschaft, UI im Juli 2026 entfernt),
   `Team`, `Participant` (Watt-Turnier), `SimpleForecast`, `EntryForecast`,
@@ -189,6 +248,9 @@ npm run dev                      # http://localhost:3000
 - **`seed-werbebanden.ts`** (`npm run db:seed:werbebanden`) — Werbebanden-Startdaten
   (Einstellungen + Partner + Rechnungen 2025/2026 aus der Excel); idempotent.
   **Läuft beim Auto-Deploy.**
+- **`seed-schluessel.ts`** (`npm run db:seed:schluessel`) — Schlüssel-Grundgerüst
+  (Einstellungen inkl. Start-Passwort, Typen GHS/GS1–GS6/Transponder — bewusst
+  OHNE Echtdaten, Repo ist öffentlich); idempotent. **Läuft beim Auto-Deploy.**
 - **`seed-anfangsbestand-2026-07-07.ts`** — Inventur-Anfangsbestand Fest 2026
   (Warenwirtschaft-Daten; UI entfernt, Skript bleibt marker-geschützt im Deploy).
 - `db:reset` = `prisma db push --force-reset && db:seed` (die alten
