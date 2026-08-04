@@ -303,12 +303,16 @@ tragen `eventId String @default("jubilaeum-2026")` (+ Index). `Beschluss` /
   Neue Route ohne diesen Guard = für alle eingeloggten Nutzer offen!
   Layout-Gates (`darf(...)` → `redirect('/')`) sind nur UX, kein Schutz.
 - **Selbstverwaltung:** `/mein-konto` (eigenes Passwort ändern, erhöht
-  `tokenVersion` und stellt das eigene Cookie neu aus). **Admin:**
+  `tokenVersion` und stellt das eigene Cookie neu aus). **Adminbereich:**
   `/admin/benutzer` (anlegen, Rollen je Bereich, Passwort-Reset,
-  Deaktivieren statt Löschen — `SalesEntry.enteredBy`-FKs).
-- Seed-User: **`DJKalle` / `DJKistsuper`** (`istAdmin`, `prisma/seed-user.ts`,
-  läuft beim Auto-Deploy). Alle weiteren Konten legt der Admin über die UI an —
-  NIE echte Namen/Passwörter ins Repo (öffentlich!).
+  Deaktivieren statt Löschen — `SalesEntry.enteredBy`-FKs); Kachel/Sidebar
+  nur für `istAdmin` sichtbar.
+- Seed-User: **`Admin` / `spielwiese`** (`istAdmin`, `prisma/seed-user.ts`,
+  läuft beim Auto-Deploy; Passwort wird nie überschrieben — **nach dem ersten
+  Login über /mein-konto ändern**). Alle weiteren Konten legt der Admin über
+  den Adminbereich an — NIE echte Namen/Passwörter ins Repo (öffentlich!).
+  Der Alt-User `DJKalle` bleibt in Bestands-DBs liegen, ist aber ohne
+  `istAdmin`/Rollen wirkungslos (per Adminbereich deaktivierbar).
 
 ## Umgebungsvariablen (`.env`, gitignored)
 
@@ -338,7 +342,8 @@ npm run dev                      # http://localhost:3000
 - **`seed-sommerfest-2027.ts`** — Standard-Bereiche + Catch-All-Person für 2027;
   idempotent (no-op, sobald Bereiche existieren). **Läuft beim Auto-Deploy.**
   Vorlage für künftige Veranstaltungen (siehe ANLEITUNG-NEUE-VERANSTALTUNG.md).
-- **`seed-user.ts`** — idempotenter Admin-Login-Seed (DJKalle, istAdmin).
+- **`seed-user.ts`** — idempotenter Admin-Login-Seed (`Admin`, istAdmin;
+  Passwort nur beim allerersten Anlegen, repariert istAdmin/aktiv falls nötig).
   **Läuft beim Auto-Deploy** (stellt nach dem Rollensystem-Umbau sicher,
   dass immer ein Admin-Login existiert).
 - **`seed-werbebanden.ts`** (`npm run db:seed:werbebanden`) — Werbebanden-Startdaten

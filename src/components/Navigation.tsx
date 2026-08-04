@@ -174,11 +174,15 @@ export function Navigation({ sichtbarkeit }: { sichtbarkeit: Sichtbarkeit | null
               <Link
                 href="/admin/benutzer"
                 onClick={() => setMobileOpen(false)}
-                title={collapsed ? 'Benutzerverwaltung' : undefined}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 text-gray-400 hover:bg-gray-800 hover:text-white ${collapsed ? 'justify-center' : ''}`}
+                title={collapsed ? 'Adminbereich' : undefined}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+                  pathname.startsWith('/admin')
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25'
+                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                } ${collapsed ? 'justify-center' : ''}`}
               >
                 <span className="text-lg shrink-0">🛠️</span>
-                {!collapsed && <span className="truncate">Benutzerverwaltung</span>}
+                {!collapsed && <span className="truncate">Adminbereich</span>}
               </Link>
             </li>
           )}

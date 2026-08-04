@@ -22,7 +22,7 @@ Next.js 14 + Prisma/SQLite, passwortgeschützt.
 npm install
 npx prisma generate
 npx prisma db push               # Schema → frische SQLite-DB
-npx tsx prisma/seed-user.ts      # Login-User DJKalle anlegen
+npx tsx prisma/seed-user.ts      # Systemverwalter "Admin" anlegen
 npm run db:seed                  # Festplanung Jubiläum 2026 seeden
 npm run db:seed:sommerfest-2027  # Startzustand Sommerfest 2027
 npm run db:seed:werbebanden      # Werbebanden-Startdaten

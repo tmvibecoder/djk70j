@@ -128,6 +128,26 @@ export default async function Uebersicht() {
           </div>
         </div>
       )}
+
+      {session?.istAdmin && (
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-3">
+            Verwaltung
+          </h2>
+          <div className="grid sm:grid-cols-3 gap-4">
+            <Link
+              href="/admin/benutzer"
+              className="bg-white rounded-lg shadow-md border border-gray-200 px-5 py-4 hover:bg-gray-50"
+            >
+              <div className="text-2xl mb-1">🛠️</div>
+              <div className="font-bold text-gray-900">Adminbereich</div>
+              <div className="text-xs text-gray-500 mt-0.5">
+                Benutzer anlegen, Passwörter vergeben, Rollen und Zugriffe steuern
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

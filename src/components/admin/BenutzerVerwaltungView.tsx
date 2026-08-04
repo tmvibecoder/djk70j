@@ -35,7 +35,12 @@ export function BenutzerVerwaltungView() {
   return (
     <div className="max-w-3xl mx-auto space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-gray-900">Benutzerverwaltung</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Adminbereich</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Benutzer anlegen, Passwörter vergeben, Rollen und Zugriffe steuern
+          </p>
+        </div>
         <Button onClick={() => setNeuOffen(true)}>+ Neuer Benutzer</Button>
       </div>
 
