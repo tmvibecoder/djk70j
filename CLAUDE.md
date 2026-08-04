@@ -249,6 +249,8 @@ npx prisma db push               # Schema → SQLite
 npx tsx prisma/seed-user.ts      # Login-User
 npm run db:seed                  # Festplanung Jubiläum (+ Watt-Demo)
 npm run db:seed:sommerfest-2027  # Startzustand Sommerfest
+npm run db:seed:werbebanden      # Werbebanden-Startdaten
+npm run db:seed:djk-info         # DJK-Info-Startdaten
 npm run dev                      # http://localhost:3000
 ```
 
@@ -326,3 +328,18 @@ Sommerfest-2027-Seed (beide idempotent), `npm run build`, `pm2 restart`.
   ohne Endung.
 - **`uploads/` liegt nur auf dem Server** (gitignored, wie `dev.db`) — bei
   Server-Umzügen mitsichern.
+- **Parameterlose GET-API-Routen brauchen `export const dynamic = 'force-dynamic'`**
+  — sonst führt Next sie beim Build aus und friert die Antwort statisch ein
+  (betroffen z.B. `einstellungen`, `djk-info/preise`, `djk-info/verteilung`).
+- **Einstellungs-PUTs ersetzen ALLE Felder** (Feld-Whitelist mit Defaults in
+  `*-felder.ts`) — ein Teil-PUT leert die nicht mitgeschickten Felder. Die
+  Views schicken deshalb immer das komplette Formular; die Seeds rüsten nur
+  leere Briefkopf-Felder nach, ersetzen also keinen verlorenen Inhalt.
+- **`npm run build` zerschießt einen parallel laufenden `npm run dev`**
+  (gemeinsames `.next/` → 404 auf alle Chunks, Seiten ohne JS). Dev-Server
+  danach neu starten.
+- **Browser-Verifikation ohne Dauer-Dependency:** `npm install --no-save
+  puppeteer-core` + System-Chrome (`/Applications/Google Chrome.app/...`);
+  `package.json` bleibt unverändert, `node_modules` ist gitignored. Beim
+  Login der Bereiche auf die URL warten (`waitForFunction`), nicht auf ein
+  Navigationsevent — `router.push` ist SPA-Navigation.
