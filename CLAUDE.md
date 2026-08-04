@@ -14,7 +14,7 @@ Seit dem Umbau Juli 2026 ist die App **mehrveranstaltungsfähig**: Eine Veransta
 ist ein Eintrag im Register `src/data/veranstaltungen.ts`; Menü, Übersichtsseite,
 URLs und Daten-Scoping folgen automatisch. **Kein Copy-Paste von Seitencode.**
 
-- **Live:** https://djk-ottenhofen-event.de (passwortgeschützt)
+- **Live:** https://djk-ottenhofen-event.de (Login mit Benutzerkonto)
 - Veranstaltungen aktuell: `jubilaeum-2026` (abgeschlossen, inkl. Abschlussbericht),
   `sommerfest-2027` (geplant)
 
@@ -54,7 +54,8 @@ läuft über ein einheitliches Benutzer-/Rollensystem, siehe „Authentifizierun
 | `/[eventId]/finanzplanung` | dünne Server-Page → `FinanzplanungView` | 5 Tabs (Umsätze/Kosten/Spenden/Vergleich/Bericht) |
 | `/[eventId]/abschlussbericht` | dünne Server-Page → `AbschlussberichtView` | Protokoll Abschlussbesprechung (nur Jubiläum) |
 
-`[eventId]/layout.tsx` validiert die ID (unbekannt → `notFound()`); die einzelnen
+`[eventId]/layout.tsx` validiert die ID (unbekannt → `notFound()`) und prüft
+die Rolle `veranstaltungen:lesen` (sonst `redirect('/')`); die einzelnen
 Pages prüfen zusätzlich das Bereichs-Gate (`event.bereiche.includes(...)`).
 
 **Templates** (`src/components/veranstaltungen/`): `FinanzplanungView.tsx` und
@@ -377,8 +378,9 @@ Redirects laufen **vor** der Auth-Middleware; das Ziel ist normal geschützt.
 
 Auto-Deploy via GitHub Actions (`.github/workflows/deploy.yml`): **Push auf `main`**
 → SSH zu **web01** → `git checkout -f -B main origin/main`, `npm install`,
-`prisma generate`, `prisma db push --accept-data-loss`, Anfangsbestand- +
-Sommerfest-2027-Seed (beide idempotent), `npm run build`, `pm2 restart`.
+`prisma generate`, `prisma db push --accept-data-loss`, dann die idempotenten
+Seeds (Admin-User, Anfangsbestand 2026, Sommerfest 2027, Werbebanden,
+Schlüssel, DJK-Info), `npm run build`, `pm2 restart`.
 
 - Server-Pfad `/var/www/djk-ottenhofen-event/app`, pm2 `djk-ottenhofen-event`, Port **3010**.
 - **Doku-/Nicht-Deploy-Commits mit `[skip ci]` versehen.**
@@ -418,14 +420,15 @@ Sommerfest-2027-Seed (beide idempotent), `npm run build`, `pm2 restart`.
   und `node_modules` sind gitignored — vor Build/Tests `npm install`,
   `.env` anlegen, `npx prisma db push` + Seeds (sonst z.B. „Module not
   found: pdf-lib" oder leere Login-Tabellen).
-- **UI-Verifikation der Bereichs-Logins mit headless Chrome:** Cookie
-  beschaffen über eine temporäre Login-Hilfsseite in `public/`
-  (fetch auf die Login-API, gleicher Origin) + `--user-data-dir`-Profil,
-  danach Seiten screenshotten; Hilfsseite vor dem Commit löschen. Dabei:
-  `next start` liefert **nach dem Build** angelegte `public/`-Dateien
-  NICHT aus (erst neu bauen), und gegen `next dev` hängt headless Chrome
-  (HMR-WebSocket hält `--virtual-time-budget` offen) — Screenshots daher
-  immer gegen den Prod-Server.
+- **UI-Verifikation eingeloggter Seiten mit headless Chrome:** Cookie per
+  `fetch` auf `/api/auth/login` holen (`set-cookie` → `djk_session`-Wert)
+  und in puppeteer-core via `page.setCookie({name:'djk_session', value,
+  domain:'localhost', path:'/', httpOnly:true})` setzen — seit dem
+  Ein-Cookie-Umbau (PR #46) braucht es keine Login-Hilfsseite in `public/`
+  mehr (der Ordner existiert gar nicht). Screenshots immer gegen den
+  Prod-Server (`next start`) — gegen `next dev` hängt headless Chrome
+  (HMR-WebSocket). Das Test-Skript muss im Repo-Ordner liegen/laufen,
+  damit `node_modules` auflöst.
 - **Parameterlose GET-API-Routen brauchen `export const dynamic = 'force-dynamic'`**
   — sonst führt Next sie beim Build aus und friert die Antwort statisch ein
   (betroffen z.B. `einstellungen`, `djk-info/preise`, `djk-info/verteilung`).
@@ -439,5 +442,13 @@ Sommerfest-2027-Seed (beide idempotent), `npm run build`, `pm2 restart`.
 - **Browser-Verifikation ohne Dauer-Dependency:** `npm install --no-save
   puppeteer-core` + System-Chrome (`/Applications/Google Chrome.app/...`);
   `package.json` bleibt unverändert, `node_modules` ist gitignored. Beim
-  Login der Bereiche auf die URL warten (`waitForFunction`), nicht auf ein
+  Login auf die URL warten (`waitForFunction`), nicht auf ein
   Navigationsevent — `router.push` ist SPA-Navigation.
+- **Neue API-Route ⇒ IMMER zuerst `erfordereRolle(...)`** (siehe
+  „Authentifizierung"): Die Middleware prüft nur „eingeloggt" — eine Route
+  ohne eigenen Guard ist für JEDEN eingeloggten Nutzer offen, egal welche
+  Rollen er hat. Das gilt auch für harmlos wirkende GETs und Datei-/PDF-Routen.
+- **`lib/session.ts` NIE aus Client-Components (`'use client'`) importieren**
+  — es zieht `next/headers` + Prisma und bricht den Build. Für Typen/Labels
+  (Bereich, BereichsRolle, BEREICH_LABELS …) stattdessen `lib/bereiche.ts`
+  importieren; `session.ts` re-exportiert dieselben Konstanten für Server-Code.

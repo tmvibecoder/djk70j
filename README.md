@@ -2,7 +2,7 @@
 
 Interne Orga- und Planungs-App für die Veranstaltungen des **DJK SG Ottenhofen e.V.**
 (je Veranstaltung: Festplanung, Finanzplanung, ggf. Abschlussbericht).
-Next.js 14 + Prisma/SQLite, passwortgeschützt.
+Next.js 14 + Prisma/SQLite, Zugang über persönliche Benutzerkonten mit Bereichs-Rollen.
 
 - **Live:** https://djk-ottenhofen-event.de
 - **Veranstaltungen:** 70 Jahre Jubiläum 2026 (abgeschlossen), DJK Sommerfest 2027 (geplant)
