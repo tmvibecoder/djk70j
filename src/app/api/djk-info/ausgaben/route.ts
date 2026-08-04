@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { ausgabeDaten } from '@/lib/info-felder'
-import { erfordereRolle, rolleAusRequest } from '@/lib/info-auth'
+import { darf, erfordereRolle, getSessionUserFromRequest } from '@/lib/session'
 
 export async function GET(req: NextRequest) {
+  const verboten = await erfordereRolle(req, 'djk-info', 'lesen')
+  if (verboten) return verboten
+
   const jahrParam = req.nextUrl.searchParams.get('jahr')
   const jahr = jahrParam ? parseInt(jahrParam, 10) : null
   const ausgaben = await prisma.infoAusgabe.findMany({
@@ -20,13 +23,13 @@ export async function GET(req: NextRequest) {
 // Ausgaben anlegen dürfen Kassier und Redakteur (gehört zur Ausgaben-Pflege).
 // Das Druckkosten-Feld bleibt dem Kassier vorbehalten.
 export async function POST(req: NextRequest) {
-  const verboten = await erfordereRolle(req, 'schaltungen')
+  const verboten = await erfordereRolle(req, 'djk-info', 'bearbeiten')
   if (verboten) return verboten
-  const rolle = await rolleAusRequest(req)
+  const session = await getSessionUserFromRequest(req)
 
   const body = await req.json().catch(() => ({}))
   const daten = ausgabeDaten(body)
-  if (rolle !== 'kassier') daten.druckKosten = null
+  if (!darf(session, 'djk-info', 'verwalten')) daten.druckKosten = null
 
   const vorhanden = await prisma.infoAusgabe.findUnique({
     where: { jahr_nummer: { jahr: daten.jahr, nummer: daten.nummer } },

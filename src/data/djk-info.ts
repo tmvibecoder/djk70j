@@ -1,30 +1,5 @@
 // Fachkonstanten des DJK-Info-Bereichs (Vereinszeitschrift).
 
-import type { InfoRolle } from '@/lib/info-auth'
-
-// Rollen fürs Login-Dropdown inkl. Erklärtext (Info-Kasten auf der Login-Seite)
-export const ROLLEN_INFO: { rolle: InfoRolle; label: string; beschreibung: string }[] = [
-  {
-    rolle: 'kassier',
-    label: 'Erfasser & Kassier',
-    beschreibung: 'Vollzugriff: Kunden anlegen und ändern, Rechnungen erstellen, Verteilung pflegen, Einstellungen.',
-  },
-  {
-    rolle: 'redakteur',
-    label: 'Redakteur',
-    beschreibung: 'Alles einsehen und je Ausgabe eintragen, welche Anzeigen erschienen sind.',
-  },
-  {
-    rolle: 'leser',
-    label: 'Lesen & Betrachten',
-    beschreibung: 'Alle Inhalte einsehen — Kunden, Rechnungen, Verteilung. Änderungen sind nicht möglich.',
-  },
-]
-
-export function rollenLabel(rolle: InfoRolle | null): string {
-  return ROLLEN_INFO.find(r => r.rolle === rolle)?.label ?? ''
-}
-
 // Anzeigengrößen in Anzeige-Reihenfolge (Schlüssel = InfoPreis.groesse)
 export const GROESSEN_REIHENFOLGE = ['1/1', '3/4', '2/3', '1/2', '1/3', '1/4'] as const
 

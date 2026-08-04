@@ -8,19 +8,14 @@
 // Importskript eingespielt.
 //
 // Idempotent (läuft gefahrlos bei jedem Deploy):
-// 1. Einstellungen: upsert mit leerem update — das Start-Passwort wird nur
-//    beim allerersten Lauf gesetzt, spätere Passwort-Änderungen überleben.
+// 1. Einstellungen: upsert mit leerem update — spätere Nutzeränderungen
+//    überleben.
 // 2. Schlüsseltypen: nur beim allerersten Lauf (count-Guard) — in der App
 //    angelegte/umbenannte Typen werden nie überschrieben.
 import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
 import 'dotenv/config'
 
 const prisma = new PrismaClient()
-
-// Start-Passwort des Bereichs — nach dem ersten Login über die
-// Einstellungs-Seite ändern!
-const START_PASSWORT = 'schluessel2026'
 
 // Neutrales Grundgerüst der ABUS-Anlage (General- + Gruppenschlüssel) und
 // der Transponder Sporthalle. Bezeichnungen bleiben leer und werden in der
@@ -42,7 +37,6 @@ async function main() {
     where: { id: 'schluessel' },
     create: {
       id: 'schluessel',
-      passwordHash: bcrypt.hashSync(START_PASSWORT, 10),
       standardPfand: 20,
     },
     update: {},

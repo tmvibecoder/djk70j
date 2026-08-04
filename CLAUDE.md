@@ -7,7 +7,8 @@ Sie ist die zentrale Projekt-Doku; ergänzend gibt es `README.md` (kurz) und
 ## Projekt-Überblick
 
 Interne **Orga- und Planungs-App** für die Veranstaltungen des **DJK SG Ottenhofen e.V.**
-Kein öffentliches Tool — nur der Festausschuss meldet sich an (ein gemeinsames Passwort).
+Kein öffentliches Tool — Zugang nur über **persönliche Benutzerkonten** mit
+Bereichs-Rollen (siehe „Authentifizierung").
 
 Seit dem Umbau Juli 2026 ist die App **mehrveranstaltungsfähig**: Eine Veranstaltung
 ist ein Eintrag im Register `src/data/veranstaltungen.ts`; Menü, Übersichtsseite,
@@ -85,13 +86,9 @@ Routen-Baum mit eigenem Layout (`src/app/werbebanden/layout.tsx` →
 Einstellungen). Sidebar/AppHeader der Event-App blenden sich auf
 `/werbebanden/**` aus; für App-Nutzer gibt es in der Sidebar den Punkt „Werbebanden".
 
-**Eigene Auth (`src/lib/banden-auth.ts`):** Nur-Passwort-Login, Cookie
-`djk_banden_auth`. **Wichtig:** HMAC-Payload ist `banden-auth:${ts}` — bewusst
-anderes Format als das App-Cookie, sonst würde ein Banden-Token die ganze App
-öffnen (Middleware prüft nur Signaturen, keine DB). Banden-Cookie öffnet NUR
-`/werbebanden/**`; App-Cookie öffnet zusätzlich auch den Banden-Bereich.
-Das Bereichs-Passwort liegt als bcrypt-Hash in `WerbebandenEinstellung`
-(Start: `keymaster`, per Seed; änderbar über die Einstellungs-Seite).
+**Auth:** über das zentrale Benutzer-/Rollensystem (Bereich `werbebanden`,
+siehe „Authentifizierung") — kein eigenes Bereichs-Passwort mehr. Der
+Einstellungen-Tab erscheint nur für Rolle `verwalten`.
 
 **Modelle:** `Werbepartner` (Kontakte, Ist-Länge vs. abgerechnete lfd. Meter,
 Preis/m netto, Abschnitt 1–4 + PositionNr, Status aktiv/gekuendigt, Kündigung),
@@ -135,12 +132,9 @@ eigener Routen-Baum `src/app/schluessel/` → `SchluesselShell` mit Tabs
 Bestand | Inhaber | Ausgabe | Schließplan | Belege | ⚙️, Views in
 `src/components/schluessel/`.
 
-**Eigene Auth (`src/lib/schluessel-auth.ts`):** Nur-Passwort-Login, Cookie
-`djk_schluessel_auth`, HMAC-Payload `schluessel-auth:${ts}` (Domain-Präfix
-wie beim Banden-Cookie — verhindert Cookie-Umkopieren zwischen Bereichen).
-Schlüssel-Cookie öffnet NUR `/schluessel/**`; App-Cookie öffnet den Bereich
-zusätzlich. Hash in `SchluesselEinstellung` (Start: `schluessel2026` per
-Seed — **nach dem ersten Login ändern**, Einstellungs-Seite).
+**Auth:** über das zentrale Benutzer-/Rollensystem (Bereich `schluessel`,
+siehe „Authentifizierung") — kein eigenes Bereichs-Passwort mehr.
+Einstellungen + Pfandkasse nur für Rolle `verwalten`.
 
 **Modelle** (alle `Schluessel…`-Präfix): `SchluesselTyp` (system
 abus/transponder/schrank/sonstige + code, `@@unique([system, code])`) →
@@ -173,7 +167,7 @@ Matcher-Falle wie bei den Banden-Uploads).
 
 **⚠️ Echtdaten:** Das Repo ist öffentlich — `seed-schluessel.ts` legt bewusst
 NUR das neutrale Grundgerüst an (GHS/GS1–GS6 ohne Gruppenbezeichnungen,
-Transponder-Typ, Start-Passwort). Inhaber, Schließmatrix, Schloss-/
+Transponder-Typ). Inhaber, Schließmatrix, Schloss-/
 Transponder-Nummern werden in der App gepflegt oder einmalig über ein
 **privates, NICHT eingechecktes Importskript** eingespielt (liegt fertig
 lokal bei Thomas, `~/Claude/Projects/djk70j-schluessel-echtdaten/`:
@@ -191,27 +185,13 @@ Routen-Baum mit `InfoShell` (Tabs: Kunden | Ausgaben | Rechnungen |
 Verteilung | Einstellungen), Client-Views in `src/components/djk-info/`,
 Sidebar/AppHeader blenden sich auf `/djk-info/**` aus.
 
-**Auth mit 3 Rollen (`src/lib/info-auth.ts`):** Login-Dropdown wählt die
-Rolle, jede Rolle hat ein eigenes Passwort (bcrypt-Hashes in
-`InfoEinstellung`; Start per Seed: Kassier `kassenbuch`, Redakteur
-`druckfrisch`, Leser `leseratte`). Cookie `djk_info_auth` mit der Rolle im
-signierten Payload. **Die drei Cookie-Payload-Formate der App sind bewusst
-paarweise disjunkt** (Middleware prüft nur Signaturen, keine DB — die
-Domain-Trennung im Payload verhindert Token-Übertragung zwischen Bereichen;
-gemeinsame Krypto-Helfer in `src/lib/hmac.ts`, dort NICHTS vereinheitlichen):
+**Auth:** über das zentrale Benutzer-/Rollensystem (Bereich `djk-info`, siehe
+„Authentifizierung") — die früheren drei Rollen-Passwörter sind abgeschafft;
+die alte Kassier/Redakteur/Leser-Semantik entspricht jetzt
+verwalten/bearbeiten/lesen. **Rollen-Matrix** (jede Route gated serverseitig
+per `erfordereRolle`, die Shell blendet Bedienelemente nur zusätzlich aus):
 
-| Bereich | Cookie | signierter Payload |
-|---|---|---|
-| App | `djk_auth` | `${userId}.${ts}` |
-| Werbebanden | `djk_banden_auth` | `banden-auth:${ts}` |
-| DJK-Info | `djk_info_auth` | `info-auth:${rolle}:${ts}` |
-
-App-Cookie zählt im Info-Bereich als Kassier; Banden-Cookie öffnet den
-Info-Bereich NICHT (und umgekehrt). **Rollen-Matrix** (`darf()`; die
-Middleware prüft nur „eingeloggt", jede schreibende Route gated serverseitig
-per `erfordereRolle`):
-
-| Aktion | Kassier | Redakteur | Leser |
+| Aktion | verwalten | bearbeiten | lesen |
 |---|---|---|---|
 | Lesen (alle Bereiche außer Einstellungen) | ✓ | ✓ | ✓ |
 | Schaltungs-Matrix, Ausgaben anlegen/ändern, Druckrechnungs-Upload | ✓ | ✓ | — |
@@ -260,7 +240,10 @@ tragen `eventId String @default("jubilaeum-2026")` (+ Index). `Beschluss` /
 **additiv mit Default** sein (Deploy nutzt `prisma db push`, kein `migrate`;
 `prisma/migrations/` ist veraltet und wird nicht verwendet).
 
-- **Auth:** `User` (Login-Passwort-Hashes).
+- **Auth:** `User` (username?, passwordHash?, istAdmin, aktiv, tokenVersion —
+  „login-fähig" = username UND passwordHash gesetzt; die alten
+  Warenwirtschafts-Zeilen ohne username bleiben unangetastet) +
+  `UserBereichsRolle` (userId × bereich → rolle, `@@unique([userId, bereich])`).
 - **Festplanung:** `Bereich`, `Person` (`isCatchAll` = „Nicht zugewiesen"),
   `Task`, `TaskAssignment`, `Beschluss`.
 - **Finanzen:** `CostItem` (vatRate/amountEntry/dueDate/costType/status/eventDay),
@@ -284,18 +267,48 @@ tragen `eventId String @default("jubilaeum-2026")` (+ Index). `Beschluss` /
 
 ## API-Routen (`src/app/api/.../route.ts`)
 
-- **Auth:** `auth/login` (nur Passwort, gegen alle User-Hashes), `auth/logout`.
+- **Auth:** `auth/login` (username + password), `auth/logout`,
+  `mein-konto/passwort` (PUT), `admin/benutzer[...]` (nur istAdmin).
 - **Event-gescoped** (GET `?event=`, POST-Body `eventId`, Default `jubilaeum-2026`):
   `bereiche[/id]`, `personen[/id]`, `tasks[/id]`, `costs`, `sponsors`, `anmerkungen`.
 - `[id]`-Routen sind unverändert ungescoped (cuid ist global eindeutig).
 
-## Authentifizierung
+## Authentifizierung (einheitliches Benutzer-/Rollensystem, seit 08/2026)
 
-- Reines **Passwort-Login**; Session = HMAC-Cookie `djk_auth` (`lib/auth.ts`),
-  30 Tage, signiert mit **`AUTH_SECRET`** (Web-Crypto, edge-kompatibel).
-- `src/middleware.ts` schützt alles außer `/login` + Auth-APIs — auch alle
-  neuen `/[eventId]`-Routen (Matcher greift automatisch).
-- Seed-User: **`DJKalle` / `DJKistsuper`** (Rolle admin).
+**Ein zentraler Login für alles** — die früheren separaten Bereichs-Passwörter
+(Werbebanden/Schlüssel) und Rollen-Passwörter (DJK-Info) sind abgeschafft.
+
+- **Login** `/login`: Dropdown mit allen aktiven Benutzern (`User.username` +
+  `passwordHash` gesetzt) + Passwort. Ein Cookie **`djk_session`**
+  (`${userId}.${ts}.${tokenVersion}.${hmac}`, `lib/auth.ts` + `lib/hmac.ts`,
+  `AUTH_SECRET`, 30 Tage).
+- **Zwei Schichten:** `src/middleware.ts` (Edge, kein Prisma!) prüft NUR
+  „eingeloggt ja/nein" (Signatur + Ablauf). Die Autorisierung passiert in
+  **`src/lib/session.ts`** (Node): `getSessionUser()` lädt bei jedem Request
+  frisch `User` + `UserBereichsRolle` aus der DB → Rollenänderungen wirken
+  sofort. `tokenVersion`-Abgleich Cookie ↔ DB invalidiert Sessions bei
+  Passwort-Reset/Deaktivierung. Reine Konstanten (Bereiche/Rollen/Labels)
+  liegen in **`lib/bereiche.ts`** (auch aus Client-Components importierbar —
+  `session.ts` re-exportiert sie, darf aber NIE in Client-Code importiert
+  werden, sonst bricht der Build an next/headers).
+- **Rollenmodell:** je Bereich (`veranstaltungen` | `werbebanden` |
+  `schluessel` | `djk-info`) eine Rolle `lesen` < `bearbeiten` < `verwalten`
+  (Rang-Vergleich in `darf()`). Kein Eintrag = kein Zugriff, Kachel/Sidebar
+  unsichtbar. `User.istAdmin` = Systemverwalter (alles + `/admin/benutzer`).
+  Veranstaltungen: `bearbeiten` = Festplanung, `verwalten` = zusätzlich
+  Finanzen/Kosten/Sponsoren.
+- **WICHTIG — jede API-Route gated selbst:** Da die Middleware keine Bereiche
+  mehr kennt, beginnt JEDE Route (auch GETs!) mit
+  `const verboten = await erfordereRolle(req, '<bereich>', '<aktion>'); if (verboten) return verboten`.
+  Neue Route ohne diesen Guard = für alle eingeloggten Nutzer offen!
+  Layout-Gates (`darf(...)` → `redirect('/')`) sind nur UX, kein Schutz.
+- **Selbstverwaltung:** `/mein-konto` (eigenes Passwort ändern, erhöht
+  `tokenVersion` und stellt das eigene Cookie neu aus). **Admin:**
+  `/admin/benutzer` (anlegen, Rollen je Bereich, Passwort-Reset,
+  Deaktivieren statt Löschen — `SalesEntry.enteredBy`-FKs).
+- Seed-User: **`DJKalle` / `DJKistsuper`** (`istAdmin`, `prisma/seed-user.ts`,
+  läuft beim Auto-Deploy). Alle weiteren Konten legt der Admin über die UI an —
+  NIE echte Namen/Passwörter ins Repo (öffentlich!).
 
 ## Umgebungsvariablen (`.env`, gitignored)
 
@@ -325,7 +338,9 @@ npm run dev                      # http://localhost:3000
 - **`seed-sommerfest-2027.ts`** — Standard-Bereiche + Catch-All-Person für 2027;
   idempotent (no-op, sobald Bereiche existieren). **Läuft beim Auto-Deploy.**
   Vorlage für künftige Veranstaltungen (siehe ANLEITUNG-NEUE-VERANSTALTUNG.md).
-- **`seed-user.ts`** — idempotenter Login-User-Seed.
+- **`seed-user.ts`** — idempotenter Admin-Login-Seed (DJKalle, istAdmin).
+  **Läuft beim Auto-Deploy** (stellt nach dem Rollensystem-Umbau sicher,
+  dass immer ein Admin-Login existiert).
 - **`seed-werbebanden.ts`** (`npm run db:seed:werbebanden`) — Werbebanden-Startdaten
   (Einstellungen + Partner + Rechnungen 2025/2026 aus der Excel); idempotent.
   **Läuft beim Auto-Deploy.**

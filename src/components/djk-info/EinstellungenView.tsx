@@ -9,7 +9,6 @@ export function EinstellungenView() {
   const [form, setForm] = useState<Record<string, string> | null>(null)
   const [preise, setPreise] = useState<PreisDto[]>([])
   const [preisEingaben, setPreisEingaben] = useState<Record<string, string>>({})
-  const [passwoerter, setPasswoerter] = useState({ kassier: '', redakteur: '', leser: '' })
   const [verboten, setVerboten] = useState(false)
   const [speichern, setSpeichern] = useState(false)
   const [meldung, setMeldung] = useState<{ art: 'ok' | 'fehler'; text: string } | null>(null)
@@ -51,7 +50,7 @@ export function EinstellungenView() {
   if (verboten) {
     return (
       <p className="text-sm text-gray-500 py-8 text-center">
-        Die Einstellungen sind der Rolle „Erfasser &amp; Kassier&quot; vorbehalten.
+        Die Einstellungen sind der Rolle „Verwalten&quot; vorbehalten.
       </p>
     )
   }
@@ -68,9 +67,6 @@ export function EinstellungenView() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...form,
-        neuesPasswortKassier: passwoerter.kassier,
-        neuesPasswortRedakteur: passwoerter.redakteur,
-        neuesPasswortLeser: passwoerter.leser,
         preise: preise.map(p => ({ groesse: p.groesse, jahresNetto: preisEingaben[p.groesse] ?? p.jahresNetto })),
       }),
     })
@@ -80,12 +76,7 @@ export function EinstellungenView() {
       setMeldung({ art: 'fehler', text: j.error || 'Speichern fehlgeschlagen' })
       return
     }
-    const passwortGeaendert = Object.values(passwoerter).some(p => p.trim())
-    setPasswoerter({ kassier: '', redakteur: '', leser: '' })
-    setMeldung({
-      art: 'ok',
-      text: passwortGeaendert ? 'Gespeichert — neue Passwörter gelten ab dem nächsten Login.' : 'Gespeichert.',
-    })
+    setMeldung({ art: 'ok', text: 'Gespeichert.' })
   }
 
   const preisZahl = (g: string) => parseFloat((preisEingaben[g] ?? '').replace(',', '.')) || 0
@@ -218,38 +209,6 @@ export function EinstellungenView() {
           <Input label="Ansprechpartner" value={form.druckereiAnsprechpartner} onChange={set('druckereiAnsprechpartner')} />
           <Input label="Telefon" value={form.druckereiTelefon} onChange={set('druckereiTelefon')} />
           <Input label="E-Mail" type="email" value={form.druckereiEmail} onChange={set('druckereiEmail')} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="!py-3">
-          <h2 className="font-bold text-gray-900">Zugang</h2>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-xs text-gray-500">
-            Je Rolle ein eigenes Passwort. Leer lassen, um es unverändert zu behalten.
-          </p>
-          <Input
-            label="Erfasser & Kassier — neues Passwort (min. 6 Zeichen)"
-            type="password"
-            value={passwoerter.kassier}
-            onChange={e => setPasswoerter(p => ({ ...p, kassier: e.target.value }))}
-            autoComplete="new-password"
-          />
-          <Input
-            label="Redakteur — neues Passwort (min. 6 Zeichen)"
-            type="password"
-            value={passwoerter.redakteur}
-            onChange={e => setPasswoerter(p => ({ ...p, redakteur: e.target.value }))}
-            autoComplete="new-password"
-          />
-          <Input
-            label="Lesen & Betrachten — neues Passwort (min. 6 Zeichen)"
-            type="password"
-            value={passwoerter.leser}
-            onChange={e => setPasswoerter(p => ({ ...p, leser: e.target.value }))}
-            autoComplete="new-password"
-          />
         </CardContent>
       </Card>
 

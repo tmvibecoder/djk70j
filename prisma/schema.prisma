@@ -10,18 +10,39 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Benutzer (Login)
+// Benutzer (Login). username bleibt optional, damit die alten Zeilen der
+// früheren Warenwirtschafts-Personenliste (SalesEntry.enteredBy) unberührt
+// bleiben — SQLite erlaubt mehrfach NULL in einer @unique-Spalte.
+// "Login-fähiger Account" = username UND passwordHash gesetzt.
 model User {
   id           String   @id @default(cuid())
   name         String
   email        String?  @unique
   username     String?  @unique
   passwordHash String?
-  role         String   @default("admin") // admin, orga
+  istAdmin     Boolean  @default(false) // Systemverwalter: Benutzerverwaltung, unabhängig von Bereichs-Rollen
+  aktiv        Boolean  @default(true)  // Deaktivieren statt Löschen (Fremdschlüssel/Historie bleiben gültig)
+  tokenVersion Int      @default(0)     // hochzählen bei Passwort-Reset/Deaktivierung → laufende Sessions sofort ungültig
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  salesEntries SalesEntry[]
+  bereichsRollen UserBereichsRolle[]
+  salesEntries   SalesEntry[]
+}
+
+// Rolle je Bereich, 3-stufig ("lesen" | "bearbeiten" | "verwalten").
+// Fehlender Eintrag für einen Bereich = kein Zugriff auf diesen Bereich.
+model UserBereichsRolle {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bereich   String   // "veranstaltungen" | "werbebanden" | "schluessel" | "djk-info"
+  rolle     String   // "lesen" | "bearbeiten" | "verwalten"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, bereich])
+  @@index([bereich])
 }
 
 // Produkte (Getränke & Speisen)
@@ -387,7 +408,6 @@ model WerbebandenEinstellung {
   zahlungszielTage      Int      @default(14)
   standardPreisProMeter Float    @default(40)
   mwstSatz              Float    @default(19)
-  passwordHash          String   @default("") // bcrypt-Hash des Bereichs-Passworts
   // Briefkopf/Fußzeile der Rechnungs-PDF (mehrzeilig, editierbar — Inhalte
   // aus der offiziellen Briefvorlage; Logos liegen in src/lib/rechnung-assets.ts)
   kopfKontaktblock      String   @default("") // rechts oben (Kassier, Mobil, E-Mail)
@@ -544,10 +564,9 @@ model SchluesselPfandBuchung {
   createdAt DateTime @default(now())
 }
 
-// Bereichs-Passwort + Vorgaben (Singleton, id "schluessel")
+// Vorgaben Schlüsselbereich (Singleton, id "schluessel")
 model SchluesselEinstellung {
   id            String   @id @default("schluessel")
-  passwordHash  String   @default("") // bcrypt-Hash des Bereichs-Passworts
   standardPfand Float    @default(20)
   ausgeberName  String   @default("") // Vorbelegung „ausgegeben durch" auf Belegen
   updatedAt     DateTime @updatedAt
@@ -719,7 +738,7 @@ model InfoVerteiler {
   updatedAt      DateTime @updatedAt
 }
 
-// DJK-Info-Stammdaten + die drei Rollen-Passwörter (Singleton, id "djk-info")
+// DJK-Info-Stammdaten (Singleton, id "djk-info")
 model InfoEinstellung {
   id                       String   @id @default("djk-info")
   vereinsname              String   @default("DJK SG Ottenhofen e.V.")
@@ -740,9 +759,5 @@ model InfoEinstellung {
   fusszeileSpalte1         String   @default("")
   fusszeileSpalte2         String   @default("")
   fusszeileSpalte3         String   @default("")
-  // bcrypt-Hashes der Rollen-Passwörter (Login-Dropdown)
-  passwordHashKassier      String   @default("")
-  passwordHashRedakteur    String   @default("")
-  passwordHashLeser        String   @default("")
   updatedAt                DateTime @updatedAt
 }

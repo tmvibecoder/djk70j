@@ -8,8 +8,8 @@ import 'dotenv/config'
 
 const prisma = new PrismaClient()
 
-const SEED_USERS: Array<{ username: string; name: string; password: string; role: string }> = [
-  { username: 'DJKalle', name: 'DJKalle', password: 'DJKistsuper', role: 'admin' },
+const SEED_USERS: Array<{ username: string; name: string; password: string }> = [
+  { username: 'DJKalle', name: 'DJKalle', password: 'DJKistsuper' },
 ]
 
 async function main() {
@@ -25,10 +25,10 @@ async function main() {
         username: u.username,
         name: u.name,
         passwordHash,
-        role: u.role,
+        istAdmin: true,
       },
     })
-    console.log(`User '${u.username}' angelegt`)
+    console.log(`User '${u.username}' angelegt (Systemverwalter)`)
   }
 }
 

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { erfordereRolle } from '@/lib/info-auth'
+import { erfordereRolle } from '@/lib/session'
 
 export async function GET(req: NextRequest) {
+  const verboten = await erfordereRolle(req, 'djk-info', 'lesen')
+  if (verboten) return verboten
+
   const jahrParam = req.nextUrl.searchParams.get('jahr')
   const jahr = jahrParam ? parseInt(jahrParam, 10) : null
   const schaltungen = await prisma.infoSchaltung.findMany({
@@ -15,7 +18,7 @@ export async function GET(req: NextRequest) {
 // Checkbox der Schaltungs-Matrix: {kundeId, ausgabeId, geschaltet} —
 // legt die Schaltung an bzw. entfernt sie. Kassier + Redakteur.
 export async function POST(req: NextRequest) {
-  const verboten = await erfordereRolle(req, 'schaltungen')
+  const verboten = await erfordereRolle(req, 'djk-info', 'bearbeiten')
   if (verboten) return verboten
 
   const body = await req.json().catch(() => ({}))

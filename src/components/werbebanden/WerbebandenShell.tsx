@@ -2,29 +2,27 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-
-const TABS = [
-  { href: '/werbebanden', label: 'Partner', icon: '📋' },
-  { href: '/werbebanden/rechnungen', label: 'Rechnungen', icon: '🧾' },
-  { href: '/werbebanden/platz', label: 'Platzübersicht', icon: '🏟️' },
-  { href: '/werbebanden/einstellungen', label: 'Einstellungen', icon: '⚙️' },
-]
+import type { BereichsRolle } from '@/lib/bereiche'
 
 export function WerbebandenShell({
-  hatAppSession,
+  rolle,
   children,
 }: {
-  hatAppSession: boolean
+  rolle: BereichsRolle
   children: React.ReactNode
 }) {
   const pathname = usePathname()
 
-  // Login-Seite rendert sich als Vollbild-Overlay selbst
-  if (pathname === '/werbebanden/login') return <>{children}</>
+  const TABS = [
+    { href: '/werbebanden', label: 'Partner', icon: '📋' },
+    { href: '/werbebanden/rechnungen', label: 'Rechnungen', icon: '🧾' },
+    { href: '/werbebanden/platz', label: 'Platzübersicht', icon: '🏟️' },
+    ...(rolle === 'verwalten' ? [{ href: '/werbebanden/einstellungen', label: 'Einstellungen', icon: '⚙️' }] : []),
+  ]
 
   const handleLogout = async () => {
-    await fetch('/api/werbebanden/auth/logout', { method: 'POST' })
-    window.location.href = '/werbebanden/login'
+    await fetch('/api/auth/logout', { method: 'POST' })
+    window.location.href = '/login'
   }
 
   const tabAktiv = (href: string) =>
@@ -41,14 +39,12 @@ export function WerbebandenShell({
             <h1 className="text-xl font-bold text-gray-900">🏟️ Bandenwerbung</h1>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {hatAppSession && (
-              <Link
-                href="/"
-                className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg border border-gray-200"
-              >
-                ← Zur Event-App
-              </Link>
-            )}
+            <Link
+              href="/"
+              className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg border border-gray-200"
+            >
+              ← Übersicht
+            </Link>
             <button
               onClick={handleLogout}
               className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg border border-gray-200"

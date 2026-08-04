@@ -1,13 +1,5 @@
-// Gemeinsame HMAC-Helfer für die Session-Cookies der drei Login-Bereiche
-// (App `lib/auth.ts`, Werbebanden `lib/banden-auth.ts`, DJK-Info `lib/info-auth.ts`).
-// Web-Crypto, läuft auch in der Edge-Middleware. Alle signieren mit AUTH_SECRET.
-//
-// SICHERHEITSKRITISCH: Die Payload-Formate der Bereiche sind bewusst paarweise
-// verschieden — App `${userId}.${ts}`, Banden `banden-auth:${ts}`,
-// Info `info-auth:${rolle}:${ts}`. Die Middleware prüft nur Signaturen (keine
-// DB); allein die Domain-Trennung im Payload verhindert, dass ein kopierter
-// Token eines Bereichs in einem anderen gültig ist. Payloads hier niemals
-// vereinheitlichen oder umformatieren.
+// Gemeinsamer HMAC-Helfer für das eine Session-Cookie der App (lib/auth.ts).
+// Web-Crypto, läuft auch in der Edge-Middleware. Signiert mit AUTH_SECRET.
 
 function getSecret(): string {
   const s = process.env.AUTH_SECRET

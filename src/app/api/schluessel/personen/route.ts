@@ -1,11 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { personDaten } from '@/lib/schluessel-felder'
+import { erfordereRolle } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 
 // Inhaberliste inkl. aktiver Ausgaben (für Badges + Pfandsummen)
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const verboten = await erfordereRolle(req, 'schluessel', 'lesen')
+  if (verboten) return verboten
+
   const personen = await prisma.schluesselPerson.findMany({
     orderBy: { name: 'asc' },
     include: {
@@ -19,7 +23,10 @@ export async function GET() {
   return NextResponse.json(personen)
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const verboten = await erfordereRolle(req, 'schluessel', 'bearbeiten')
+  if (verboten) return verboten
+
   const body = await req.json().catch(() => ({}))
   const daten = personDaten(body)
   if (!daten.name) {

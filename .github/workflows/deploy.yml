@@ -24,6 +24,8 @@ jobs:
             npm install
             npx prisma generate
             npx prisma db push --accept-data-loss --skip-generate
+            # Admin-Login DJKalle sicherstellen (idempotent: legt ihn nur beim ersten Mal an)
+            npx tsx prisma/seed-user.ts
             # Anfangsbestand Fest 2026 einspielen (idempotent: läuft nur beim ersten Mal)
             npx tsx prisma/seed-anfangsbestand-2026-07-07.ts
             # Startzustand Sommerfest 2027 (idempotent: läuft nur beim ersten Mal)

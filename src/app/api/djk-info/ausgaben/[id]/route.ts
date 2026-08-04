@@ -1,21 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { ausgabeDaten } from '@/lib/info-felder'
-import { erfordereRolle, rolleAusRequest } from '@/lib/info-auth'
+import { darf, erfordereRolle, getSessionUserFromRequest } from '@/lib/session'
 import { loescheUpload } from '@/lib/uploads'
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const verboten = await erfordereRolle(req, 'schaltungen')
+  const verboten = await erfordereRolle(req, 'djk-info', 'bearbeiten')
   if (verboten) return verboten
-  const rolle = await rolleAusRequest(req)
+  const session = await getSessionUserFromRequest(req)
 
   const alt = await prisma.infoAusgabe.findUnique({ where: { id: params.id } })
   if (!alt) return NextResponse.json({ error: 'Nicht gefunden' }, { status: 404 })
 
   const body = await req.json().catch(() => ({}))
   const daten = ausgabeDaten(body)
-  // Druckkosten darf nur der Kassier ändern
-  if (rolle !== 'kassier') daten.druckKosten = alt.druckKosten
+  // Druckkosten darf nur verwalten (bisher „Kassier") ändern
+  if (!darf(session, 'djk-info', 'verwalten')) daten.druckKosten = alt.druckKosten
 
   const konflikt = await prisma.infoAusgabe.findUnique({
     where: { jahr_nummer: { jahr: daten.jahr, nummer: daten.nummer } },
@@ -30,7 +30,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
 // Löschen ist destruktiv (Schaltungen fallen per Cascade) — nur Kassier
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const verboten = await erfordereRolle(req, 'verwalten')
+  const verboten = await erfordereRolle(req, 'djk-info', 'verwalten')
   if (verboten) return verboten
 
   const dateien = await prisma.infoDatei.findMany({ where: { ausgabeId: params.id } })

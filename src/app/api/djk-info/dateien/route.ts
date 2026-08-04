@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { erfordereRolle } from '@/lib/info-auth'
+import { erfordereRolle } from '@/lib/session'
 import {
   BILD_TYPEN,
   PDF_TYPEN,
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unbekannte Upload-Art' }, { status: 400 })
   }
 
-  const verboten = await erfordereRolle(req, art === 'druckrechnung' ? 'schaltungen' : 'verwalten')
+  const verboten = await erfordereRolle(req, 'djk-info', art === 'druckrechnung' ? 'bearbeiten' : 'verwalten')
   if (verboten) return verboten
 
   if (!(file instanceof File)) {

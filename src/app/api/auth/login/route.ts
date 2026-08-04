@@ -5,27 +5,20 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}))
+  const username: string | undefined = body.username
   const password: string | undefined = body.password
 
-  if (!password) {
-    return NextResponse.json({ error: 'Passwort erforderlich' }, { status: 400 })
+  if (!username || !password) {
+    return NextResponse.json({ error: 'Benutzer und Passwort erforderlich' }, { status: 400 })
   }
 
-  // Kein Benutzername mehr: Passwort gegen alle Benutzer mit Passwort-Hash prüfen.
-  const users = await prisma.user.findMany({ where: { passwordHash: { not: null } } })
-  let matched: (typeof users)[number] | null = null
-  for (const user of users) {
-    if (user.passwordHash && (await bcrypt.compare(password, user.passwordHash))) {
-      matched = user
-      break
-    }
-  }
-  if (!matched) {
+  const user = await prisma.user.findUnique({ where: { username } })
+  if (!user || !user.aktiv || !user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
     return NextResponse.json({ error: 'Login fehlgeschlagen' }, { status: 401 })
   }
 
-  const token = await signSession(matched.id)
-  const res = NextResponse.json({ id: matched.id, name: matched.name, username: matched.username, role: matched.role })
+  const token = await signSession(user.id, user.tokenVersion)
+  const res = NextResponse.json({ id: user.id, name: user.name, username: user.username, istAdmin: user.istAdmin })
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: 'lax',

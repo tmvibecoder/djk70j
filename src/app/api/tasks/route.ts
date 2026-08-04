@@ -1,8 +1,12 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { DEFAULT_EVENT_ID } from '@/data/veranstaltungen'
+import { erfordereRolle } from '@/lib/session'
 
 export async function GET(request: NextRequest) {
+  const verboten = await erfordereRolle(request, 'veranstaltungen', 'lesen')
+  if (verboten) return verboten
+
   const searchParams = request.nextUrl.searchParams
   const eventDay = searchParams.get('eventDay')
   const status = searchParams.get('status')
@@ -34,6 +38,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const verboten = await erfordereRolle(request, 'veranstaltungen', 'bearbeiten')
+  if (verboten) return verboten
+
   const body = await request.json()
 
   const task = await prisma.task.create({

@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { parseNum } from '@/lib/schluessel-felder'
+import { erfordereRolle } from '@/lib/session'
 
 // Schlüssel-Ausgabe: legt in einer Transaktion einen Beleg (offen) plus je
 // Position eine Ausgabe an und bucht das Pfand in die Pfandkasse. Die
@@ -10,7 +11,10 @@ import { parseNum } from '@/lib/schluessel-felder'
 // Positionen: [{ typId, exemplarId? }] — ohne exemplarId wird ein freies
 // Exemplar gewählt (ABUS-Kopien sind anonym), Transponder kommen mit
 // konkreter exemplarId.
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const verboten = await erfordereRolle(req, 'schluessel', 'bearbeiten')
+  if (verboten) return verboten
+
   const body = await req.json().catch(() => ({}))
   const personId = typeof body.personId === 'string' ? body.personId : ''
   const positionen: { typId?: string; exemplarId?: string }[] = Array.isArray(body.positionen)

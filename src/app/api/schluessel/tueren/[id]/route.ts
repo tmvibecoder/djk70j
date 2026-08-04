@@ -1,8 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { tuerDaten } from '@/lib/schluessel-felder'
+import { erfordereRolle } from '@/lib/session'
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const verboten = await erfordereRolle(req, 'schluessel', 'bearbeiten')
+  if (verboten) return verboten
+
   const body = await req.json().catch(() => ({}))
   const daten = tuerDaten(body)
   if (!daten.name) {
@@ -13,7 +17,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 }
 
 // Löschen entfernt die Tür samt Matrix-Einträgen (Cascade)
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const verboten = await erfordereRolle(req, 'schluessel', 'bearbeiten')
+  if (verboten) return verboten
+
   await prisma.schluesselTuer.delete({ where: { id: params.id } })
   return NextResponse.json({ ok: true })
 }

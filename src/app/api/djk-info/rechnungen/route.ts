@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { rechnungDaten } from '@/lib/info-felder'
-import { erfordereRolle } from '@/lib/info-auth'
+import { erfordereRolle } from '@/lib/session'
 import { formatRechnungsnummer, naechsteInfoLaufnummer } from '@/lib/rechnungsnummer'
 
 export async function GET(req: NextRequest) {
+  const verboten = await erfordereRolle(req, 'djk-info', 'lesen')
+  if (verboten) return verboten
+
   const jahrParam = req.nextUrl.searchParams.get('jahr')
   const jahr = jahrParam && jahrParam !== 'alle' ? parseInt(jahrParam, 10) : null
   const rechnungen = await prisma.infoRechnung.findMany({
@@ -17,7 +20,7 @@ export async function GET(req: NextRequest) {
 
 // Einzelne Rechnung anlegen (Nummer wird automatisch im Kreis "I" vergeben)
 export async function POST(req: NextRequest) {
-  const verboten = await erfordereRolle(req, 'verwalten')
+  const verboten = await erfordereRolle(req, 'djk-info', 'verwalten')
   if (verboten) return verboten
 
   const body = await req.json().catch(() => ({}))

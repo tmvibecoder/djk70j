@@ -1,25 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { einstellungenDaten } from '@/lib/info-felder'
-import { erfordereRolle } from '@/lib/info-auth'
+import { erfordereRolle } from '@/lib/session'
 import { GROESSEN_REIHENFOLGE } from '@/data/djk-info'
-import bcrypt from 'bcryptjs'
 
 // Ohne force-dynamic würde Next die parameterlose GET-Route zur Build-Zeit
 // ausführen und die Antwort statisch einfrieren
 export const dynamic = 'force-dynamic'
 
-// Die Passwort-Hashes verlassen den Server nie
-function ohneHashes<T extends Record<string, unknown>>(e: T): Record<string, unknown> {
-  const rest: Record<string, unknown> = { ...e }
-  delete rest.passwordHashKassier
-  delete rest.passwordHashRedakteur
-  delete rest.passwordHashLeser
-  return rest
-}
-
 export async function GET(req: NextRequest) {
-  const verboten = await erfordereRolle(req, 'verwalten')
+  const verboten = await erfordereRolle(req, 'djk-info', 'verwalten')
   if (verboten) return verboten
 
   const einstellung = await prisma.infoEinstellung.upsert({
@@ -27,30 +17,15 @@ export async function GET(req: NextRequest) {
     create: { id: 'djk-info' },
     update: {},
   })
-  return NextResponse.json(ohneHashes(einstellung))
+  return NextResponse.json(einstellung)
 }
 
 export async function PUT(req: NextRequest) {
-  const verboten = await erfordereRolle(req, 'verwalten')
+  const verboten = await erfordereRolle(req, 'djk-info', 'verwalten')
   if (verboten) return verboten
 
   const body = await req.json().catch(() => ({}))
   const daten: Record<string, unknown> = einstellungenDaten(body)
-
-  // Neue Rollen-Passwörter (leer = unverändert)
-  const passwortFelder: { eingabe: string; feld: string }[] = [
-    { eingabe: 'neuesPasswortKassier', feld: 'passwordHashKassier' },
-    { eingabe: 'neuesPasswortRedakteur', feld: 'passwordHashRedakteur' },
-    { eingabe: 'neuesPasswortLeser', feld: 'passwordHashLeser' },
-  ]
-  for (const { eingabe, feld } of passwortFelder) {
-    const wert = typeof body[eingabe] === 'string' ? (body[eingabe] as string).trim() : ''
-    if (!wert) continue
-    if (wert.length < 6) {
-      return NextResponse.json({ error: 'Passwörter müssen mindestens 6 Zeichen haben' }, { status: 400 })
-    }
-    daten[feld] = await bcrypt.hash(wert, 10)
-  }
 
   const einstellung = await prisma.infoEinstellung.upsert({
     where: { id: 'djk-info' },
@@ -71,5 +46,5 @@ export async function PUT(req: NextRequest) {
     }
   }
 
-  return NextResponse.json(ohneHashes(einstellung))
+  return NextResponse.json(einstellung)
 }

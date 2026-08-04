@@ -4,11 +4,10 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { Badge, Button, Card, CardHeader, Input, Modal, Select } from '@/components/ui'
 import { AUSGABE_STATUS_OPTIONEN, formatEuro, groesseKurzLabel } from '@/data/djk-info'
-import { useDarfSchalten, useDarfVerwalten, useInfoRolle } from './InfoShell'
+import { useDarfSchalten, useDarfVerwalten } from './InfoShell'
 import { AusgabeDto, DateiDto, KundeDto, SchaltungDto, alsDatumsfeld } from './typen'
 
 export function AusgabenView() {
-  const rolle = useInfoRolle()
   const darfSchalten = useDarfSchalten()
   const darfVerwalten = useDarfVerwalten()
 
@@ -115,7 +114,7 @@ export function AusgabenView() {
               ausgabe={a}
               darfSchalten={darfSchalten}
               darfVerwalten={darfVerwalten}
-              istKassier={rolle === 'kassier'}
+              istKassier={darfVerwalten}
               onAenderung={lade}
             />
           ))}

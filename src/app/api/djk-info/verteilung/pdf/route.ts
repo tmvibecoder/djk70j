@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { erzeugeVerteilungsPdf } from '@/lib/verteilung-pdf'
+import { erfordereRolle } from '@/lib/session'
 
 // DIN-A4-Verteilungs-PDFs. URL bewusst OHNE Dateiendung (Middleware-Matcher).
 // ?ziel=gesamt | alle | ottenhofen | auslagen | postversand | <gebietId>
 export async function GET(req: NextRequest) {
+  const verboten = await erfordereRolle(req, 'djk-info', 'lesen')
+  if (verboten) return verboten
+
   const ziel = req.nextUrl.searchParams.get('ziel') ?? 'gesamt'
 
   const [gebiete, verteiler, einstellung] = await Promise.all([

@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { kundeDaten } from '@/lib/info-felder'
-import { erfordereRolle } from '@/lib/info-auth'
+import { erfordereRolle } from '@/lib/session'
 import { loescheUpload } from '@/lib/uploads'
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const verboten = await erfordereRolle(req, 'djk-info', 'lesen')
+  if (verboten) return verboten
+
   const kunde = await prisma.infoKunde.findUnique({
     where: { id: params.id },
     include: {
@@ -21,7 +24,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const verboten = await erfordereRolle(req, 'verwalten')
+  const verboten = await erfordereRolle(req, 'djk-info', 'verwalten')
   if (verboten) return verboten
 
   const body = await req.json().catch(() => ({}))
@@ -34,7 +37,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const verboten = await erfordereRolle(req, 'verwalten')
+  const verboten = await erfordereRolle(req, 'djk-info', 'verwalten')
   if (verboten) return verboten
 
   // Dateien auch von der Platte löschen (DB-Zeilen fallen per Cascade)

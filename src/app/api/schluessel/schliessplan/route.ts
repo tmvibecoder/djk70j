@@ -1,10 +1,14 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { erfordereRolle } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 
 // Schließmatrix: Türen + Einträge (Eintrag = Typ sperrt Tür)
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const verboten = await erfordereRolle(req, 'schluessel', 'lesen')
+  if (verboten) return verboten
+
   const [tueren, eintraege] = await Promise.all([
     prisma.schluesselTuer.findMany({ orderBy: [{ sortier: 'asc' }, { name: 'asc' }] }),
     prisma.schluesselSchliessplanEintrag.findMany(),
@@ -13,7 +17,10 @@ export async function GET() {
 }
 
 // Zelle togglen: Eintrag anlegen, falls nicht vorhanden — sonst löschen
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const verboten = await erfordereRolle(req, 'schluessel', 'bearbeiten')
+  if (verboten) return verboten
+
   const body = await req.json().catch(() => ({}))
   const tuerId = typeof body.tuerId === 'string' ? body.tuerId : ''
   const typId = typeof body.typId === 'string' ? body.typId : ''

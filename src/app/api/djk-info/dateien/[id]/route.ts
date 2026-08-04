@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { erfordereRolle } from '@/lib/info-auth'
+import { erfordereRolle } from '@/lib/session'
 import { leseUpload, loescheUpload } from '@/lib/uploads'
 
 // Auslieferung bewusst OHNE Dateiendung in der URL: Der Middleware-Matcher
 // schließt Pfade mit Punkt aus (statische Assets) — eine Endung in der URL
 // würde die Login-Prüfung umgehen. Die cuid-ID enthält nie einen Punkt,
 // dadurch läuft jeder Abruf durch die Middleware.
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const verboten = await erfordereRolle(req, 'djk-info', 'lesen')
+  if (verboten) return verboten
+
   const datei = await prisma.infoDatei.findUnique({ where: { id: params.id } })
   if (!datei || !datei.pfad) {
     return NextResponse.json({ error: 'Nicht gefunden' }, { status: 404 })
@@ -31,7 +34,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   const datei = await prisma.infoDatei.findUnique({ where: { id: params.id } })
   if (!datei) return NextResponse.json({ error: 'Nicht gefunden' }, { status: 404 })
 
-  const verboten = await erfordereRolle(req, datei.art === 'druckrechnung' ? 'schaltungen' : 'verwalten')
+  const verboten = await erfordereRolle(req, 'djk-info', datei.art === 'druckrechnung' ? 'bearbeiten' : 'verwalten')
   if (verboten) return verboten
 
   await prisma.infoDatei.delete({ where: { id: datei.id } })

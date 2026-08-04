@@ -5,25 +5,15 @@
 //
 // Idempotent (läuft gefahrlos bei jedem Deploy):
 // - Einstellungen + Preise: upsert mit leerem update — Nutzeränderungen
-//   werden nie überschrieben; Passwörter nur beim allerersten Anlegen gesetzt.
+//   werden nie überschrieben.
 // - Ausgaben: upsert je (jahr, nummer) mit leerem update.
 // - Kunden/Schaltungen/Rechnungen bzw. Verteilung: nur wenn die jeweilige
 //   Tabelle noch leer ist.
 import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
 import 'dotenv/config'
 import { INFO_KUNDEN, INFO_GEBIETE, INFO_VERTEILER } from './seed-djk-info-daten'
 
 const prisma = new PrismaClient()
-
-// Startpasswörter der drei Rollen (einfach und merkbar, änderbar in den
-// Einstellungen): Kassier führt das Kassenbuch, der Redakteur meldet
-// druckfrische Ausgaben, die Leserolle gehört der Leseratte.
-const START_PASSWOERTER = {
-  kassier: 'kassenbuch',
-  redakteur: 'druckfrisch',
-  leser: 'leseratte',
-}
 
 // Briefkopf/Fußzeile aus der offiziellen Briefvorlage — identisch zum
 // Werbebanden-Seed; wird nur gesetzt, solange die Felder leer sind.
@@ -87,9 +77,6 @@ async function main() {
       fusszeileSpalte1: FUSSZEILE_1,
       fusszeileSpalte2: FUSSZEILE_2,
       fusszeileSpalte3: FUSSZEILE_3,
-      passwordHashKassier: bcrypt.hashSync(START_PASSWOERTER.kassier, 10),
-      passwordHashRedakteur: bcrypt.hashSync(START_PASSWOERTER.redakteur, 10),
-      passwordHashLeser: bcrypt.hashSync(START_PASSWOERTER.leser, 10),
     },
     update: {},
   })
@@ -100,9 +87,6 @@ async function main() {
   if (!einstellung.fusszeileSpalte1) nachruestung.fusszeileSpalte1 = FUSSZEILE_1
   if (!einstellung.fusszeileSpalte2) nachruestung.fusszeileSpalte2 = FUSSZEILE_2
   if (!einstellung.fusszeileSpalte3) nachruestung.fusszeileSpalte3 = FUSSZEILE_3
-  if (!einstellung.passwordHashKassier) nachruestung.passwordHashKassier = bcrypt.hashSync(START_PASSWOERTER.kassier, 10)
-  if (!einstellung.passwordHashRedakteur) nachruestung.passwordHashRedakteur = bcrypt.hashSync(START_PASSWOERTER.redakteur, 10)
-  if (!einstellung.passwordHashLeser) nachruestung.passwordHashLeser = bcrypt.hashSync(START_PASSWOERTER.leser, 10)
   if (Object.keys(nachruestung).length > 0) {
     await prisma.infoEinstellung.update({ where: { id: 'djk-info' }, data: nachruestung })
     console.log(`DJK-Info-Seed: Einstellungs-Felder nachgerüstet (${Object.keys(nachruestung).join(', ')}).`)

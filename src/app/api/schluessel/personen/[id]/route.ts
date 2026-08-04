@@ -1,9 +1,13 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { personDaten } from '@/lib/schluessel-felder'
+import { erfordereRolle } from '@/lib/session'
 
 // Voll-Detail: Stammdaten + gesamte Ausgabe-Historie + Belege
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const verboten = await erfordereRolle(req, 'schluessel', 'lesen')
+  if (verboten) return verboten
+
   const person = await prisma.schluesselPerson.findUnique({
     where: { id: params.id },
     include: {
@@ -20,7 +24,10 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   return NextResponse.json(person)
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const verboten = await erfordereRolle(req, 'schluessel', 'bearbeiten')
+  if (verboten) return verboten
+
   const body = await req.json().catch(() => ({}))
   const daten = personDaten(body)
   if (!daten.name) {
@@ -31,7 +38,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 }
 
 // Löschen nur ohne Ausgabe-Historie
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const verboten = await erfordereRolle(req, 'schluessel', 'bearbeiten')
+  if (verboten) return verboten
+
   const anzahl = await prisma.schluesselAusgabe.count({ where: { personId: params.id } })
   if (anzahl > 0) {
     return NextResponse.json(

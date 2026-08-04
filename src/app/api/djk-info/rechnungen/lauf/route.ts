@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { erfordereRolle } from '@/lib/info-auth'
+import { erfordereRolle } from '@/lib/session'
 import { formatRechnungsnummer, naechsteInfoLaufnummer } from '@/lib/rechnungsnummer'
 import { anteiligerNetto, rund2 } from '@/data/djk-info'
 
@@ -9,7 +9,7 @@ import { anteiligerNetto, rund2 } from '@/data/djk-info'
 // richtet sich nach den Schaltungen: netto = round(jahresNetto × n ÷ 3) —
 // bewusst NICHT gerundeter Einzelpreis × n (290 ÷ 3 → 96,67 × 3 = 290,01).
 export async function POST(req: NextRequest) {
-  const verboten = await erfordereRolle(req, 'verwalten')
+  const verboten = await erfordereRolle(req, 'djk-info', 'verwalten')
   if (verboten) return verboten
 
   const body = await req.json().catch(() => ({}))

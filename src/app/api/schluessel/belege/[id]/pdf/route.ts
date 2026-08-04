@@ -1,11 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { leseDatei } from '@/lib/schluessel-dateien'
+import { erfordereRolle } from '@/lib/session'
 
 // Streamt die Beleg-PDF über die cuid-ID — bewusst OHNE Dateiendung in der
 // URL: der Middleware-Matcher lässt URLs mit Punkt ungeprüft durch
 // (siehe CLAUDE.md, gleiche Falle wie bei den Werbebanden-Uploads).
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const verboten = await erfordereRolle(req, 'schluessel', 'lesen')
+  if (verboten) return verboten
+
   const beleg = await prisma.schluesselBeleg.findUnique({
     where: { id: params.id },
     include: { person: { select: { name: true } } },

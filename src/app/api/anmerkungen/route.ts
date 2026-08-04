@@ -1,8 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { DEFAULT_EVENT_ID } from '@/data/veranstaltungen'
+import { erfordereRolle } from '@/lib/session'
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
+  const verboten = await erfordereRolle(req, 'veranstaltungen', 'lesen')
+  if (verboten) return verboten
+
   const { searchParams } = new URL(req.url)
   const eventId = searchParams.get('event') ?? DEFAULT_EVENT_ID
   const anmerkungen = await prisma.berichtAnmerkung.findMany({
@@ -12,7 +16,10 @@ export async function GET(req: Request) {
   return NextResponse.json(anmerkungen)
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const verboten = await erfordereRolle(req, 'veranstaltungen', 'lesen')
+  if (verboten) return verboten
+
   const body = await req.json()
   const name = (body.name ?? '').trim()
   const top = (body.top ?? '').trim()

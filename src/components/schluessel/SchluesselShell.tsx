@@ -2,31 +2,29 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-
-const TABS = [
-  { href: '/schluessel', label: 'Bestand', icon: '🔑' },
-  { href: '/schluessel/inhaber', label: 'Inhaber', icon: '👤' },
-  { href: '/schluessel/ausgabe', label: 'Ausgabe', icon: '✍️' },
-  { href: '/schluessel/schliessplan', label: 'Schließplan', icon: '🗝️' },
-  { href: '/schluessel/belege', label: 'Belege', icon: '🧾' },
-  { href: '/schluessel/einstellungen', label: '', icon: '⚙️' },
-]
+import type { BereichsRolle } from '@/lib/bereiche'
 
 export function SchluesselShell({
-  hatAppSession,
+  rolle,
   children,
 }: {
-  hatAppSession: boolean
+  rolle: BereichsRolle
   children: React.ReactNode
 }) {
   const pathname = usePathname()
 
-  // Login-Seite rendert sich als Vollbild-Overlay selbst
-  if (pathname === '/schluessel/login') return <>{children}</>
+  const TABS = [
+    { href: '/schluessel', label: 'Bestand', icon: '🔑' },
+    { href: '/schluessel/inhaber', label: 'Inhaber', icon: '👤' },
+    { href: '/schluessel/ausgabe', label: 'Ausgabe', icon: '✍️' },
+    { href: '/schluessel/schliessplan', label: 'Schließplan', icon: '🗝️' },
+    { href: '/schluessel/belege', label: 'Belege', icon: '🧾' },
+    ...(rolle === 'verwalten' ? [{ href: '/schluessel/einstellungen', label: '', icon: '⚙️' }] : []),
+  ]
 
   const handleLogout = async () => {
-    await fetch('/api/schluessel/auth/logout', { method: 'POST' })
-    window.location.href = '/schluessel/login'
+    await fetch('/api/auth/logout', { method: 'POST' })
+    window.location.href = '/login'
   }
 
   const tabAktiv = (href: string) =>
@@ -43,14 +41,12 @@ export function SchluesselShell({
             <h1 className="text-xl font-bold text-gray-900">🔑 Schlüsselverwaltung</h1>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {hatAppSession && (
-              <Link
-                href="/"
-                className="hidden sm:inline px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg border border-gray-200"
-              >
-                ← Zur Event-App
-              </Link>
-            )}
+            <Link
+              href="/"
+              className="hidden sm:inline px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg border border-gray-200"
+            >
+              ← Übersicht
+            </Link>
             <button
               onClick={handleLogout}
               className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg border border-gray-200"

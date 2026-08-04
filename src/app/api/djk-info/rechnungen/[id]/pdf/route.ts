@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { erzeugeInfoRechnungPdf } from '@/lib/info-rechnung-pdf'
+import { erfordereRolle } from '@/lib/session'
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const verboten = await erfordereRolle(req, 'djk-info', 'lesen')
+  if (verboten) return verboten
+
   const rechnung = await prisma.infoRechnung.findUnique({ where: { id: params.id } })
   if (!rechnung) return NextResponse.json({ error: 'Nicht gefunden' }, { status: 404 })
 
