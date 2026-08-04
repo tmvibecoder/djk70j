@@ -147,6 +147,17 @@ export function Navigation() {
               {!collapsed && <span className="truncate">Schlüssel</span>}
             </Link>
           </li>
+          <li>
+            <Link
+              href="/djk-info"
+              onClick={() => setMobileOpen(false)}
+              title={collapsed ? 'DJK Info' : undefined}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 text-gray-400 hover:bg-gray-800 hover:text-white ${collapsed ? 'justify-center' : ''}`}
+            >
+              <span className="text-lg shrink-0">📰</span>
+              {!collapsed && <span className="truncate">DJK Info</span>}
+            </Link>
+          </li>
         </ul>
       </nav>
 
@@ -186,7 +197,13 @@ export function Navigation() {
   )
 
   // Auf der Login-Seite und in Bereichen mit eigenem Layout keine Sidebar
-  if (pathname === '/login' || pathname.startsWith('/werbebanden') || pathname.startsWith('/schluessel')) return null
+  if (
+    pathname === '/login' ||
+    pathname.startsWith('/werbebanden') ||
+    pathname.startsWith('/schluessel') ||
+    pathname.startsWith('/djk-info')
+  )
+    return null
 
   return (
     <>

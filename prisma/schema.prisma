@@ -552,3 +552,197 @@ model SchluesselEinstellung {
   ausgeberName  String   @default("") // Vorbelegung „ausgegeben durch" auf Belegen
   updatedAt     DateTime @updatedAt
 }
+
+// ─── DJK Info Broschüre (dauerhafter Bereich /djk-info, unabhängig von Veranstaltungen) ───
+
+// Anzeigenkunde der Vereinszeitschrift
+model InfoKunde {
+  id                      String    @id @default(cuid())
+  firma                   String
+  zusatz                  String?   // Namenszusatz (aus der Excel-Spalte "Zusatz")
+  strasse                 String?
+  plz                     String?
+  ort                     String?
+  telefon                 String?
+  email                   String?
+  ansprechpartnerInhaber  String?   // Ansprechpartner DJK Info (Inhaber)
+  ansprechpartnerRechnung String?   // Ansprechpartner für die Rechnung
+  rechnungEmail           String?   // abweichende E-Mail für den Rechnungsversand
+  rechnungsversand        String    @default("post")        // "post" | "persoenlich" | "email"
+  broschuerenversand      String    @default("persoenlich") // "post" | "persoenlich" | "email"
+  anzeigenGroesse         String    @default("1/2") // Schlüssel in InfoPreis ("1/1".."1/4")
+  kuendigungZum           DateTime?
+  status                  String    @default("aktiv") // "aktiv" | "gekuendigt"
+  bemerkung               String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  schaltungen InfoSchaltung[]
+  rechnungen  InfoRechnung[]
+  dateien     InfoDatei[]
+
+  @@index([status])
+}
+
+// Pflegbare Preistabelle (Jahrespreis netto je Anzeigengröße; Preis/Anzeige = Jahrespreis ÷ 3)
+model InfoPreis {
+  id          String @id @default(cuid())
+  groesse     String @unique // "1/1" | "3/4" | "2/3" | "1/2" | "1/3" | "1/4"
+  bezeichnung String // z.B. "1 Seite (130 × 180 mm)"
+  jahresNetto Float
+  sortierung  Int    @default(0)
+}
+
+// Eine Ausgabe der Zeitschrift (3 pro Jahr)
+model InfoAusgabe {
+  id          String    @id @default(cuid())
+  jahr        Int
+  nummer      Int       // 1..3
+  bezeichnung String    @unique // z.B. "2026-1"
+  erscheinung DateTime?
+  status      String    @default("geplant") // "geplant" | "erschienen"
+  auflage     Int       @default(896)
+  druckKosten Float?    // eine Druckrechnung je Ausgabe ist der Regelfall
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  schaltungen InfoSchaltung[]
+  dateien     InfoDatei[]
+
+  @@unique([jahr, nummer])
+}
+
+// Anzeige eines Kunden in einer Ausgabe (von Redakteuren gepflegt) —
+// Grundlage der anteiligen Jahresabrechnung
+model InfoSchaltung {
+  id        String      @id @default(cuid())
+  kundeId   String
+  kunde     InfoKunde   @relation(fields: [kundeId], references: [id], onDelete: Cascade)
+  ausgabeId String
+  ausgabe   InfoAusgabe @relation(fields: [ausgabeId], references: [id], onDelete: Cascade)
+  groesse   String?     // optionaler Override, sonst gilt InfoKunde.anzeigenGroesse
+  createdAt DateTime    @default(now())
+
+  @@unique([kundeId, ausgabeId])
+  @@index([ausgabeId])
+}
+
+// Jahresrechnung — Snapshot der Kundendaten zum Rechnungszeitpunkt,
+// nachträglich frei editierbar (gleiches Muster wie WerbebandenRechnung)
+model InfoRechnung {
+  id               String     @id @default(cuid())
+  kundeId          String?
+  kunde            InfoKunde? @relation(fields: [kundeId], references: [id], onDelete: SetNull)
+  leistungsjahr    Int        // abgerechnetes Jahr (Schaltungen)
+  jahr             Int        // Nummernkreis-Jahr
+  laufnummer       Int        // 1, 2, … (je Jahr fortlaufend, Kreis "I")
+  nummer           String     @unique // z.B. "2026/I/0001"
+  datum            DateTime   @default(now())
+  firma            String
+  zusatz           String?
+  ansprechpartner  String?
+  strasse          String?
+  plz              String?
+  ort              String?
+  anzeigenGroesse  String     @default("")
+  jahresNetto      Float      @default(0) // Jahrespreis netto lt. Preisliste zum Zeitpunkt des Laufs
+  anzahlAusgaben   Int        @default(3) // geschaltete Ausgaben (n von 3)
+  ausgabenListe    String     @default("") // z.B. "2026-1, 2026-2"
+  netto            Float      @default(0) // round(jahresNetto × n ÷ 3, 2)
+  mwstSatz         Float      @default(19)
+  mwst             Float      @default(0)
+  brutto           Float      @default(0)
+  zahlungszielTage Int        @default(14)
+  status           String     @default("erstellt") // "erstellt" | "versendet" | "bezahlt"
+  bemerkung        String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  @@unique([jahr, laufnummer])
+  @@index([leistungsjahr])
+  @@index([kundeId])
+}
+
+// Hochgeladene Dateien — je Kunde (Vertrag, Kündigung, Anzeigenbild)
+// oder je Ausgabe (Druckrechnung, Heft-PDF)
+model InfoDatei {
+  id        String       @id @default(cuid())
+  kundeId   String?
+  kunde     InfoKunde?   @relation(fields: [kundeId], references: [id], onDelete: Cascade)
+  ausgabeId String?
+  ausgabe   InfoAusgabe? @relation(fields: [ausgabeId], references: [id], onDelete: Cascade)
+  art       String       // Kunde: "vertrag" | "kuendigung" | "anzeige" — Ausgabe: "druckrechnung" | "heft"
+  dateiname String       // Original-Dateiname
+  pfad      String       // Pfad relativ zu uploads/djk-info/
+  mimeType  String
+  groesse   Int          // Bytes
+  createdAt DateTime     @default(now())
+
+  @@index([kundeId])
+  @@index([ausgabeId])
+}
+
+// Verteilbereich: Ottenhofener Austragegebiet, Ortsteil, Auslagestelle oder Postversand
+model InfoVerteilgebiet {
+  id           String   @id @default(cuid())
+  name         String
+  kategorie    String   @default("gebiet") // "gebiet" | "ortsteil" | "auslage" | "postversand"
+  beschreibung String?  // z.B. "Ehrenmitglieder u.a. · z.B. Adolf Fischer"
+  hefte        Int      @default(0) // editierbar; wird NICHT aus den Straßen erzwungen
+  sortierung   Int      @default(0)
+  updatedAt    DateTime @updatedAt
+
+  strassen InfoStrasse[]
+}
+
+// Straße innerhalb eines Ottenhofener Austragegebiets (Heftzahl editierbar)
+model InfoStrasse {
+  id         String            @id @default(cuid())
+  gebietId   String
+  gebiet     InfoVerteilgebiet @relation(fields: [gebietId], references: [id], onDelete: Cascade)
+  name       String
+  hefte      Int               @default(0)
+  sortierung Int               @default(0)
+
+  @@index([gebietId])
+}
+
+// Verteilerliste: wer trägt was aus (Person "" = noch offen)
+model InfoVerteiler {
+  id             String   @id @default(cuid())
+  person         String   @default("")
+  zustaendigkeit String
+  stueckzahl     Int      @default(0)
+  verguetung     String   @default("kostenlos") // "kostenlos" | "verguetet"
+  betrag         Float?   // nur bei verguetung = "verguetet"
+  sortierung     Int      @default(0)
+  updatedAt      DateTime @updatedAt
+}
+
+// DJK-Info-Stammdaten + die drei Rollen-Passwörter (Singleton, id "djk-info")
+model InfoEinstellung {
+  id                       String   @id @default("djk-info")
+  vereinsname              String   @default("DJK SG Ottenhofen e.V.")
+  kassierName              String   @default("")
+  absenderzeile            String   @default("")
+  bankName                 String   @default("")
+  iban                     String   @default("")
+  bic                      String   @default("")
+  zahlungszielTage         Int      @default(14)
+  mwstSatz                 Float    @default(19)
+  ausgabenProJahr          Int      @default(3)
+  druckereiName            String   @default("")
+  druckereiAnsprechpartner String   @default("")
+  druckereiTelefon         String   @default("")
+  druckereiEmail           String   @default("")
+  // Briefkopf/Fußzeile der Rechnungs-PDF (wie WerbebandenEinstellung)
+  kopfKontaktblock         String   @default("")
+  fusszeileSpalte1         String   @default("")
+  fusszeileSpalte2         String   @default("")
+  fusszeileSpalte3         String   @default("")
+  // bcrypt-Hashes der Rollen-Passwörter (Login-Dropdown)
+  passwordHashKassier      String   @default("")
+  passwordHashRedakteur    String   @default("")
+  passwordHashLeser        String   @default("")
+  updatedAt                DateTime @updatedAt
+}

@@ -32,6 +32,8 @@ jobs:
             npx tsx prisma/seed-werbebanden.ts
             # Schlüssel-Grundgerüst (idempotent: Typen nur beim ersten Mal)
             npx tsx prisma/seed-schluessel.ts
+            # DJK-Info-Startdaten (idempotent: Kunden/Verteilung nur beim ersten Mal)
+            npx tsx prisma/seed-djk-info.ts
             npm run build
             pm2 restart djk-ottenhofen-event || pm2 restart all
             pm2 save
