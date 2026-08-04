@@ -10,6 +10,7 @@
     "db:seed": "npx tsx prisma/seed.ts",
     "db:seed:sommerfest-2027": "npx tsx prisma/seed-sommerfest-2027.ts",
     "db:seed:werbebanden": "npx tsx prisma/seed-werbebanden.ts",
+    "db:seed:djk-info": "npx tsx prisma/seed-djk-info.ts",
     "db:reset": "npx prisma db push --force-reset && npm run db:seed"
   },
   "dependencies": {

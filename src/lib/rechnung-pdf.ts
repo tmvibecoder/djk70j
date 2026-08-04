@@ -1,15 +1,15 @@
 // PDF-Erzeugung für Werbebanden-Jahresrechnungen mit pdf-lib.
-// Layout nach der offiziellen Briefvorlage (DJK_Vorlage_Brief.docx):
-// Vereinswappen links oben, DJK-Verbandslogo rechts oben, Kassier-Kontaktblock
-// rechts, Absenderzeile + Adressfeld (DIN-Fensterposition), Leistungstabelle,
-// Netto/MwSt/Brutto, dreispaltige Fußzeile (Anschrift | Register/Vorstand |
-// Bankverbindungen). Kopfblock und Fußzeilen-Spalten kommen editierbar aus den
-// Einstellungen; die Logos aus src/lib/rechnung-assets.ts.
-// pdf-lib statt headless Chrome: reines JS, kein zusätzlicher Prozess auf
-// dem Server; Helvetica (WinAnsi) deckt Umlaute, ß und € ab.
+// Briefkopf, Absenderzeile und Fußzeile kommen aus den gemeinsamen
+// Primitiven in src/lib/pdf-brief.ts (Layout der offiziellen Briefvorlage);
+// Kopfblock und Fußzeilen-Spalten sind editierbar über die Einstellungen.
 
-import { PDFDocument, PDFFont, StandardFonts, rgb } from 'pdf-lib'
-import { WAPPEN_JPEG_BASE64, VERBAND_JPEG_BASE64 } from './rechnung-assets'
+import { PDFDocument } from 'pdf-lib'
+import {
+  A4, LINKS, RECHTS, GRAU, SCHWARZ,
+  euro, zahlDe, ladeBriefFonts, textZeichner, zeilenUmbruch,
+  zeichneBriefkopf, zeichneAbsenderzeile, zeichneFusszeile,
+  BriefEinstellungen,
+} from './pdf-brief'
 
 export interface RechnungFuerPdf {
   nummer: string
@@ -29,53 +29,7 @@ export interface RechnungFuerPdf {
   zahlungszielTage: number
 }
 
-export interface EinstellungenFuerPdf {
-  vereinsname: string
-  kassierName: string
-  absenderzeile: string
-  bankName: string
-  iban: string
-  bic: string
-  kopfKontaktblock: string
-  fusszeileSpalte1: string
-  fusszeileSpalte2: string
-  fusszeileSpalte3: string
-}
-
-const A4 = { breite: 595.28, hoehe: 841.89 }
-const LINKS = 71
-const RECHTS = A4.breite - 71
-const SCHWARZ = rgb(0, 0, 0)
-const GRAU = rgb(0.35, 0.35, 0.35)
-
-function euro(n: number): string {
-  return `${n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
-}
-
-function meter(n: number): string {
-  return n.toLocaleString('de-DE', { maximumFractionDigits: 2 })
-}
-
-function zeilen(text: string): string[] {
-  return text.split('\n').map(z => z.trim()).filter(Boolean)
-}
-
-function zeilenUmbruch(text: string, font: PDFFont, groesse: number, maxBreite: number): string[] {
-  const woerter = text.split(' ')
-  const ergebnis: string[] = []
-  let aktuelle = ''
-  for (const wort of woerter) {
-    const test = aktuelle ? `${aktuelle} ${wort}` : wort
-    if (font.widthOfTextAtSize(test, groesse) > maxBreite && aktuelle) {
-      ergebnis.push(aktuelle)
-      aktuelle = wort
-    } else {
-      aktuelle = test
-    }
-  }
-  if (aktuelle) ergebnis.push(aktuelle)
-  return ergebnis
-}
+export type EinstellungenFuerPdf = BriefEinstellungen
 
 export async function erzeugeRechnungPdf(
   rechnung: RechnungFuerPdf,
@@ -83,49 +37,15 @@ export async function erzeugeRechnungPdf(
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create()
   const seite = doc.addPage([A4.breite, A4.hoehe])
-  const font = await doc.embedFont(StandardFonts.Helvetica)
-  const fontFett = await doc.embedFont(StandardFonts.HelveticaBold)
+  const fonts = await ladeBriefFonts(doc)
+  const { font } = fonts
+  const { text, textRechts } = textZeichner(seite, fonts)
 
-  const text = (t: string, x: number, y: number, groesse = 11, fett = false, farbe = SCHWARZ) => {
-    seite.drawText(t, { x, y, size: groesse, font: fett ? fontFett : font, color: farbe })
-  }
-  const textRechts = (t: string, xRechts: number, y: number, groesse = 11, fett = false, farbe = SCHWARZ) => {
-    const f = fett ? fontFett : font
-    seite.drawText(t, { x: xRechts - f.widthOfTextAtSize(t, groesse), y, size: groesse, font: f, color: farbe })
-  }
-
-  // ── Briefkopf: Wappen links, Verbandslogo rechts, Vereinsname mittig ──
-  const kopfOben = A4.hoehe - 45
-  const wappen = await doc.embedJpg(WAPPEN_JPEG_BASE64)
-  seite.drawImage(wappen, { x: LINKS, y: kopfOben - 58, width: 54, height: 58 })
-  const verband = await doc.embedJpg(VERBAND_JPEG_BASE64)
-  seite.drawImage(verband, { x: RECHTS - 60, y: kopfOben - 47, width: 60, height: 47 })
-
-  const titel = einstellungen.vereinsname || 'DJK SG Ottenhofen e.V.'
-  const titelBreite = fontFett.widthOfTextAtSize(titel, 16)
-  text(titel, (A4.breite - titelBreite) / 2, kopfOben - 34, 16, true)
-
-  // Kontaktblock (Kassier) rechtsbündig unter dem Verbandslogo
-  let yKontakt = kopfOben - 47 - 16
-  for (const zeile of zeilen(einstellungen.kopfKontaktblock)) {
-    textRechts(zeile, RECHTS, yKontakt, 8.5, false, GRAU)
-    yKontakt -= 11
-  }
-
-  // ── Absenderzeile (klein, über dem Adressfeld — DIN-Fensterposition) ──
-  let y = A4.hoehe - 168
-  if (einstellungen.absenderzeile) {
-    text(einstellungen.absenderzeile, LINKS, y, 8, false, GRAU)
-    seite.drawLine({
-      start: { x: LINKS, y: y - 3 },
-      end: { x: LINKS + font.widthOfTextAtSize(einstellungen.absenderzeile, 8), y: y - 3 },
-      thickness: 0.5,
-      color: GRAU,
-    })
-  }
+  await zeichneBriefkopf(doc, seite, fonts, einstellungen)
+  zeichneAbsenderzeile(seite, fonts, einstellungen.absenderzeile)
 
   // Adressfeld
-  y -= 22
+  let y = A4.hoehe - 168 - 22
   const adresse = [
     rechnung.firma,
     rechnung.ansprechpartner || null,
@@ -173,7 +93,7 @@ export async function erzeugeRechnungPdf(
   seite.drawLine({ start: { x: LINKS, y }, end: { x: RECHTS, y }, thickness: 0.75, color: SCHWARZ })
 
   y -= 18
-  text(meter(rechnung.laenge), spalteMeter, y)
+  text(zahlDe(rechnung.laenge), spalteMeter, y)
   text('Bandenwerbung Sportplatz Ottenhofen', spalteBezeichnung, y)
   textRechts(euro(rechnung.preisProMeter), spaltePreisRechts, y)
   textRechts(euro(rechnung.netto), spalteGesamtRechts, y)
@@ -188,7 +108,7 @@ export async function erzeugeRechnungPdf(
   text('Summe Netto', spalteBezeichnung, y)
   textRechts(euro(rechnung.netto), spalteGesamtRechts, y)
   y -= 16
-  text(`${meter(rechnung.mwstSatz)} % MwSt.`, spalteBezeichnung, y)
+  text(`${zahlDe(rechnung.mwstSatz)} % MwSt.`, spalteBezeichnung, y)
   textRechts(euro(rechnung.mwst), spalteGesamtRechts, y)
   y -= 6
   seite.drawLine({ start: { x: spalteBezeichnung, y }, end: { x: RECHTS, y }, thickness: 0.5, color: SCHWARZ })
@@ -198,7 +118,7 @@ export async function erzeugeRechnungPdf(
 
   // Zahlungshinweis
   y -= 34
-  const hatFusszeilenBank = zeilen(einstellungen.fusszeileSpalte3).length > 0
+  const hatFusszeilenBank = einstellungen.fusszeileSpalte3.split('\n').some(z => z.trim())
   const bankHinweis = hatFusszeilenBank
     ? 'an eine der untenstehenden Bankverbindungen'
     : 'an die Bankverbindung des Vereins'
@@ -222,35 +142,7 @@ export async function erzeugeRechnungPdf(
     text('Kassier', LINKS, y)
   }
 
-  // ── Fußzeile: drei Spalten (Anschrift | Register/Vorstand | Banken) ──
-  const spalten = [
-    zeilen(einstellungen.fusszeileSpalte1),
-    zeilen(einstellungen.fusszeileSpalte2),
-    zeilen(einstellungen.fusszeileSpalte3),
-  ]
-  if (spalten.some(s => s.length > 0)) {
-    const fussOben = 108
-    seite.drawLine({ start: { x: LINKS, y: fussOben }, end: { x: RECHTS, y: fussOben }, thickness: 0.5, color: GRAU })
-    const spaltenX = [LINKS, LINKS + 175, LINKS + 298]
-    spalten.forEach((spalte, i) => {
-      let yFuss = fussOben - 12
-      for (const zeile of spalte) {
-        text(zeile, spaltenX[i], yFuss, 7.5, false, GRAU)
-        yFuss -= 10
-      }
-    })
-  } else if (einstellungen.iban) {
-    // Übergangsweise: alte Ein-Bank-Fußzeile, falls die Spalten leer sind
-    const teile = [
-      einstellungen.bankName || null,
-      `IBAN: ${einstellungen.iban}`,
-      einstellungen.bic ? `BIC: ${einstellungen.bic}` : null,
-    ].filter(Boolean)
-    const fusszeile = teile.join('  ·  ')
-    seite.drawLine({ start: { x: LINKS, y: 78 }, end: { x: RECHTS, y: 78 }, thickness: 0.5, color: GRAU })
-    const breite = font.widthOfTextAtSize(fusszeile, 9)
-    text(fusszeile, (A4.breite - breite) / 2, 64, 9, false, GRAU)
-  }
+  zeichneFusszeile(seite, fonts, einstellungen)
 
   return doc.save()
 }
