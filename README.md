@@ -6,6 +6,8 @@ Next.js 14 + Prisma/SQLite, passwortgeschützt.
 
 - **Live:** https://djk-ottenhofen-event.de
 - **Veranstaltungen:** 70 Jahre Jubiläum 2026 (abgeschlossen), DJK Sommerfest 2027 (geplant)
+- **Dauerhafte Bereiche** (eigene Passwort-Logins): `/werbebanden` (Bandenwerbung)
+  und `/schluessel` (Schlüsselverwaltung mit Finger-Signatur + PDF-Belegen)
 - **Neue Veranstaltung anlegen:** siehe [`ANLEITUNG-NEUE-VERANSTALTUNG.md`](./ANLEITUNG-NEUE-VERANSTALTUNG.md)
 
 > **📖 Die vollständige Projekt-Doku steht in [`CLAUDE.md`](./CLAUDE.md)** — Architektur, Datenmodell,

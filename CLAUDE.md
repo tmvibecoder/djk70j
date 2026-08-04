@@ -17,9 +17,11 @@ URLs und Daten-Scoping folgen automatisch. **Kein Copy-Paste von Seitencode.**
 - Veranstaltungen aktuell: `jubilaeum-2026` (abgeschlossen, inkl. Abschlussbericht),
   `sommerfest-2027` (geplant)
 
-Daneben gibt es den **dauerhaften Bereich `/werbebanden`** (Bandenwerbung am
-Sportplatz) mit **eigenem Nur-Passwort-Login**, unabhängig von den
-Veranstaltungen — siehe Abschnitt „Werbebanden-Bereich".
+Daneben gibt es zwei **dauerhafte Bereiche** mit jeweils **eigenem
+Nur-Passwort-Login**, unabhängig von den Veranstaltungen:
+`/werbebanden` (Bandenwerbung am Sportplatz, live seit 03.08.2026) und
+`/schluessel` (Schlüsselverwaltung, live seit 04.08.2026) — siehe die
+Abschnitte „Werbebanden-Bereich" und „Schlüssel-Bereich".
 
 ## Tech-Stack
 
@@ -173,8 +175,12 @@ Matcher-Falle wie bei den Banden-Uploads).
 NUR das neutrale Grundgerüst an (GHS/GS1–GS6 ohne Gruppenbezeichnungen,
 Transponder-Typ, Start-Passwort). Inhaber, Schließmatrix, Schloss-/
 Transponder-Nummern werden in der App gepflegt oder einmalig über ein
-privates, NICHT eingechecktes Skript importiert. Keine echten Anlagen- oder
-Personendaten in Commits!
+**privates, NICHT eingechecktes Importskript** eingespielt (liegt fertig
+lokal bei Thomas, `~/Claude/Projects/djk70j-schluessel-echtdaten/`:
+Extraktion aus den Original-Excel/PDF-Quellen + idempotenter Import mit
+Leer-Bestand-Guard; zum Einspielen werden Skript + JSON untracked in den
+App-Ordner kopiert, per `npx tsx` ausgeführt und wieder gelöscht — kein
+pm2-Restart nötig). Keine echten Anlagen- oder Personendaten in Commits!
 
 ## Datenmodell (`prisma/schema.prisma`)
 
@@ -309,3 +315,15 @@ Sommerfest-2027-Seed (beide idempotent), `npm run build`, `pm2 restart`.
   über die cuid-ID ohne Endung.
 - **`uploads/` liegt nur auf dem Server** (gitignored, wie `dev.db`) — bei
   Server-Umzügen mitsichern.
+- **Frische Worktrees/Checkouts brauchen lokales Setup:** `.env`, `dev.db`
+  und `node_modules` sind gitignored — vor Build/Tests `npm install`,
+  `.env` anlegen, `npx prisma db push` + Seeds (sonst z.B. „Module not
+  found: pdf-lib" oder leere Login-Tabellen).
+- **UI-Verifikation der Bereichs-Logins mit headless Chrome:** Cookie
+  beschaffen über eine temporäre Login-Hilfsseite in `public/`
+  (fetch auf die Login-API, gleicher Origin) + `--user-data-dir`-Profil,
+  danach Seiten screenshotten; Hilfsseite vor dem Commit löschen. Dabei:
+  `next start` liefert **nach dem Build** angelegte `public/`-Dateien
+  NICHT aus (erst neu bauen), und gegen `next dev` hängt headless Chrome
+  (HMR-WebSocket hält `--virtual-time-budget` offen) — Screenshots daher
+  immer gegen den Prod-Server.
