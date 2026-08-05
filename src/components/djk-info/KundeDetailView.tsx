@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { Badge, Button, Card, CardContent, CardHeader, Input, Select } from '@/components/ui'
+import { Badge, Button, Card, CardContent, CardHeader, Input, Select, gruppenRahmen, gruppenTitel } from '@/components/ui'
 import {
   BROSCHUERENVERSAND_OPTIONEN,
   KUNDE_STATUS_OPTIONEN,
@@ -147,70 +147,92 @@ export function KundeDetailView({ kundeId }: { kundeId: string }) {
         </CardHeader>
         <CardContent>
           <fieldset disabled={!darfVerwalten} className="space-y-5 disabled:opacity-90">
-            {/* Stammdaten */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Input label="Firma *" value={form.firma} onChange={set('firma')} />
-              <Input label="Zusatz" value={form.zusatz} onChange={set('zusatz')} />
-              <Input label="Ansprechpartner DJK Info (Inhaber)" value={form.ansprechpartnerInhaber} onChange={set('ansprechpartnerInhaber')} />
-              <Input label="Telefon" value={form.telefon} onChange={set('telefon')} />
-              <div className="sm:col-span-2">
-                <Input label="Straße" value={form.strasse} onChange={set('strasse')} />
+            {/* Feldgruppen wie im Partner-Formular der Bandenwerbung: Farbe = Art der
+                Angabe (siehe components/ui/feldgruppe.ts). */}
+            <div className="space-y-3">
+            <div className={gruppenRahmen.stammdaten}>
+              <p className={gruppenTitel.stammdaten}>Firma &amp; Anschrift</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
+                  <Input label="Firma *" value={form.firma} onChange={set('firma')} />
+                </div>
+                <Input label="Zusatz" value={form.zusatz} onChange={set('zusatz')} />
+                <div className="sm:col-span-3">
+                  <Input label="Straße" value={form.strasse} onChange={set('strasse')} />
+                </div>
+                <Input label="PLZ" value={form.plz} onChange={set('plz')} />
+                <div className="sm:col-span-2">
+                  <Input label="Ort" value={form.ort} onChange={set('ort')} />
+                </div>
               </div>
-              <Input label="PLZ" value={form.plz} onChange={set('plz')} />
-              <Input label="Ort" value={form.ort} onChange={set('ort')} />
-              <Input label="E-Mail" type="email" value={form.email} onChange={set('email')} />
             </div>
 
-            {/* Rechnung & Broschüre */}
-            <div className="border-t border-gray-100 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Input label="Ansprechpartner Rechnung" value={form.ansprechpartnerRechnung} onChange={set('ansprechpartnerRechnung')} />
-              <Input label="E-Mail für Rechnungen (falls abweichend)" type="email" value={form.rechnungEmail} onChange={set('rechnungEmail')} />
-              <Select
-                label="Rechnungsversand"
-                value={form.rechnungsversand}
-                onChange={set('rechnungsversand')}
-                options={RECHNUNGSVERSAND_OPTIONEN}
-              />
-              <Select
-                label="Broschüren-Verteilung an den Kunden"
-                value={form.broschuerenversand}
-                onChange={set('broschuerenversand')}
-                options={BROSCHUERENVERSAND_OPTIONEN}
-              />
+            <div className={gruppenRahmen.kontakt}>
+              <p className={gruppenTitel.kontakt}>Ansprechpartner</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Input label="Ansprechpartner DJK Info (Inhaber)" value={form.ansprechpartnerInhaber} onChange={set('ansprechpartnerInhaber')} />
+                <Input label="Telefon" value={form.telefon} onChange={set('telefon')} />
+                <Input label="E-Mail" type="email" value={form.email} onChange={set('email')} />
+              </div>
             </div>
 
-            {/* Anzeige & Abrechnung */}
-            <div className="border-t border-gray-100 pt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="sm:col-span-2">
+            <div className={gruppenRahmen.geld}>
+              <p className={gruppenTitel.geld}>Rechnung &amp; Broschüre</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Input label="Ansprechpartner Rechnung" value={form.ansprechpartnerRechnung} onChange={set('ansprechpartnerRechnung')} />
+                <Input label="E-Mail für Rechnungen (falls abweichend)" type="email" value={form.rechnungEmail} onChange={set('rechnungEmail')} />
                 <Select
-                  label="Anzeigengröße"
-                  value={form.anzeigenGroesse}
-                  onChange={set('anzeigenGroesse')}
-                  options={preise.map(p => ({
-                    value: p.groesse,
-                    label: `${p.bezeichnung} — ${formatEuro(p.jahresNetto)} netto/Jahr`,
-                  }))}
+                  label="Rechnungsversand"
+                  value={form.rechnungsversand}
+                  onChange={set('rechnungsversand')}
+                  options={RECHNUNGSVERSAND_OPTIONEN}
                 />
-              </div>
-              <div className="flex flex-col justify-end pb-2">
-                <p className="text-sm font-medium text-gray-700 mb-1">Netto/Jahr lt. Preisliste</p>
-                <p className="text-sm font-bold text-gray-900">{preis ? formatEuro(preis.jahresNetto) : '—'}</p>
+                <Select
+                  label="Broschüren-Verteilung an den Kunden"
+                  value={form.broschuerenversand}
+                  onChange={set('broschuerenversand')}
+                  options={BROSCHUERENVERSAND_OPTIONEN}
+                />
               </div>
             </div>
 
-            {/* Status & Kündigung */}
-            <div className="border-t border-gray-100 pt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Select label="Status" value={form.status} onChange={set('status')} options={KUNDE_STATUS_OPTIONEN} />
-              <Input label="Kündigung zum" type="date" value={form.kuendigungZum} onChange={set('kuendigungZum')} />
-              <div className="sm:col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Bemerkung</label>
-                <textarea
-                  value={form.bemerkung}
-                  onChange={set('bemerkung')}
-                  rows={2}
-                  className="bg-gray-50 w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+            <div className={gruppenRahmen.leistung}>
+              <p className={gruppenTitel.leistung}>Anzeige &amp; Abrechnung</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
+                  <Select
+                    label="Anzeigengröße"
+                    value={form.anzeigenGroesse}
+                    onChange={set('anzeigenGroesse')}
+                    options={preise.map(p => ({
+                      value: p.groesse,
+                      label: `${p.bezeichnung} — ${formatEuro(p.jahresNetto)} netto/Jahr`,
+                    }))}
+                  />
+                </div>
+                <div className="flex flex-col justify-end pb-2">
+                  <p className="text-sm font-medium text-gray-700 mb-1">Netto/Jahr lt. Preisliste</p>
+                  <p className="text-sm font-bold text-gray-900">{preis ? formatEuro(preis.jahresNetto) : '—'}</p>
+                </div>
               </div>
+            </div>
+
+            <div className={gruppenRahmen.status}>
+              <p className={gruppenTitel.status}>Status &amp; Kündigung</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Select label="Status" value={form.status} onChange={set('status')} options={KUNDE_STATUS_OPTIONEN} />
+                <Input label="Kündigung zum" type="date" value={form.kuendigungZum} onChange={set('kuendigungZum')} />
+                <div className="sm:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Bemerkung</label>
+                  <textarea
+                    value={form.bemerkung}
+                    onChange={set('bemerkung')}
+                    rows={2}
+                    className="bg-gray-50 w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
             </div>
 
             {meldung && (

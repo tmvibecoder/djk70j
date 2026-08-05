@@ -1,5 +1,7 @@
 'use client'
 
+import { gruppenRahmen, gruppenTitel } from '@/components/ui'
+
 // Ausgabe-Flow (Variante 2): 1 Empfänger wählen/anlegen → 2 Schlüssel &
 // Pfand → 3 Finger-Signatur → Beleg wird gebucht, signiert und als PDF
 // mit SHA-256-Prüfsumme erzeugt. ABUS-/Schrank-Typen als Checkbox („n frei"),
@@ -167,7 +169,10 @@ export function AusgabeFlowView() {
     <div className="grid sm:grid-cols-2 gap-4">
       <div>
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-4">
-          <div className="text-xs font-semibold text-gray-500 uppercase mb-2">1 · Empfänger</div>
+          {/* Farbe = Art der Angabe (components/ui/feldgruppe.ts). Bernstein bleibt hier
+              frei: es markiert im Schlüsselbereich die ausgewählten Schlüssel. */}
+          <div className={gruppenRahmen.stammdaten}>
+            <p className={gruppenTitel.stammdaten}>1 · Empfänger</p>
           <select
             value={neuPerson ? '__neu' : personId}
             onChange={e => {
@@ -200,8 +205,10 @@ export function AusgabeFlowView() {
               onAbbrechen={() => setNeuPerson(false)}
             />
           )}
+          </div>
 
-          <div className="text-xs font-semibold text-gray-500 uppercase mb-2 mt-4">2 · Schlüssel &amp; Pfand</div>
+          <div className={`${gruppenRahmen.kontakt} mt-3`}>
+            <p className={gruppenTitel.kontakt}>2 · Schlüssel &amp; Pfand</p>
           {verfuegbar.length === 0 && (
             <p className="text-sm text-gray-400">
               Keine freien Schlüssel im Bestand — zuerst im Tab „Bestand&quot; Exemplare anlegen.
@@ -268,13 +275,15 @@ export function AusgabeFlowView() {
               <span className="ml-1 text-gray-500">€</span>
             </div>
           </div>
+          </div>
         </div>
       </div>
 
       <div>
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-          <div className="text-xs font-semibold text-gray-500 uppercase mb-2">3 · Unterschrift Empfänger</div>
-          <SignaturPad ref={pad} />
+          <div className={gruppenRahmen.leistung}>
+            <p className={gruppenTitel.leistung}>3 · Unterschrift Empfänger</p>
+            <SignaturPad ref={pad} />
           {fehler && (
             <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg px-3 py-2 mt-3">
               {fehler}
@@ -295,6 +304,7 @@ export function AusgabeFlowView() {
             >
               {laeuft ? 'Signiere…' : 'Signieren & PDF erzeugen'}
             </button>
+          </div>
           </div>
           <p className="text-[11px] text-gray-400 mt-3">
             Mit der Unterschrift wird die Empfangsbestätigung erzeugt, mit einer SHA-256-Prüfsumme
