@@ -185,13 +185,13 @@ export function SchliessplanView() {
               value={neuTuer}
               onChange={e => setNeuTuer(e.target.value)}
               placeholder="Neue Tür (z.B. Heimkabine)"
-              className="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+              className="bg-gray-50 flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
             />
             <input
               value={neuNummer}
               onChange={e => setNeuNummer(e.target.value)}
               placeholder="Einzelschl.-Nr."
-              className="w-32 rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+              className="bg-gray-50 w-32 rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
             />
             <button
               onClick={tuerAnlegen}

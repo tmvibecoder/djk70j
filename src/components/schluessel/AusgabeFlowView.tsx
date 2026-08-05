@@ -178,7 +178,7 @@ export function AusgabeFlowView() {
                 setPersonId(e.target.value)
               }
             }}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mb-2"
+            className="bg-gray-50 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mb-2"
           >
             <option value="">— Person wählen —</option>
             {personen.map(p => (
@@ -243,7 +243,7 @@ export function AusgabeFlowView() {
                           return neu
                         })
                       }
-                      className="mt-1 ml-6 rounded-lg border border-gray-300 px-2 py-1 text-xs"
+                      className="bg-gray-50 mt-1 ml-6 rounded-lg border border-gray-300 px-2 py-1 text-xs"
                     >
                       {typ.freie.map(e => (
                         <option key={e.id} value={e.id}>
@@ -263,7 +263,7 @@ export function AusgabeFlowView() {
                 value={pfand}
                 onChange={e => setPfand(e.target.value)}
                 inputMode="decimal"
-                className="w-24 text-right rounded-lg border border-gray-300 px-2 py-1 text-sm"
+                className="bg-gray-50 w-24 text-right rounded-lg border border-gray-300 px-2 py-1 text-sm"
               />
               <span className="ml-1 text-gray-500">€</span>
             </div>

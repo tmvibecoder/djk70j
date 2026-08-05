@@ -82,12 +82,12 @@ export function InhaberListeView() {
           value={suche}
           onChange={e => setSuche(e.target.value)}
           placeholder="🔍 Name suchen…"
-          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white"
+          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50"
         />
         <select
           value={bereich}
           onChange={e => setBereich(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white"
+          className="rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50"
         >
           <option value="">Alle Bereiche</option>
           {bereiche.map(b => (
@@ -225,7 +225,7 @@ export function NeuPersonFormular({
       value={daten[k]}
       onChange={e => setDaten({ ...daten, [k]: e.target.value })}
       placeholder={placeholder}
-      className={`rounded-lg border border-gray-300 px-3 py-1.5 text-sm ${breit ? 'sm:col-span-2' : ''}`}
+      className={`bg-gray-50 rounded-lg border border-gray-300 px-3 py-1.5 text-sm ${breit ? 'sm:col-span-2' : ''}`}
     />
   )
   return (

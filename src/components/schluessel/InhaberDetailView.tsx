@@ -207,7 +207,7 @@ function PersonBearbeiten({ person, onFertig }: { person: Person; onFertig: () =
       <input
         value={daten[k]}
         onChange={e => setDaten({ ...daten, [k]: e.target.value })}
-        className="mt-0.5 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+        className="bg-gray-50 mt-0.5 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
       />
     </label>
   )
@@ -351,7 +351,7 @@ function RueckgabeFlow({
             value={pfand}
             onChange={e => setPfand(e.target.value)}
             inputMode="decimal"
-            className="w-24 text-right rounded-lg border border-gray-300 px-2 py-1 text-sm"
+            className="bg-gray-50 w-24 text-right rounded-lg border border-gray-300 px-2 py-1 text-sm"
           />
           <span className="ml-1 text-gray-500">€</span>
         </div>

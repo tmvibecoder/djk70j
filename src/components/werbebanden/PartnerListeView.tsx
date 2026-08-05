@@ -61,7 +61,7 @@ export function PartnerListeView() {
           placeholder="Suchen (Firma, Name, Ort)…"
           value={suche}
           onChange={e => setSuche(e.target.value)}
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         />
         <Link
           href="/werbebanden/partner/neu"

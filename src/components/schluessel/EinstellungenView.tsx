@@ -89,7 +89,7 @@ export function EinstellungenView() {
               value={standardPfand}
               onChange={e => setStandardPfand(e.target.value)}
               inputMode="decimal"
-              className="mt-0.5 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+              className="bg-gray-50 mt-0.5 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
             />
           </label>
           <label className="block mb-2">
@@ -99,7 +99,7 @@ export function EinstellungenView() {
             <input
               value={ausgeberName}
               onChange={e => setAusgeberName(e.target.value)}
-              className="mt-0.5 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+              className="bg-gray-50 mt-0.5 w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
             />
           </label>
           {meldung && <p className="text-xs text-emerald-700 mb-2">{meldung}</p>}
@@ -126,13 +126,13 @@ export function EinstellungenView() {
             onChange={e => setBuchungBetrag(e.target.value)}
             placeholder="± Betrag"
             inputMode="decimal"
-            className="w-24 rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-right"
+            className="bg-gray-50 w-24 rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-right"
           />
           <input
             value={buchungNotiz}
             onChange={e => setBuchungNotiz(e.target.value)}
             placeholder="Notiz (z.B. Entnahme Kasse)"
-            className="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+            className="bg-gray-50 flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
           />
           <button
             onClick={buchen}

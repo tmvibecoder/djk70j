@@ -322,7 +322,7 @@ function GebietAufklappbar({
                   onChange={e => setNeueStrasse(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') strasseAnlegen() }}
                   placeholder="Neue Straße…"
-                  className="w-40 px-2 py-1.5 text-xs border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="bg-gray-50 w-40 px-2 py-1.5 text-xs border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <Button variant="secondary" size="sm" onClick={strasseAnlegen} disabled={!neueStrasse.trim()}>+ Straße</Button>
               </span>
@@ -351,7 +351,7 @@ function StrassenNameInput({ strasse, onSpeichern }: { strasse: StrasseDto; onSp
         if (n && n !== strasse.name) onSpeichern(n)
         else setText(strasse.name)
       }}
-      className="w-full px-2 py-1 text-sm border border-transparent hover:border-gray-300 focus:border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent"
+      className="bg-gray-50 w-full px-2 py-1 text-sm border border-transparent hover:border-gray-300 focus:border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent"
     />
   )
 }
@@ -500,7 +500,7 @@ function VerteilerZeile({
   const [zust, setZust] = useState(verteiler.zustaendigkeit)
   useEffect(() => { setPerson(verteiler.person); setZust(verteiler.zustaendigkeit) }, [verteiler])
 
-  const textFeld = 'w-full px-2 py-1 text-sm border border-transparent hover:border-gray-300 focus:border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent'
+  const textFeld = 'w-full px-2 py-1 text-sm border border-transparent hover:border-gray-300 focus:border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50'
 
   return (
     <tr className="hover:bg-emerald-50/50">
@@ -548,7 +548,7 @@ function VerteilerZeile({
           <select
             value={verteiler.verguetung}
             onChange={e => onSpeichern({ verguetung: e.target.value })}
-            className="text-xs border border-gray-200 rounded-md px-1.5 py-1 bg-white"
+            className="text-xs border border-gray-200 rounded-md px-1.5 py-1 bg-gray-50"
             aria-label="Vergütung"
           >
             <option value="kostenlos">kostenlos</option>

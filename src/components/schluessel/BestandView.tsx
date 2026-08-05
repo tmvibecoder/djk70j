@@ -125,13 +125,13 @@ function NeuTypFormular({
         value={code}
         onChange={e => setCode(e.target.value)}
         placeholder={system === 'abus' ? 'Code (z.B. GS2, 14)' : 'Code (z.B. Halle, SY0005)'}
-        className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm w-full sm:w-40"
+        className="bg-gray-50 rounded-lg border border-gray-300 px-3 py-1.5 text-sm w-full sm:w-40"
       />
       <input
         value={bezeichnung}
         onChange={e => setBezeichnung(e.target.value)}
         placeholder="Bezeichnung (z.B. Trainer)"
-        className="flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
+        className="bg-gray-50 flex-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
       />
       <div className="flex gap-2 shrink-0">
         <button
@@ -267,7 +267,7 @@ function TypZeilen({
                 value={anzahl}
                 onChange={e => setAnzahl(e.target.value)}
                 inputMode="numeric"
-                className="w-14 rounded-lg border border-gray-300 px-2 py-1 text-xs text-right"
+                className="bg-gray-50 w-14 rounded-lg border border-gray-300 px-2 py-1 text-xs text-right"
               />
               <button
                 onClick={() =>
@@ -414,7 +414,7 @@ function TransponderTabelle({
             onChange={e => setNeuNummer(e.target.value)}
             placeholder="Nr."
             inputMode="numeric"
-            className="w-16 rounded-lg border border-gray-300 px-2 py-1 text-xs text-right"
+            className="bg-gray-50 w-16 rounded-lg border border-gray-300 px-2 py-1 text-xs text-right"
           />
           <button
             onClick={async () => {

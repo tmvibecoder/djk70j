@@ -56,7 +56,7 @@ function LoginFormInner({ nutzer }: { nutzer: LoginNutzer[] }) {
             onChange={e => setUsername(e.target.value)}
             autoFocus
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50"
           >
             <option value="" disabled>Bitte wählen …</option>
             {nutzer.map(u => (
@@ -72,7 +72,7 @@ function LoginFormInner({ nutzer }: { nutzer: LoginNutzer[] }) {
             onChange={e => setPassword(e.target.value)}
             autoComplete="current-password"
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="bg-gray-50 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
       </div>

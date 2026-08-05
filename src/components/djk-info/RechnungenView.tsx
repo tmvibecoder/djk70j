@@ -110,7 +110,7 @@ export function RechnungenView() {
                       <select
                         value={r.status}
                         onChange={e => setzeStatus(r, e.target.value)}
-                        className="text-xs border border-gray-200 rounded-md px-1.5 py-1 bg-white"
+                        className="text-xs border border-gray-200 rounded-md px-1.5 py-1 bg-gray-50"
                         aria-label={`Status von ${r.nummer}`}
                       >
                         {RECHNUNG_STATUS_OPTIONEN.map(o => (

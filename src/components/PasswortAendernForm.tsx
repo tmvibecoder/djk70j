@@ -49,7 +49,7 @@ export function PasswortAendernForm() {
           onChange={e => setAktuellesPasswort(e.target.value)}
           autoComplete="current-password"
           required
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="bg-gray-50 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
       <div>
@@ -61,7 +61,7 @@ export function PasswortAendernForm() {
           autoComplete="new-password"
           minLength={6}
           required
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="bg-gray-50 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
       <div>
@@ -73,7 +73,7 @@ export function PasswortAendernForm() {
           autoComplete="new-password"
           minLength={6}
           required
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="bg-gray-50 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
 

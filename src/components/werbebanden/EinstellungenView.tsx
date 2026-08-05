@@ -94,7 +94,7 @@ export function EinstellungenView() {
               value={form.kopfKontaktblock}
               onChange={set('kopfKontaktblock')}
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="bg-gray-50 w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -104,7 +104,7 @@ export function EinstellungenView() {
                 value={form.fusszeileSpalte1}
                 onChange={set('fusszeileSpalte1')}
                 rows={5}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="bg-gray-50 w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
@@ -113,7 +113,7 @@ export function EinstellungenView() {
                 value={form.fusszeileSpalte2}
                 onChange={set('fusszeileSpalte2')}
                 rows={5}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="bg-gray-50 w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
@@ -122,7 +122,7 @@ export function EinstellungenView() {
                 value={form.fusszeileSpalte3}
                 onChange={set('fusszeileSpalte3')}
                 rows={5}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="bg-gray-50 w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>

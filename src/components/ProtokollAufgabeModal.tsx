@@ -102,7 +102,7 @@ export default function ProtokollAufgabeModal({
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="Was ist zu tun?"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="bg-gray-50 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               autoFocus
             />
           </div>
@@ -113,7 +113,7 @@ export default function ProtokollAufgabeModal({
             <select
               value={bereichId}
               onChange={e => setBereichId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50"
             >
               <option value="">— Kein Bereich —</option>
               {bereiche.map(b => (
@@ -197,7 +197,7 @@ export default function ProtokollAufgabeModal({
               onChange={e => setDetail(e.target.value)}
               rows={3}
               placeholder="Optionale Beschreibung, Stand, offene Fragen…"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="bg-gray-50 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
         </div>
