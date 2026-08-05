@@ -24,9 +24,19 @@ const LEER = {
   abschnitt: '', positionNr: '', kuendigungZum: '', status: 'aktiv', bemerkung: '',
 }
 
-// Rahmen + leichte Grautönung, um die Personen/Blöcke voneinander abzugrenzen
-const BLOCK = 'border border-gray-200 rounded-lg p-3 bg-gray-100/50'
-const BLOCK_TITEL = 'text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2'
+// Jeder Block bekommt eine eigene blasse Tönung, damit die drei Bereiche auf einen
+// Blick auseinanderzuhalten sind. Grau scheidet dafür aus — das tragen seit dem
+// Umbau die Eingabefelder selbst (bg-gray-50).
+const BLOCK = {
+  firma: 'border border-slate-300 bg-slate-100 rounded-lg p-3',
+  allgemein: 'border border-emerald-200 bg-emerald-50 rounded-lg p-3',
+  rechnung: 'border border-amber-200 bg-amber-50 rounded-lg p-3',
+}
+const BLOCK_TITEL = {
+  firma: 'text-xs font-semibold uppercase tracking-wide text-slate-600 mb-2',
+  allgemein: 'text-xs font-semibold uppercase tracking-wide text-emerald-700 mb-2',
+  rechnung: 'text-xs font-semibold uppercase tracking-wide text-amber-700 mb-2',
+}
 
 const UPLOADS: { art: string; label: string; hinweis: string }[] = [
   { art: 'foto', label: '📷 Foto der Bande', hinweis: 'Bilddatei (JPG, PNG, WebP, HEIC)' },
@@ -157,8 +167,8 @@ export function PartnerDetailView({ partnerId }: { partnerId: string }) {
           {/* Stammdaten: Firma/Anschrift und die beiden Ansprechpartner je in einem
               eigenen Block; beide Personen-Blöcke haben dasselbe 3-Spalten-Raster. */}
           <div className="space-y-3">
-            <div className={BLOCK}>
-              <p className={BLOCK_TITEL}>Firma &amp; Anschrift</p>
+            <div className={BLOCK.firma}>
+              <p className={BLOCK_TITEL.firma}>Firma &amp; Anschrift</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
                   <Input label="Firma *" value={form.firma} onChange={set('firma')} />
@@ -174,8 +184,8 @@ export function PartnerDetailView({ partnerId }: { partnerId: string }) {
               </div>
             </div>
 
-            <div className={BLOCK}>
-              <p className={BLOCK_TITEL}>Ansprechpartner Allgemein</p>
+            <div className={BLOCK.allgemein}>
+              <p className={BLOCK_TITEL.allgemein}>Ansprechpartner Allgemein</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Input label="Ansprechpartner Allgemein" value={form.ansprechpartner} onChange={set('ansprechpartner')} />
                 <Input label="Telefon Allgemein" value={form.telefon} onChange={set('telefon')} />
@@ -183,8 +193,8 @@ export function PartnerDetailView({ partnerId }: { partnerId: string }) {
               </div>
             </div>
 
-            <div className={BLOCK}>
-              <p className={BLOCK_TITEL}>Ansprechpartner Rechnung</p>
+            <div className={BLOCK.rechnung}>
+              <p className={BLOCK_TITEL.rechnung}>Ansprechpartner Rechnung</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Input label="Ansprechpartner Rechnung" value={form.ansprechpartnerRechnung} onChange={set('ansprechpartnerRechnung')} />
                 <Input label="Telefon Rechnung" value={form.telefonRechnung} onChange={set('telefonRechnung')} />
