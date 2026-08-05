@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DJK Schlüssel — Variante 3: Mobile-Listen</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  .sig-canvas { touch-action: none; }
+</style>
+</head>
+<body class="bg-gray-100 min-h-screen pb-24">
+
+<div class="max-w-md mx-auto px-3 pt-4">
+
+  <div class="text-center text-[11px] text-gray-400 mb-2">Mockup — alle Namen und Zahlen sind frei erfunden</div>
+
+  <header class="bg-white rounded-xl shadow-sm border border-gray-200 px-4 py-3 mb-3">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-[10px] font-semibold tracking-widest uppercase text-amber-600">DJK SG Ottenhofen e.V.</p>
+        <h1 class="text-lg font-bold text-gray-900">🔑 Schlüssel</h1>
+      </div>
+      <span class="px-2.5 py-1.5 text-xs text-gray-400 rounded-lg border border-gray-200">🚪</span>
+    </div>
+  </header>
+
+  <!-- ═══════════ SCREEN: BESTAND ═══════════ -->
+  <div id="screen-bestand">
+
+    <div class="grid grid-cols-3 gap-2 mb-3 text-center">
+      <div class="bg-white rounded-xl border border-gray-200 py-2.5">
+        <div class="text-lg font-bold text-amber-600">45</div>
+        <div class="text-[10px] text-gray-500 uppercase">ausgegeben</div>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 py-2.5">
+        <div class="text-lg font-bold text-emerald-600">70</div>
+        <div class="text-[10px] text-gray-500 uppercase">Archiv</div>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-200 py-2.5">
+        <div class="text-lg font-bold text-red-600">5</div>
+        <div class="text-[10px] text-gray-500 uppercase">verloren</div>
+      </div>
+    </div>
+
+    <!-- Akkordeon Schließanlage (offen) -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm mb-2.5 overflow-hidden">
+      <button onclick="toggle('acc-abus')" class="w-full flex items-center justify-between px-4 py-3">
+        <span class="font-bold text-gray-900 text-sm">🏠 Schließanlage Sportheim</span>
+        <span class="text-xs text-gray-400">34 Typen ▾</span>
+      </button>
+      <div id="acc-abus" class="border-t border-gray-100 divide-y divide-gray-50">
+        <div class="px-4 py-2.5 flex items-center justify-between">
+          <div>
+            <div class="text-sm font-semibold text-gray-900">GHS Generalschlüssel</div>
+            <div class="text-[11px] text-gray-500">schließt alles</div>
+          </div>
+          <div class="flex gap-1">
+            <span class="text-[11px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">3 ausg.</span>
+            <span class="text-[11px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">3 Archiv</span>
+          </div>
+        </div>
+        <div class="px-4 py-2.5 flex items-center justify-between">
+          <div>
+            <div class="text-sm font-semibold text-gray-900">GS2 Trainer</div>
+            <div class="text-[11px] text-gray-500">Eingang, Kabinen, Ballkammer …</div>
+          </div>
+          <div class="flex gap-1">
+            <span class="text-[11px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">16 ausg.</span>
+            <span class="text-[11px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">3</span>
+          </div>
+        </div>
+        <div class="px-4 py-2.5 flex items-center justify-between">
+          <div>
+            <div class="text-sm font-semibold text-gray-900">GS6 Saal</div>
+            <div class="text-[11px] text-gray-500">Saalnutzer</div>
+          </div>
+          <div class="flex gap-1">
+            <span class="text-[11px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">1</span>
+            <span class="text-[11px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">2</span>
+            <span class="text-[11px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded">1 verl.</span>
+          </div>
+        </div>
+        <div class="px-4 py-2 text-[11px] text-gray-400">… GS1, GS3–GS5, Einzelschlüssel 1–27</div>
+      </div>
+    </div>
+
+    <!-- Akkordeon Transponder (zu) -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm mb-2.5 overflow-hidden">
+      <button onclick="toggle('acc-trans')" class="w-full flex items-center justify-between px-4 py-3">
+        <span class="font-bold text-gray-900 text-sm">📟 Transponder Halle</span>
+        <span class="text-xs text-gray-400">5 aktiv · 2 verloren ▸</span>
+      </button>
+      <div id="acc-trans" class="hidden border-t border-gray-100 divide-y divide-gray-50">
+        <div class="px-4 py-2.5 flex items-center justify-between text-sm">
+          <span><b class="font-mono">13</b> · Daniel Meier</span>
+          <span class="text-[11px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">seit 29.10.25</span>
+        </div>
+        <div class="px-4 py-2.5 flex items-center justify-between text-sm">
+          <span><b class="font-mono">14</b> · Andreas Winter</span>
+          <span class="text-[11px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">seit 15.05.23</span>
+        </div>
+        <div class="px-4 py-2.5 flex items-center justify-between text-sm text-gray-400">
+          <span class="line-through"><b class="font-mono">21</b> · verloren (Daniel Meier)</span>
+          <span class="text-[11px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded">10/2025</span>
+        </div>
+        <div class="px-4 py-2 text-[11px] text-gray-400">… 11, 12, 15, 16 (Archiv), 22 decodiert</div>
+      </div>
+    </div>
+
+    <!-- Akkordeon Schränke (zu) -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm mb-2.5 overflow-hidden">
+      <button onclick="toggle('acc-schrank')" class="w-full flex items-center justify-between px-4 py-3">
+        <span class="font-bold text-gray-900 text-sm">🗄️ Schränke & Sonstige</span>
+        <span class="text-xs text-gray-400">▸</span>
+      </button>
+      <div id="acc-schrank" class="hidden border-t border-gray-100 px-4 py-2.5 text-sm text-gray-600">
+        Schrankschloss A · Schrankschloss B · Briefkasten · Fasskühler · Getränkeautomat · Bälle
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ SCREEN: INHABER ═══════════ -->
+  <div id="screen-inhaber" class="hidden">
+    <input type="search" placeholder="🔍 Name oder Funktion suchen…" class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm bg-white mb-3">
+
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-50 overflow-hidden">
+
+      <div class="flex items-center gap-3 px-4 py-3">
+        <div class="w-9 h-9 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs font-bold shrink-0">SM</div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-gray-900 text-sm">Stefan Maier <span class="font-normal text-gray-400">· 1. Vorstand</span></div>
+          <div class="text-[11px] text-gray-500 truncate">GHS · Pfand 20 €</div>
+        </div>
+        <span class="text-gray-300">›</span>
+      </div>
+
+      <div class="flex items-center gap-3 px-4 py-3 bg-amber-50/50">
+        <div class="w-9 h-9 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs font-bold shrink-0">AW</div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-gray-900 text-sm">Andreas Winter <span class="font-normal text-gray-400">· 2. Vorstand</span></div>
+          <div class="text-[11px] text-gray-500 truncate">GHS · Transponder 14 · Fasskühler · +2</div>
+        </div>
+        <span class="text-gray-300">›</span>
+      </div>
+
+      <div class="flex items-center gap-3 px-4 py-3">
+        <div class="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">TK</div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-gray-900 text-sm">Tobias Klein <span class="font-normal text-gray-400">· Trainer F-Jugend</span></div>
+          <div class="text-[11px] text-gray-500 truncate">GS2 · Transponder 11 · Pfand 20 €</div>
+        </div>
+        <span class="text-gray-300">›</span>
+      </div>
+
+      <div class="flex items-center gap-3 px-4 py-3">
+        <div class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">JB</div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-gray-900 text-sm">Julia Berger <span class="font-normal text-gray-400">· Grundschule</span></div>
+          <div class="text-[11px] text-gray-500 truncate">GS6 Saal</div>
+        </div>
+        <span class="text-gray-300">›</span>
+      </div>
+    </div>
+
+    <!-- Detail-Karte (angetippt) -->
+    <div class="bg-white rounded-xl border-2 border-amber-300 shadow-sm p-4 mt-3">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 rounded-full bg-amber-600 text-white flex items-center justify-center text-sm font-bold">AW</div>
+        <div>
+          <div class="font-bold text-gray-900">Andreas Winter</div>
+          <div class="text-xs text-gray-500">2. Vorstand (Liegenschaften)</div>
+        </div>
+      </div>
+      <div class="text-xs font-semibold text-gray-500 uppercase mb-1.5">Aktuelle Schlüssel</div>
+      <div class="flex flex-wrap gap-1.5 mb-3">
+        <span class="text-xs bg-gray-900 text-white px-2 py-1 rounded-full">GHS</span>
+        <span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Transponder 14</span>
+        <span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">Fasskühler</span>
+        <span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">Getränkeautomat</span>
+        <span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">Schrankschloss A</span>
+      </div>
+      <div class="text-xs font-semibold text-gray-500 uppercase mb-1.5">Historie</div>
+      <div class="text-xs text-gray-600 space-y-1 mb-3">
+        <div class="flex justify-between"><span>Transponder 14 erhalten</span><span class="text-gray-400">15.05.23</span></div>
+        <div class="flex justify-between"><span>GHS erhalten (Beleg ✓)</span><span class="text-gray-400">19.05.21</span></div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="show('ausgabe')" class="text-sm font-semibold bg-amber-600 text-white py-2 rounded-lg">➕ Ausgabe</button>
+        <button class="text-sm font-medium bg-white border border-gray-300 text-gray-700 py-2 rounded-lg">↩️ Rückgabe</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ SCREEN: AUSGABE (geführte Schritte) ═══════════ -->
+  <div id="screen-ausgabe" class="hidden">
+
+    <!-- Schritt 1 -->
+    <div id="step-1">
+      <div class="text-xs font-semibold text-gray-400 uppercase mb-2">Schritt 1 von 3 — Empfänger</div>
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-3">
+        <input type="search" placeholder="🔍 Person suchen…" class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm mb-2">
+        <div class="divide-y divide-gray-50 text-sm">
+          <label class="flex items-center gap-2.5 py-2.5"><input type="radio" name="p" checked class="accent-amber-600"><span><b>Kevin Huber</b> · Trainer E-Jugend</span></label>
+          <label class="flex items-center gap-2.5 py-2.5"><input type="radio" name="p" class="accent-amber-600"><span><b>Lisa Brandt</b> · Bambini</span></label>
+          <label class="flex items-center gap-2.5 py-2.5 text-amber-700 font-medium"><span class="pl-6">➕ Neue Person anlegen</span></label>
+        </div>
+      </div>
+      <button onclick="step(2)" class="w-full text-sm font-semibold bg-amber-600 text-white py-3 rounded-xl">Weiter →</button>
+    </div>
+
+    <!-- Schritt 2 -->
+    <div id="step-2" class="hidden">
+      <div class="text-xs font-semibold text-gray-400 uppercase mb-2">Schritt 2 von 3 — Schlüssel & Pfand</div>
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-3 space-y-2">
+        <label class="flex items-center justify-between border border-amber-300 bg-amber-50 rounded-lg px-3 py-2.5 text-sm">
+          <span><input type="checkbox" checked class="mr-2 accent-amber-600"><b>GS2 Trainer</b></span>
+          <span class="text-xs text-gray-500">3 frei</span>
+        </label>
+        <label class="flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2.5 text-sm">
+          <span><input type="checkbox" class="mr-2 accent-amber-600">Transponder Halle</span>
+          <span class="text-xs text-gray-500">Nr. 16 frei</span>
+        </label>
+        <div class="flex items-center justify-between pt-2 text-sm">
+          <span class="text-gray-500">Pfand (bar)</span>
+          <input value="20,00 €" class="w-24 text-right rounded-lg border border-gray-300 px-2 py-1.5 text-sm">
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="step(1)" class="text-sm font-medium bg-white border border-gray-300 text-gray-700 px-4 py-3 rounded-xl">←</button>
+        <button onclick="step(3)" class="flex-1 text-sm font-semibold bg-amber-600 text-white py-3 rounded-xl">Weiter zur Unterschrift →</button>
+      </div>
+    </div>
+
+    <!-- Schritt 3 -->
+    <div id="step-3" class="hidden">
+      <div class="text-xs font-semibold text-gray-400 uppercase mb-2">Schritt 3 von 3 — Unterschrift</div>
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-3">
+        <div class="text-sm text-gray-800 space-y-1 mb-3 pb-3 border-b border-gray-100">
+          <div class="flex justify-between"><span class="text-gray-500">Empfänger</span><b>Kevin Huber</b></div>
+          <div class="flex justify-between"><span class="text-gray-500">Schlüssel</span><b>GS2 Trainer</b></div>
+          <div class="flex justify-between"><span class="text-gray-500">Pfand</span><b>20,00 € bar</b></div>
+        </div>
+        <p class="text-[11px] text-gray-500 leading-relaxed mb-3">
+          Ich bestätige den Erhalt der o.g. Schlüssel. Ich bin für die sichere Aufbewahrung
+          verantwortlich und hafte bei Verlust. Weitergabe ist nicht erlaubt.
+        </p>
+        <div class="border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 relative">
+          <canvas id="sig" class="sig-canvas w-full h-44 block rounded-lg"></canvas>
+          <span id="sig-hint" class="absolute inset-0 flex items-center justify-center text-gray-300 text-sm pointer-events-none">✍️ hier mit dem Finger unterschreiben</span>
+        </div>
+        <div class="flex gap-2 mt-3">
+          <button onclick="clearSig()" class="text-xs font-medium bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-lg">🗑️ Löschen</button>
+          <button onclick="acceptSig()" class="flex-1 text-sm font-semibold bg-emerald-600 text-white px-4 py-2.5 rounded-lg">✓ Signieren & PDF</button>
+        </div>
+        <div id="sig-done" class="hidden mt-3 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+          <div class="text-sm font-semibold text-emerald-800 mb-0.5">✅ Empfangsbestätigung erstellt</div>
+          <div class="text-xs text-emerald-900">PDF gespeichert · abrufbar unter „Belege"</div>
+          <div class="text-[10px] text-emerald-700 font-mono mt-1 break-all">SHA-256: 3f9a1c…d47e02 · 03.08.2026 14:32</div>
+        </div>
+      </div>
+      <button onclick="step(2)" class="text-sm font-medium text-gray-500">← zurück</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bottom-Tab-Bar (mobil) -->
+<nav class="fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 shadow-lg">
+  <div class="max-w-md mx-auto grid grid-cols-4 text-center text-[11px]">
+    <button onclick="show('bestand')" id="tab-bestand" class="py-2.5 text-amber-700 font-semibold"><div class="text-lg">🔑</div>Bestand</button>
+    <button onclick="show('inhaber')" id="tab-inhaber" class="py-2.5 text-gray-400"><div class="text-lg">👤</div>Inhaber</button>
+    <button onclick="show('ausgabe')" id="tab-ausgabe" class="py-2.5 text-gray-400"><div class="text-lg">✍️</div>Ausgabe</button>
+    <span class="py-2.5 text-gray-300"><div class="text-lg">🧾</div>Belege</span>
+  </div>
+</nav>
+
+<script>
+function show(id) {
+  ['bestand','inhaber','ausgabe'].forEach(s => {
+    document.getElementById('screen-' + s).classList.toggle('hidden', s !== id);
+    const t = document.getElementById('tab-' + s);
+    t.classList.toggle('text-amber-700', s === id);
+    t.classList.toggle('font-semibold', s === id);
+    t.classList.toggle('text-gray-400', s !== id);
+  });
+  if (id === 'ausgabe') { step(currentStep); }
+  window.scrollTo(0, 0);
+}
+function toggle(id) { document.getElementById(id).classList.toggle('hidden'); }
+let currentStep = 1;
+function step(n) {
+  currentStep = n;
+  [1,2,3].forEach(i => document.getElementById('step-' + i).classList.toggle('hidden', i !== n));
+  if (n === 3) setTimeout(initSig, 50);
+}
+let sigCtx = null, sigInit = false, hasInk = false;
+function initSig() {
+  if (sigInit) return;
+  const c = document.getElementById('sig');
+  const dpr = window.devicePixelRatio || 1;
+  const r = c.getBoundingClientRect();
+  c.width = r.width * dpr; c.height = r.height * dpr;
+  sigCtx = c.getContext('2d');
+  sigCtx.scale(dpr, dpr);
+  sigCtx.lineWidth = 2.5; sigCtx.lineCap = 'round'; sigCtx.lineJoin = 'round';
+  sigCtx.strokeStyle = '#1f2937';
+  let drawing = false;
+  c.addEventListener('pointerdown', e => {
+    drawing = true; c.setPointerCapture(e.pointerId);
+    const b = c.getBoundingClientRect();
+    sigCtx.beginPath(); sigCtx.moveTo(e.clientX - b.left, e.clientY - b.top);
+  });
+  c.addEventListener('pointermove', e => {
+    if (!drawing) return;
+    const b = c.getBoundingClientRect();
+    sigCtx.lineTo(e.clientX - b.left, e.clientY - b.top); sigCtx.stroke();
+    if (!hasInk) { hasInk = true; document.getElementById('sig-hint').style.display = 'none'; }
+  });
+  ['pointerup','pointercancel'].forEach(ev => c.addEventListener(ev, () => drawing = false));
+  sigInit = true;
+}
+function clearSig() {
+  const c = document.getElementById('sig');
+  if (sigCtx) sigCtx.clearRect(0, 0, c.width, c.height);
+  hasInk = false;
+  document.getElementById('sig-hint').style.display = '';
+  document.getElementById('sig-done').classList.add('hidden');
+}
+function acceptSig() {
+  if (!hasInk) { alert('Bitte zuerst unterschreiben.'); return; }
+  document.getElementById('sig-done').classList.remove('hidden');
+}
+</script>
+
+</body>
+</html>
