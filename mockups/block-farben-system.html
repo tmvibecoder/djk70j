@@ -1,0 +1,416 @@
+<title>Farbsystem für Feldgruppen</title>
+<style>
+  :root {
+    --ground: #f3f6f4; --surface: #ffffff; --ink: #14181a; --ink-soft: #5c6663;
+    --line: #dee4e1; --accent: #047857;
+    --app-page: #f7f8f8; --app-card: #ffffff; --app-line: #e5e7eb;
+    --app-label: #374151; --app-text: #111827; --app-muted: #6b7280;
+    --app-field: #f9fafb; --app-field-line: #d1d5db;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ground:#101412; --surface:#191f1c; --ink:#e9efec; --ink-soft:#97a39f; --line:#29312d; --accent:#34d399; }
+  }
+  :root[data-theme="dark"] { --ground:#101412; --surface:#191f1c; --ink:#e9efec; --ink-soft:#97a39f; --line:#29312d; --accent:#34d399; }
+  :root[data-theme="light"] { --ground:#f3f6f4; --surface:#ffffff; --ink:#14181a; --ink-soft:#5c6663; --line:#dee4e1; --accent:#047857; }
+
+  body {
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:1080px; margin:0 auto; padding:56px 24px 96px; display:flex; flex-direction:column; gap:52px; }
+  .eyebrow { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); margin:0 0 10px; }
+  h1 { font-size:clamp(28px,4vw,40px); line-height:1.15; letter-spacing:-.022em; font-weight:660; margin:0 0 16px; text-wrap:balance; }
+  h2 { font-size:22px; letter-spacing:-.015em; font-weight:640; margin:0; }
+  h3 { font-size:15px; font-weight:620; margin:0; letter-spacing:-.005em; }
+  .lede { font-size:17px; color:var(--ink-soft); margin:0; max-width:64ch; }
+  .lede + .lede { margin-top:12px; }
+  section { display:flex; flex-direction:column; gap:18px; }
+  section > p { margin:0; color:var(--ink-soft); max-width:70ch; }
+  hr { border:0; border-top:1px solid var(--line); margin:0; }
+
+  /* Legende */
+  .legend { display:flex; flex-direction:column; gap:8px; }
+  .legend-row {
+    display:grid; grid-template-columns:150px 1fr; gap:16px; align-items:center;
+    border:1px solid var(--line); border-radius:10px; background:var(--surface); padding:11px 14px;
+  }
+  @media (max-width:620px){ .legend-row{ grid-template-columns:1fr; gap:6px; } }
+  .legend-name { display:flex; align-items:center; gap:10px; font-weight:600; font-size:14px; }
+  .legend-chip { width:26px; height:26px; border-radius:7px; flex:none; }
+  .legend-use { color:var(--ink-soft); font-size:14.5px; }
+
+  /* App-Vorschau */
+  .preview { border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--app-page); }
+  .preview-bar {
+    display:flex; align-items:center; gap:8px; padding:9px 14px; background:var(--surface);
+    border-bottom:1px solid var(--line); font-size:11px; font-weight:650;
+    letter-spacing:.09em; text-transform:uppercase; color:var(--ink-soft);
+  }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--line); flex:none; }
+  .preview-body { padding:22px; }
+  .card { background:var(--app-card); border:1px solid var(--app-line); border-radius:8px; box-shadow:0 1px 3px rgba(16,24,40,.08); overflow:hidden; }
+  .card-head { padding:13px 22px; border-bottom:1px solid var(--app-line); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .card-title { font-weight:700; color:var(--app-text); font-size:15.5px; }
+  .badge { font-size:11.5px; font-weight:600; color:#065f46; background:#d1fae5; border-radius:999px; padding:3px 10px; }
+  .card-body { padding:18px 22px 22px; display:flex; flex-direction:column; gap:12px; }
+
+  .block { border-radius:8px; padding:13px 14px 15px; border-width:1px; border-style:solid; }
+  .block-title { font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; margin:0 0 10px; }
+  .b-slate   { background:#f1f5f9; border-color:#cbd5e1; }
+  .b-slate   .block-title { color:#475569; }
+  .b-emerald { background:#ecfdf5; border-color:#a7f3d0; }
+  .b-emerald .block-title { color:#047857; }
+  .b-amber   { background:#fffbeb; border-color:#fde68a; }
+  .b-amber   .block-title { color:#b45309; }
+  .b-sky     { background:#f0f9ff; border-color:#bae6fd; }
+  .b-sky     .block-title { color:#0369a1; }
+  .b-violet  { background:#f5f3ff; border-color:#ddd6fe; }
+  .b-violet  .block-title { color:#6d28d9; }
+
+  .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  .g3 { grid-template-columns:repeat(3,1fr); }
+  .span2 { grid-column:span 2; } .span3 { grid-column:span 3; } .span4 { grid-column:span 4; }
+  @media (max-width:760px){
+    .grid,.g3 { grid-template-columns:1fr; }
+    .span2,.span3,.span4 { grid-column:span 1; }
+  }
+  .field label { display:block; font-size:12.5px; font-weight:550; color:var(--app-label); margin-bottom:4px; }
+  .field .input {
+    background:var(--app-field); border:1px solid var(--app-field-line); border-radius:8px;
+    box-shadow:0 1px 2px rgba(16,24,40,.05); padding:8px 11px; font-size:13.5px; color:var(--app-text); min-height:20px;
+  }
+  .field .input.select { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .field .input.tall { min-height:44px; }
+  .caret { color:var(--app-muted); font-size:10px; }
+  .readonly { padding-top:22px; font-size:13.5px; }
+  .readonly strong { display:block; font-weight:700; color:var(--app-text); }
+  .readonly span { color:var(--app-muted); font-size:12.5px; }
+
+  .tag { display:inline-block; font-size:11px; font-weight:650; border-radius:999px; padding:2px 9px; margin-left:8px; vertical-align:2px; }
+  .tag-neu { background:#ede9fe; color:#5b21b6; }
+  .tag-live { background:#d1fae5; color:#065f46; }
+
+  .note { background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px; padding:16px 20px; }
+  .note p { margin:0; color:var(--ink-soft); } .note p + p { margin-top:10px; }
+  .note strong { color:var(--ink); font-weight:620; }
+  ul.reasons { margin:0; padding-left:20px; color:var(--ink-soft); display:flex; flex-direction:column; gap:7px; max-width:74ch; }
+  ul.reasons strong { color:var(--ink); font-weight:600; }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">DJK Events · Formulare</p>
+    <h1>Ein Farbsystem für Feldgruppen — und wo es hingehört</h1>
+    <p class="lede">Im Partner-Formular stehen die Blöcke jetzt auf Schiefer, Smaragd und Bernstein. Damit das in
+      der übrigen App nicht zufällig wirkt, schlage ich vor, die Farbe an die <em>Art der Information</em> zu binden
+      statt an die Position: Anschrift ist überall schiefergrau, Kontaktpersonen überall grün, Geld überall bernstein.
+      Wer ein Formular kennt, findet sich dann im nächsten sofort zurecht.</p>
+    <p class="lede">Dafür kommen zwei Töne dazu — Himmel für technische Leistungsdaten und Violett für Status und
+      Laufzeit. Fünf Farben reichen für alle Formulare der App.</p>
+  </header>
+
+  <hr />
+
+  <section>
+    <h2>Das System</h2>
+    <p>Jede Farbe steht für eine Art von Angabe. Kein Formular braucht alle fünf, aber keine Farbe bedeutet je
+      etwas anderes.</p>
+    <div class="legend">
+      <div class="legend-row">
+        <span class="legend-name"><span class="legend-chip" style="background:#f1f5f9;border:1px solid #cbd5e1"></span>Schiefer</span>
+        <span class="legend-use">Wer ist es — Firma, Anschrift, Kopfdaten einer Rechnung</span>
+      </div>
+      <div class="legend-row">
+        <span class="legend-name"><span class="legend-chip" style="background:#ecfdf5;border:1px solid #a7f3d0"></span>Smaragd</span>
+        <span class="legend-use">Menschen — Ansprechpartner, Telefon, E-Mail, Empfänger</span>
+      </div>
+      <div class="legend-row">
+        <span class="legend-name"><span class="legend-chip" style="background:#fffbeb;border:1px solid #fde68a"></span>Bernstein</span>
+        <span class="legend-use">Geld — Rechnungskontakt, Versandweg, Beträge, Steuer</span>
+      </div>
+      <div class="legend-row">
+        <span class="legend-name"><span class="legend-chip" style="background:#f0f9ff;border:1px solid #bae6fd"></span>Himmel <span class="tag tag-neu">neu</span></span>
+        <span class="legend-use">Die Leistung selbst — Bandenmaße, Anzeigengröße, Platzabschnitt</span>
+      </div>
+      <div class="legend-row">
+        <span class="legend-name"><span class="legend-chip" style="background:#f5f3ff;border:1px solid #ddd6fe"></span>Violett <span class="tag tag-neu">neu</span></span>
+        <span class="legend-use">Zustand und Laufzeit — Status, Kündigung, interne Bemerkung</span>
+      </div>
+    </div>
+  </section>
+
+  <hr />
+
+  <!-- ============ 1 · PARTNER ============ -->
+  <section>
+    <h2>1 · Partner bearbeiten <span class="tag tag-live">3 Blöcke schon live</span></h2>
+    <p>Die oberen drei Blöcke sind seit heute live. Darunter stehen „Bande &amp; Abrechnung" und „Status &amp;
+      Kündigung" bisher nur hinter einem dünnen grauen Strich und ganz ohne Überschrift — obwohl gerade der
+      Abrechnungsblock acht Felder hat. Genau die Datei, in der das Muster eingeführt wurde, wäre sonst
+      halb umgesetzt.</p>
+
+    <div class="preview">
+      <div class="preview-bar"><span class="dot"></span> Bandenwerbung · Partner bearbeiten</div>
+      <div class="preview-body">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Bauunternehmen Huber GmbH</span><span class="badge">Aktiv</span></div>
+          <div class="card-body">
+
+            <div class="block b-slate">
+              <p class="block-title">Firma &amp; Anschrift</p>
+              <div class="grid g3">
+                <div class="field span2"><label>Firma *</label><div class="input">Bauunternehmen Huber GmbH</div></div>
+                <div class="field"><label>Umsatzsteuer-ID</label><div class="input">DE812345678</div></div>
+                <div class="field span3"><label>Straße</label><div class="input">Hauptstraße 12</div></div>
+                <div class="field"><label>PLZ</label><div class="input">85570</div></div>
+                <div class="field span2"><label>Ort</label><div class="input">Ottenhofen</div></div>
+              </div>
+            </div>
+
+            <div class="block b-emerald">
+              <p class="block-title">Ansprechpartner Allgemein</p>
+              <div class="grid g3">
+                <div class="field"><label>Ansprechpartner Allgemein</label><div class="input">Sebastian Huber</div></div>
+                <div class="field"><label>Telefon Allgemein</label><div class="input">08121 / 44 55 60</div></div>
+                <div class="field"><label>E-Mail Allgemein</label><div class="input">info@huber-bau.de</div></div>
+              </div>
+            </div>
+
+            <div class="block b-amber">
+              <p class="block-title">Ansprechpartner Rechnung</p>
+              <div class="grid g3">
+                <div class="field"><label>Ansprechpartner Rechnung</label><div class="input">Andrea Huber</div></div>
+                <div class="field"><label>Telefon Rechnung</label><div class="input">08121 / 44 55 61</div></div>
+                <div class="field"><label>E-Mail Rechnung</label><div class="input">rechnung@huber-bau.de</div></div>
+                <div class="field"><label>Rechnungsversand</label><div class="input select"><span>E-Mail-Versand</span><span class="caret">▼</span></div></div>
+              </div>
+            </div>
+
+            <div class="block b-sky">
+              <p class="block-title">Bande &amp; Abrechnung <span style="text-transform:none;letter-spacing:0;font-weight:600;opacity:.75">— neu eingefasst</span></p>
+              <div class="grid">
+                <div class="field"><label>Ist-Länge (m)</label><div class="input">5</div></div>
+                <div class="field"><label>Lfd. Meter (Abrechnung)</label><div class="input">5</div></div>
+                <div class="field"><label>Preis pro Meter (€ netto)</label><div class="input">40</div></div>
+                <div class="field readonly"><strong>238,00 €</strong><span>Brutto/Jahr</span></div>
+                <div class="field"><label>Abschnitt</label><div class="input select"><span>3 · Ab der 2. Spielerbank</span><span class="caret">▼</span></div></div>
+                <div class="field"><label>Position im Abschnitt</label><div class="input">2</div></div>
+                <div class="field"><label>Vertragsbeginn</label><div class="input">01.07.2019</div></div>
+                <div class="field"><label>Bande erneuert (Jahr)</label><div class="input">2023</div></div>
+              </div>
+            </div>
+
+            <div class="block b-violet">
+              <p class="block-title">Status &amp; Kündigung <span style="text-transform:none;letter-spacing:0;font-weight:600;opacity:.75">— neu eingefasst</span></p>
+              <div class="grid g3">
+                <div class="field"><label>Status</label><div class="input select"><span>Aktiv</span><span class="caret">▼</span></div></div>
+                <div class="field"><label>Kündigung zum</label><div class="input">&nbsp;</div></div>
+                <div class="field span3"><label>Bemerkung</label><div class="input tall">Bande 2023 erneuert, Motiv liegt beim Verein.</div></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr />
+
+  <!-- ============ 2 · DJK-INFO KUNDE ============ -->
+  <section>
+    <h2>2 · Kunde bearbeiten (DJK Info)</h2>
+    <p>Das Schwesterformular zum Partner — vier Gruppen, alle nur durch dünne Striche getrennt, keine einzige
+      Überschrift. Ich würde die Stammdaten wie beim Partner in Firma und Ansprechpartner aufteilen; dann sind
+      beide Formulare gleich aufgebaut, und wer das eine kennt, kennt das andere.</p>
+
+    <div class="preview">
+      <div class="preview-bar"><span class="dot"></span> DJK Info · Kunde bearbeiten</div>
+      <div class="preview-body">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Gärtnerei Sommer</span><span class="badge">Aktiv</span></div>
+          <div class="card-body">
+
+            <div class="block b-slate">
+              <p class="block-title">Firma &amp; Anschrift</p>
+              <div class="grid g3">
+                <div class="field span2"><label>Firma *</label><div class="input">Gärtnerei Sommer</div></div>
+                <div class="field"><label>Namenszusatz</label><div class="input">Inh. Katrin Sommer</div></div>
+                <div class="field span3"><label>Straße</label><div class="input">Erdinger Weg 4</div></div>
+                <div class="field"><label>PLZ</label><div class="input">85570</div></div>
+                <div class="field span2"><label>Ort</label><div class="input">Ottenhofen</div></div>
+              </div>
+            </div>
+
+            <div class="block b-emerald">
+              <p class="block-title">Ansprechpartner</p>
+              <div class="grid g3">
+                <div class="field"><label>Ansprechpartner DJK Info</label><div class="input">Katrin Sommer</div></div>
+                <div class="field"><label>Telefon</label><div class="input">08121 / 77 88 90</div></div>
+                <div class="field"><label>E-Mail</label><div class="input">info@gaertnerei-sommer.de</div></div>
+              </div>
+            </div>
+
+            <div class="block b-amber">
+              <p class="block-title">Rechnung &amp; Broschüre</p>
+              <div class="grid g3">
+                <div class="field"><label>Ansprechpartner Rechnung</label><div class="input">Katrin Sommer</div></div>
+                <div class="field"><label>E-Mail für Rechnungen</label><div class="input">buchhaltung@gaertnerei-sommer.de</div></div>
+                <div class="field"><label>Rechnungsversand</label><div class="input select"><span>Post</span><span class="caret">▼</span></div></div>
+              </div>
+            </div>
+
+            <div class="block b-sky">
+              <p class="block-title">Anzeige &amp; Abrechnung</p>
+              <div class="grid g3">
+                <div class="field"><label>Anzeigengröße</label><div class="input select"><span>1/4 Seite</span><span class="caret">▼</span></div></div>
+                <div class="field"><label>Jahrespreis (€ netto)</label><div class="input">155</div></div>
+                <div class="field readonly"><strong>51,67 € netto</strong><span>je geschaltete Ausgabe</span></div>
+              </div>
+            </div>
+
+            <div class="block b-violet">
+              <p class="block-title">Status &amp; Kündigung</p>
+              <div class="grid g3">
+                <div class="field"><label>Status</label><div class="input select"><span>Aktiv</span><span class="caret">▼</span></div></div>
+                <div class="field"><label>Kündigung zum</label><div class="input">&nbsp;</div></div>
+                <div class="field span3"><label>Bemerkung</label><div class="input tall">Motiv wird jedes Frühjahr neu geliefert.</div></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr />
+
+  <!-- ============ 3 · RECHNUNG BEARBEITEN ============ -->
+  <section>
+    <h2>3 · Rechnung bearbeiten <span class="tag tag-neu">zweimal identisch</span></h2>
+    <p>Bandenwerbung und DJK Info haben hier praktisch dasselbe Formular — ein Muster, zwei Stellen. Der
+      Beträge-Block läuft heute optisch in die Empfängeranschrift über, was beim Nachrechnen stört.</p>
+
+    <div class="preview">
+      <div class="preview-bar"><span class="dot"></span> Rechnung 2026/B/0015 bearbeiten</div>
+      <div class="preview-body">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Rechnung 2026/B/0015</span><span class="badge">Versendet</span></div>
+          <div class="card-body">
+
+            <div class="block b-slate">
+              <p class="block-title">Rechnungskopf</p>
+              <div class="grid g3">
+                <div class="field"><label>Saison</label><div class="input">2025/2026</div></div>
+                <div class="field"><label>Rechnungsdatum</label><div class="input">02.08.2026</div></div>
+                <div class="field"><label>Status</label><div class="input select"><span>Versendet</span><span class="caret">▼</span></div></div>
+              </div>
+            </div>
+
+            <div class="block b-emerald">
+              <p class="block-title">Empfänger</p>
+              <div class="grid g3">
+                <div class="field span2"><label>Firma</label><div class="input">Bauunternehmen Huber GmbH</div></div>
+                <div class="field"><label>Ansprechpartner</label><div class="input">Andrea Huber</div></div>
+                <div class="field span3"><label>Straße</label><div class="input">Hauptstraße 12</div></div>
+                <div class="field"><label>PLZ</label><div class="input">85570</div></div>
+                <div class="field span2"><label>Ort</label><div class="input">Ottenhofen</div></div>
+              </div>
+            </div>
+
+            <div class="block b-amber">
+              <p class="block-title">Beträge</p>
+              <div class="grid">
+                <div class="field"><label>Lfd. Meter</label><div class="input">5</div></div>
+                <div class="field"><label>Preis pro Meter</label><div class="input">40,00</div></div>
+                <div class="field"><label>Netto</label><div class="input">200,00</div></div>
+                <div class="field"><label>MwSt-Satz (%)</label><div class="input">19</div></div>
+                <div class="field"><label>MwSt</label><div class="input">38,00</div></div>
+                <div class="field"><label>Brutto</label><div class="input">238,00</div></div>
+                <div class="field"><label>Zahlungsziel (Tage)</label><div class="input">14</div></div>
+              </div>
+            </div>
+
+            <div class="block b-violet">
+              <p class="block-title">Interne Bemerkung</p>
+              <div class="grid"><div class="field span4"><div class="input tall">Rechnung am 02.08. persönlich übergeben.</div></div></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr />
+
+  <!-- ============ 4 · SCHLÜSSELAUSGABE ============ -->
+  <section>
+    <h2>4 · Schlüssel ausgeben</h2>
+    <p>Hier gliedern schon Überschriften in drei Schritte, aber Schritt 1 und 2 stecken in derselben weißen Karte
+      und sind nur durch etwas Abstand getrennt. Eine Besonderheit: Bernstein ist im Schlüsselbereich bereits die
+      Systemfarbe — ausgewählte Schlüssel werden bernsteinfarben markiert. Deshalb dort bewusst <em>ohne</em>
+      Bernstein, sonst kämen sich Rahmen und Auswahl in die Quere.</p>
+
+    <div class="preview">
+      <div class="preview-bar"><span class="dot"></span> Schlüssel · Ausgabe</div>
+      <div class="preview-body">
+        <div class="card">
+          <div class="card-body">
+            <div class="block b-slate">
+              <p class="block-title">1 · Empfänger</p>
+              <div class="grid g3">
+                <div class="field span2"><label>Person</label><div class="input select"><span>Huber, Sebastian</span><span class="caret">▼</span></div></div>
+                <div class="field"><label>Ausgabedatum</label><div class="input">05.08.2026</div></div>
+              </div>
+            </div>
+            <div class="block b-emerald">
+              <p class="block-title">2 · Schlüssel &amp; Pfand</p>
+              <div class="grid g3">
+                <div class="field span2"><label>Schlüssel wählen</label><div class="input">GS3 · Nr. 12 · Sportheim</div></div>
+                <div class="field"><label>Pfand (€)</label><div class="input">50,00</div></div>
+              </div>
+            </div>
+            <div class="block b-sky">
+              <p class="block-title">3 · Unterschrift Empfänger</p>
+              <div class="grid"><div class="field span4"><div class="input tall">Unterschriftenfeld</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr />
+
+  <section>
+    <h2>Wo ich es bewusst lassen würde</h2>
+    <p>Nicht jede Trennlinie will ein Kasten werden — zu viele Rahmen wirken schnell unruhig. Diese Stellen habe
+      ich geprüft und würde sie so lassen:</p>
+    <ul class="reasons">
+      <li><strong>Einstellungen</strong> (Bandenwerbung, DJK Info, Schlüssel) — die Gruppen sind dort schon eigene
+        weiße Karten mit fetter Überschrift. Das trennt stärker als jede Tönung.</li>
+      <li><strong>Alle Listen und Tabellen</strong> — Partnerliste, Rechnungsübersicht, Bestand, Schließplan,
+        Verteilung, Platzübersicht. Dort gibt es keine Feldgruppen, nur Zeilen.</li>
+      <li><strong>Kurze Dialoge</strong> — Passwort ändern, Benutzer anlegen, Rechnungslauf, Aufgabe im Protokoll.
+        Das sind ein bis drei Felder, ein Rahmen drumherum bringt nichts.</li>
+      <li><strong>Benutzer bearbeiten</strong> — hier würde ich <em>nur</em> den Rollen-Block einfärben (er ist
+        die eigentliche Substanz), nicht alle vier Abschnitte. Sonst wird das Fenster zum Flickenteppich.</li>
+      <li><strong>Kostenformular der Finanzplanung</strong> — dort fehlt zwar jede Trennung und eine Gliederung
+        täte gut, aber die Veranstaltungs-App hat ihre eigene Farbwelt in Indigo und Blau. Das würde ich getrennt
+        entscheiden, statt die Werbebanden-Farben hineinzutragen.</li>
+    </ul>
+  </section>
+
+  <div class="note">
+    <p><strong>Mein Vorschlag:</strong> Punkte 1 bis 3 zusammen umsetzen — das sind die vier Formulare, die sich
+      Nutzer wirklich merken (Partner, Kunde, und zweimal Rechnung bearbeiten), und sie werden durch das gemeinsame
+      Farbschema untereinander vergleichbar. Punkt 4 (Schlüsselausgabe) gerne dazu, ist aber eigenständiger.</p>
+    <p>Sag mir einfach, welche Nummern — oder „alle". Die zwei neuen Töne Himmel und Violett kann ich vorher auch
+      noch tauschen, falls dir eine andere Kombination lieber ist.</p>
+  </div>
+
+</div>
