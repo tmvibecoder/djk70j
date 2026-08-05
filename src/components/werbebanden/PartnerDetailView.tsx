@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { Badge, Button, Card, CardContent, CardHeader, Input, Select } from '@/components/ui'
+import { Badge, Button, Card, CardContent, CardHeader, Input, Select, gruppenRahmen, gruppenTitel } from '@/components/ui'
 import {
   PLATZ_ABSCHNITTE,
   RECHNUNGSVERSAND_OPTIONEN,
@@ -23,10 +23,6 @@ const LEER = {
   vertragsbeginn: '', bandeErneuert: '', rechnungsversand: 'post',
   abschnitt: '', positionNr: '', kuendigungZum: '', status: 'aktiv', bemerkung: '',
 }
-
-// Rahmen + leichte Grautönung, um die Personen/Blöcke voneinander abzugrenzen
-const BLOCK = 'border border-gray-200 rounded-lg p-3 bg-gray-100/50'
-const BLOCK_TITEL = 'text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2'
 
 const UPLOADS: { art: string; label: string; hinweis: string }[] = [
   { art: 'foto', label: '📷 Foto der Bande', hinweis: 'Bilddatei (JPG, PNG, WebP, HEIC)' },
@@ -154,11 +150,12 @@ export function PartnerDetailView({ partnerId }: { partnerId: string }) {
           )}
         </CardHeader>
         <CardContent className="space-y-5">
-          {/* Stammdaten: Firma/Anschrift und die beiden Ansprechpartner je in einem
-              eigenen Block; beide Personen-Blöcke haben dasselbe 3-Spalten-Raster. */}
+          {/* Fünf Feldgruppen, je in einem eingefärbten Block (Farbe = Art der Angabe,
+              siehe components/ui/feldgruppe.ts). Beide Personen-Blöcke teilen sich
+              dasselbe 3-Spalten-Raster. */}
           <div className="space-y-3">
-            <div className={BLOCK}>
-              <p className={BLOCK_TITEL}>Firma &amp; Anschrift</p>
+            <div className={gruppenRahmen.stammdaten}>
+              <p className={gruppenTitel.stammdaten}>Firma &amp; Anschrift</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
                   <Input label="Firma *" value={form.firma} onChange={set('firma')} />
@@ -174,8 +171,8 @@ export function PartnerDetailView({ partnerId }: { partnerId: string }) {
               </div>
             </div>
 
-            <div className={BLOCK}>
-              <p className={BLOCK_TITEL}>Ansprechpartner Allgemein</p>
+            <div className={gruppenRahmen.kontakt}>
+              <p className={gruppenTitel.kontakt}>Ansprechpartner Allgemein</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Input label="Ansprechpartner Allgemein" value={form.ansprechpartner} onChange={set('ansprechpartner')} />
                 <Input label="Telefon Allgemein" value={form.telefon} onChange={set('telefon')} />
@@ -183,8 +180,8 @@ export function PartnerDetailView({ partnerId }: { partnerId: string }) {
               </div>
             </div>
 
-            <div className={BLOCK}>
-              <p className={BLOCK_TITEL}>Ansprechpartner Rechnung</p>
+            <div className={gruppenRahmen.geld}>
+              <p className={gruppenTitel.geld}>Ansprechpartner Rechnung</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Input label="Ansprechpartner Rechnung" value={form.ansprechpartnerRechnung} onChange={set('ansprechpartnerRechnung')} />
                 <Input label="Telefon Rechnung" value={form.telefonRechnung} onChange={set('telefonRechnung')} />
@@ -197,40 +194,44 @@ export function PartnerDetailView({ partnerId }: { partnerId: string }) {
                 />
               </div>
             </div>
-          </div>
 
-          {/* Bande & Abrechnung */}
-          <div className="border-t border-gray-100 pt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Input label="Ist-Länge (m)" inputMode="decimal" value={form.istLaenge} onChange={set('istLaenge')} />
-            <Input label="Lfd. Meter (Abrechnung)" inputMode="decimal" value={form.berechneteLaenge} onChange={set('berechneteLaenge')} />
-            <Input label="Preis pro Meter (€ netto)" inputMode="decimal" value={form.preisProMeter} onChange={set('preisProMeter')} />
-            <div className="flex flex-col justify-end pb-2">
-              <p className="text-sm font-medium text-gray-700 mb-1">Brutto/Jahr</p>
-              <p className="text-sm font-bold text-gray-900">{formatEuro(brutto)}</p>
+            <div className={gruppenRahmen.leistung}>
+              <p className={gruppenTitel.leistung}>Bande &amp; Abrechnung</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Input label="Ist-Länge (m)" inputMode="decimal" value={form.istLaenge} onChange={set('istLaenge')} />
+                <Input label="Lfd. Meter (Abrechnung)" inputMode="decimal" value={form.berechneteLaenge} onChange={set('berechneteLaenge')} />
+                <Input label="Preis pro Meter (€ netto)" inputMode="decimal" value={form.preisProMeter} onChange={set('preisProMeter')} />
+                <div className="flex flex-col justify-end pb-2">
+                  <p className="text-sm font-medium text-gray-700 mb-1">Brutto/Jahr</p>
+                  <p className="text-sm font-bold text-gray-900">{formatEuro(brutto)}</p>
+                </div>
+                <Select
+                  label="Abschnitt"
+                  value={form.abschnitt}
+                  onChange={set('abschnitt')}
+                  options={abschnittOptionen}
+                />
+                <Input label="Position im Abschnitt" inputMode="numeric" value={form.positionNr} onChange={set('positionNr')} />
+                <Input label="Vertragsbeginn" type="date" value={form.vertragsbeginn} onChange={set('vertragsbeginn')} />
+                <Input label="Bande erneuert (Jahr)" inputMode="numeric" value={form.bandeErneuert} onChange={set('bandeErneuert')} />
+              </div>
             </div>
-            <Select
-              label="Abschnitt"
-              value={form.abschnitt}
-              onChange={set('abschnitt')}
-              options={abschnittOptionen}
-            />
-            <Input label="Position im Abschnitt" inputMode="numeric" value={form.positionNr} onChange={set('positionNr')} />
-            <Input label="Vertragsbeginn" type="date" value={form.vertragsbeginn} onChange={set('vertragsbeginn')} />
-            <Input label="Bande erneuert (Jahr)" inputMode="numeric" value={form.bandeErneuert} onChange={set('bandeErneuert')} />
-          </div>
 
-          {/* Status & Kündigung */}
-          <div className="border-t border-gray-100 pt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Select label="Status" value={form.status} onChange={set('status')} options={PARTNER_STATUS_OPTIONEN} />
-            <Input label="Kündigung zum" type="date" value={form.kuendigungZum} onChange={set('kuendigungZum')} />
-            <div className="sm:col-span-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Bemerkung</label>
-              <textarea
-                value={form.bemerkung}
-                onChange={set('bemerkung')}
-                rows={2}
-                className="bg-gray-50 w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+            <div className={gruppenRahmen.status}>
+              <p className={gruppenTitel.status}>Status &amp; Kündigung</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Select label="Status" value={form.status} onChange={set('status')} options={PARTNER_STATUS_OPTIONEN} />
+                <Input label="Kündigung zum" type="date" value={form.kuendigungZum} onChange={set('kuendigungZum')} />
+                <div className="sm:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Bemerkung</label>
+                  <textarea
+                    value={form.bemerkung}
+                    onChange={set('bemerkung')}
+                    rows={2}
+                    className="bg-gray-50 w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 

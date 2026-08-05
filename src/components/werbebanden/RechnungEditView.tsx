@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Button, Card, CardContent, CardHeader, Input, Select } from '@/components/ui'
+import { Button, Card, CardContent, CardHeader, Input, Select, gruppenRahmen, gruppenTitel } from '@/components/ui'
 import { RECHNUNG_STATUS_OPTIONEN, formatEuro } from '@/data/werbebanden'
 import { RechnungDto, alsDatumsfeld } from './typen'
 
@@ -114,52 +114,65 @@ export function RechnungEditView({ rechnungId }: { rechnungId: string }) {
           )}
         </CardHeader>
         <CardContent className="space-y-5">
-          <p className="text-xs text-gray-500 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            Hinweis: Alle Felder sind bewusst nachträglich änderbar. Bedenke, dass bereits
+          <p className="text-xs text-amber-900 bg-amber-100 border-l-4 border border-amber-300 rounded-lg px-3 py-2">
+            ⚠ Alle Felder sind bewusst nachträglich änderbar. Bedenke, dass bereits
             verschickte Rechnungen eigentlich nicht mehr geändert werden sollten.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Input label="Saison" value={form.saison ?? ''} onChange={set('saison')} placeholder="2025/2026" />
-            <Input label="Rechnungsdatum" type="date" value={form.datum ?? ''} onChange={set('datum')} />
-            <Select label="Status" value={form.status ?? 'erstellt'} onChange={set('status')} options={RECHNUNG_STATUS_OPTIONEN} />
-          </div>
-
-          <div className="border-t border-gray-100 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="sm:col-span-2">
-              <Input label="Firma (Rechnungsempfänger) *" value={form.firma ?? ''} onChange={set('firma')} />
+          {/* Feldgruppen: Farbe = Art der Angabe, siehe components/ui/feldgruppe.ts */}
+          <div className="space-y-3">
+            <div className={gruppenRahmen.stammdaten}>
+              <p className={gruppenTitel.stammdaten}>Rechnungskopf</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Input label="Saison" value={form.saison ?? ''} onChange={set('saison')} placeholder="2025/2026" />
+                <Input label="Rechnungsdatum" type="date" value={form.datum ?? ''} onChange={set('datum')} />
+                <Select label="Status" value={form.status ?? 'erstellt'} onChange={set('status')} options={RECHNUNG_STATUS_OPTIONEN} />
+              </div>
             </div>
-            <Input label="Ansprechpartner" value={form.ansprechpartner ?? ''} onChange={set('ansprechpartner')} />
-            <Input label="Straße" value={form.strasse ?? ''} onChange={set('strasse')} />
-            <Input label="PLZ" value={form.plz ?? ''} onChange={set('plz')} />
-            <Input label="Ort" value={form.ort ?? ''} onChange={set('ort')} />
-          </div>
 
-          <div className="border-t border-gray-100 pt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <Input label="Lfd. Meter" inputMode="decimal" value={form.laenge ?? ''} onChange={set('laenge')} />
-            <Input label="Preis pro Meter (€)" inputMode="decimal" value={form.preisProMeter ?? ''} onChange={set('preisProMeter')} />
-            <div className="flex items-end pb-1">
-              <Button variant="secondary" size="sm" onClick={neuBerechnen}>↻ Beträge neu berechnen</Button>
+            <div className={gruppenRahmen.kontakt}>
+              <p className={gruppenTitel.kontakt}>Rechnungsempfänger</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="sm:col-span-2">
+                  <Input label="Firma (Rechnungsempfänger) *" value={form.firma ?? ''} onChange={set('firma')} />
+                </div>
+                <Input label="Ansprechpartner" value={form.ansprechpartner ?? ''} onChange={set('ansprechpartner')} />
+                <Input label="Straße" value={form.strasse ?? ''} onChange={set('strasse')} />
+                <Input label="PLZ" value={form.plz ?? ''} onChange={set('plz')} />
+                <Input label="Ort" value={form.ort ?? ''} onChange={set('ort')} />
+              </div>
             </div>
-            <Input label="Netto (€)" inputMode="decimal" value={form.netto ?? ''} onChange={set('netto')} />
-            <Input label={`MwSt. ${form.mwstSatz ?? 19} % (€)`} inputMode="decimal" value={form.mwst ?? ''} onChange={set('mwst')} />
-            <Input label="Brutto (€)" inputMode="decimal" value={form.brutto ?? ''} onChange={set('brutto')} />
-            <Input label="MwSt.-Satz (%)" inputMode="decimal" value={form.mwstSatz ?? ''} onChange={set('mwstSatz')} />
-            <Input label="Zahlungsziel (Tage)" inputMode="numeric" value={form.zahlungszielTage ?? ''} onChange={set('zahlungszielTage')} />
-            <div className="flex flex-col justify-end pb-2">
-              <p className="text-sm font-medium text-gray-700 mb-1">Endsumme</p>
-              <p className="text-sm font-bold text-gray-900">{formatEuro(zahl('brutto'))}</p>
-            </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Bemerkung (intern, erscheint nicht auf dem PDF)</label>
-            <textarea
-              value={form.bemerkung ?? ''}
-              onChange={set('bemerkung')}
-              rows={2}
-              className="bg-gray-50 w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className={gruppenRahmen.geld}>
+              <p className={gruppenTitel.geld}>Beträge</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <Input label="Lfd. Meter" inputMode="decimal" value={form.laenge ?? ''} onChange={set('laenge')} />
+                <Input label="Preis pro Meter (€)" inputMode="decimal" value={form.preisProMeter ?? ''} onChange={set('preisProMeter')} />
+                <div className="flex items-end pb-1">
+                  <Button variant="secondary" size="sm" onClick={neuBerechnen}>↻ Beträge neu berechnen</Button>
+                </div>
+                <Input label="Netto (€)" inputMode="decimal" value={form.netto ?? ''} onChange={set('netto')} />
+                <Input label={`MwSt. ${form.mwstSatz ?? 19} % (€)`} inputMode="decimal" value={form.mwst ?? ''} onChange={set('mwst')} />
+                <Input label="Brutto (€)" inputMode="decimal" value={form.brutto ?? ''} onChange={set('brutto')} />
+                <Input label="MwSt.-Satz (%)" inputMode="decimal" value={form.mwstSatz ?? ''} onChange={set('mwstSatz')} />
+                <Input label="Zahlungsziel (Tage)" inputMode="numeric" value={form.zahlungszielTage ?? ''} onChange={set('zahlungszielTage')} />
+                <div className="flex flex-col justify-end pb-2">
+                  <p className="text-sm font-medium text-gray-700 mb-1">Endsumme</p>
+                  <p className="text-sm font-bold text-gray-900">{formatEuro(zahl('brutto'))}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className={gruppenRahmen.status}>
+              <p className={gruppenTitel.status}>Interne Bemerkung</p>
+              <p className="text-xs text-gray-500 mb-2">Erscheint nicht auf dem PDF.</p>
+              <textarea
+                value={form.bemerkung ?? ''}
+                onChange={set('bemerkung')}
+                rows={2}
+                className="bg-gray-50 w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
 
           {meldung && (

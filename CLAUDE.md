@@ -408,6 +408,32 @@ Schlüssel, DJK-Info), `npm run build`, `pm2 restart`.
   nicht in Komponenten. Neue Veranstaltung = Register-Eintrag + optionaler Seed.
 - DB-Backups (`*.db.backup*`) und `.env` sind gitignored; nie committen.
 
+## Formulare: Farbsystem für Feldgruppen
+
+Feldgruppen in Formularen stehen in eingefärbten Blöcken; die Farbe steht für die
+**Art der Angabe**, nicht für die Position — dieselbe Gruppe sieht in jedem
+Formular gleich aus. Klassen zentral in **`src/components/ui/feldgruppe.ts`**
+(`gruppenRahmen` / `gruppenTitel`), nie lokal nachbauen:
+
+| Schlüssel | Farbe | Wofür |
+|---|---|---|
+| `stammdaten` | Schiefer | Firma, Anschrift, Rechnungskopf |
+| `kontakt` | Smaragd | Ansprechpartner, Telefon, E-Mail, Empfänger |
+| `geld` | Bernstein | Rechnungskontakt, Versandweg, Beträge, Steuer |
+| `leistung` | Himmel | Bandenmaße, Anzeigengröße, Abschnitt, PDF-Angaben |
+| `status` | Violett | Status, Kündigung, interne Bemerkung |
+
+**Grau ist vergeben:** die Eingabefelder selbst haben `bg-gray-50` (Input/Select),
+deshalb taugt Grau nicht mehr als Gruppenfarbe. **Im Schlüsselbereich kein
+`geld`** — dort markiert Bernstein die ausgewählten Schlüssel.
+
+Eingebaut in: `werbebanden/PartnerDetailView`, `werbebanden/RechnungEditView`,
+`djk-info/KundeDetailView`, `djk-info/RechnungEditView`,
+`schluessel/AusgabeFlowView`. Bewusst **nicht** in Einstellungsseiten (dort
+trennen bereits Cards), Listen/Tabellen und kurzen Dialogen. Mockups zur
+Entscheidung liegen unter `mockups/partner-block-farben.html` und
+`mockups/block-farben-system.html`.
+
 ## ⚠️ Stolpersteine / Bekannte Eigenheiten
 
 - **Niemals direkt auf dem Server editieren.** Der Deploy setzt das Arbeitsverzeichnis
