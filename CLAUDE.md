@@ -132,6 +132,14 @@ Bewusst eine eigene Route: `rechnungDaten()` in `werbebanden-felder.ts` kennt
 die beiden Stempelfelder nicht, damit ein normaler PUT sie nicht fälschen kann.
 Das manuelle Status-Dropdown stempelt nicht.
 
+**Rechnungslauf-Hilfe:** `src/components/werbebanden/RechnungslaufHilfe.tsx`
+erklärt im Lauf-Dialog, was beim Klick passiert (fester Kernsatz + Fallliste,
+die den Dialoginhalt ersetzt — kein zweites Modal, das bricht mobil das
+Scrollen). Die Fälle beschreiben das echte Verhalten der Route
+`api/werbebanden/rechnungen/lauf` (übersprungen wird je **Saison + Partner**,
+Vorauswahl = aktiv mit Preis > 0 und lfd. Meter > 0). **Ändert sich die Route,
+muss die Fallliste mitgezogen werden.**
+
 **Seed `prisma/seed-werbebanden.ts`** (läuft beim Auto-Deploy, idempotent):
 Einstellungen per upsert (`update: {}` — überschreibt nie Nutzeränderungen),
 Partner + Rechnungen 2025/2026 aus der Excel nur beim allerersten Lauf.

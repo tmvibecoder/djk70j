@@ -11,6 +11,7 @@ import {
   saisonFuerJahr,
 } from '@/data/werbebanden'
 import { PartnerDto, RechnungDto, formatDatum } from './typen'
+import { RechnungslaufFaelle, RechnungslaufKernsatz } from './RechnungslaufHilfe'
 
 type SortSpalte = 'nummer' | 'firma' | 'saison' | 'datum' | 'brutto' | 'status' | 'versandart' | 'versendet'
 
@@ -260,6 +261,8 @@ function RechnungslaufModal({ onClose, onFertig }: { onClose: () => void; onFert
   const [laufend, setLaufend] = useState(false)
   const [ergebnis, setErgebnis] = useState<{ angelegt: string[]; uebersprungen: string[] } | null>(null)
   const [fehler, setFehler] = useState<string | null>(null)
+  // Die Fallliste ersetzt den Dialoginhalt, statt ein zweites Fenster zu öffnen.
+  const [faelleOffen, setFaelleOffen] = useState(false)
 
   useEffect(() => {
     fetch('/api/werbebanden/partner?status=aktiv')
@@ -306,8 +309,14 @@ function RechnungslaufModal({ onClose, onFertig }: { onClose: () => void; onFert
   )
 
   return (
-    <Modal isOpen onClose={onClose} title="Rechnungslauf">
-      {ergebnis ? (
+    <Modal
+      isOpen
+      onClose={onClose}
+      title={faelleOffen ? 'Was passiert beim Rechnungslauf?' : 'Rechnungslauf'}
+    >
+      {faelleOffen ? (
+        <RechnungslaufFaelle onZurueck={() => setFaelleOffen(false)} />
+      ) : ergebnis ? (
         <div className="space-y-4">
           <p className="text-sm text-gray-700">
             ✅ {ergebnis.angelegt.length} Rechnung{ergebnis.angelegt.length === 1 ? '' : 'en'} angelegt
@@ -324,6 +333,8 @@ function RechnungslaufModal({ onClose, onFertig }: { onClose: () => void; onFert
         </div>
       ) : (
         <div className="space-y-4">
+          <RechnungslaufKernsatz onAlleFaelle={() => setFaelleOffen(true)} />
+
           <div className="grid grid-cols-2 gap-3">
             <Input label="Saison" value={saison} onChange={e => setSaison(e.target.value)} placeholder="2025/2026" />
             <Input label="Rechnungsjahr (Nummernkreis)" inputMode="numeric" value={jahr} onChange={e => setJahr(e.target.value)} />
