@@ -143,14 +143,16 @@ export function zeichneFusszeile(
     zeilen(einstellungen.fusszeileSpalte3),
   ]
   if (spalten.some(s => s.length > 0)) {
-    const fussOben = 108
+    // Fußzeile sitzt tief am Blattrand: Trennlinie bei 85, fünf Zeilen à 9 pt
+    // enden bei y = 39 (≈ 1,4 cm Rand) und lassen dem Brieftext darüber Luft.
+    const fussOben = 85
     seite.drawLine({ start: { x: LINKS, y: fussOben }, end: { x: RECHTS, y: fussOben }, thickness: 0.5, color: GRAU })
     const spaltenX = [LINKS, LINKS + 175, LINKS + 298]
     spalten.forEach((spalte, i) => {
-      let yFuss = fussOben - 12
+      let yFuss = fussOben - 10
       for (const zeile of spalte) {
         text(zeile, spaltenX[i], yFuss, 7.5, false, GRAU)
-        yFuss -= 10
+        yFuss -= 9
       }
     })
   } else if (einstellungen.iban) {
@@ -160,8 +162,8 @@ export function zeichneFusszeile(
       einstellungen.bic ? `BIC: ${einstellungen.bic}` : null,
     ].filter(Boolean)
     const fusszeile = teile.join('  ·  ')
-    seite.drawLine({ start: { x: LINKS, y: 78 }, end: { x: RECHTS, y: 78 }, thickness: 0.5, color: GRAU })
+    seite.drawLine({ start: { x: LINKS, y: 55 }, end: { x: RECHTS, y: 55 }, thickness: 0.5, color: GRAU })
     const breite = fonts.font.widthOfTextAtSize(fusszeile, 9)
-    text(fusszeile, (A4.breite - breite) / 2, 64, 9, false, GRAU)
+    text(fusszeile, (A4.breite - breite) / 2, 41, 9, false, GRAU)
   }
 }
