@@ -328,13 +328,16 @@ model Werbepartner {
   ort                     String?
   telefon                 String?
   email                   String?
+  telefonRechnung         String?   // Telefon des Rechnungs-Ansprechpartners
+  emailRechnung           String?   // E-Mail des Rechnungs-Ansprechpartners
+  ustId                   String?   // Umsatzsteuer-ID des Partners
   istLaenge               Float     @default(0) // tatsächliche Länge der Bande in m
   berechneteLaenge        Float     @default(0) // abgerechnete lfd. Meter (kann von Ist abweichen)
   preisProMeter           Float     @default(40) // netto; 0 = Gratisbande (z.B. DJK-Logo, Fanclub)
   vertragsbeginn          DateTime?
   bandeErneuert           Int? // Jahr der letzten Bandenerneuerung
   rechnungsversand        String    @default("post") // "post" | "uebergabe" | "email"
-  abschnitt               Int? // 1..3 = Platzabschnitte, 4 = Zusatzfläche 17,5 m
+  abschnitt               Int? // 1..3 = Platzabschnitte
   positionNr              Int? // Reihenfolge innerhalb des Abschnitts
   kuendigungZum           DateTime? // "Kündigung zum"
   status                  String    @default("aktiv") // "aktiv" | "gekuendigt"
@@ -387,6 +390,8 @@ model WerbebandenRechnung {
   brutto           Float         @default(0)
   zahlungszielTage Int           @default(14)
   status           String        @default("erstellt") // "erstellt" | "versendet" | "bezahlt"
+  versendetAm      DateTime?     // Stempel: wann als versendet markiert (Checkbox im Rechnungs-Tab)
+  versendetVon     String?       // Stempel: Name des angemeldeten Benutzers
   bemerkung        String?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt

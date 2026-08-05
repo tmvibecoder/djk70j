@@ -11,6 +11,9 @@ export interface PartnerDto {
   ort: string | null
   telefon: string | null
   email: string | null
+  telefonRechnung: string | null
+  emailRechnung: string | null
+  ustId: string | null
   istLaenge: number
   berechneteLaenge: number
   preisProMeter: number
@@ -37,7 +40,7 @@ export interface DateiDto {
 export interface RechnungDto {
   id: string
   partnerId: string | null
-  partner?: { id: string; firma: string } | null
+  partner?: { id: string; firma: string; rechnungsversand: string } | null
   saison: string
   jahr: number
   laufnummer: number
@@ -56,6 +59,8 @@ export interface RechnungDto {
   brutto: number
   zahlungszielTage: number
   status: string
+  versendetAm: string | null
+  versendetVon: string | null
   bemerkung: string | null
 }
 
