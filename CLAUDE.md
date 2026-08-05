@@ -91,8 +91,10 @@ Einstellungen). Sidebar/AppHeader der Event-App blenden sich auf
 siehe „Authentifizierung") — kein eigenes Bereichs-Passwort mehr. Der
 Einstellungen-Tab erscheint nur für Rolle `verwalten`.
 
-**Modelle:** `Werbepartner` (Kontakte, Ist-Länge vs. abgerechnete lfd. Meter,
-Preis/m netto, Abschnitt 1–4 + PositionNr, Status aktiv/gekuendigt, Kündigung),
+**Modelle:** `Werbepartner` (zwei Kontaktblöcke — allgemein `ansprechpartner`/
+`telefon`/`email`, für die Rechnung `ansprechpartnerRechnung`/`telefonRechnung`/
+`emailRechnung` —, `ustId`, Ist-Länge vs. abgerechnete lfd. Meter, Preis/m netto,
+Abschnitt 1–3 + PositionNr, Status aktiv/gekuendigt, Kündigung),
 `WerbepartnerDatei` (Uploads), `WerbebandenRechnung` (editierbarer Snapshot,
 Nummernkreis `jahr` + `laufnummer` → `2026/B/0001`, `src/lib/rechnungsnummer.ts`),
 `WerbebandenEinstellung` (Singleton „werbebanden": DJK-Stammdaten für die
@@ -114,9 +116,21 @@ fusszeileSpalte1–3; Seed rüstet leere Felder nach, überschreibt aber nie
 Nutzereingaben). Rechnungslauf (`api/werbebanden/rechnungen/lauf`) überspringt
 Partner, die für die Saison schon eine Rechnung haben.
 
-**Platzabschnitte** in `src/data/werbebanden.ts`: 34 m / 26,88 m / 18 m +
-17,5 m Zusatzfläche. Die Platzübersicht rechnet mit **Ist-Längen** (physisch),
-die Abrechnung mit den **lfd. Metern** (können abweichen).
+**Platzabschnitte** in `src/data/werbebanden.ts`: 34 m / 26,88 m / 35,5 m
+(die früher separat geführte Zusatzfläche von 17,5 m gehört zu Abschnitt 3 und
+ist dort eingerechnet — Abschnitt 4 gibt es nicht). Die Platzübersicht rechnet
+mit **Ist-Längen** (physisch), die Abrechnung mit den **lfd. Metern** (können
+abweichen). Partner mit einer unbekannten Abschnittsnummer erscheinen unter
+„Ohne Abschnitt erfasst", damit sie beim Entfallen eines Abschnitts sichtbar
+bleiben.
+
+**Versand-Stempel:** Die Checkbox „Versendet" im Rechnungs-Tab schreibt über
+`PUT api/werbebanden/rechnungen/[id]/versand` `versendetAm` + `versendetVon`
+(Name aus der Session) und setzt den Status auf „versendet"; Abhaken löscht den
+Stempel und nimmt den Status auf „erstellt" zurück, lässt „bezahlt" aber stehen.
+Bewusst eine eigene Route: `rechnungDaten()` in `werbebanden-felder.ts` kennt
+die beiden Stempelfelder nicht, damit ein normaler PUT sie nicht fälschen kann.
+Das manuelle Status-Dropdown stempelt nicht.
 
 **Seed `prisma/seed-werbebanden.ts`** (läuft beim Auto-Deploy, idempotent):
 Einstellungen per upsert (`update: {}` — überschreibt nie Nutzeränderungen),
