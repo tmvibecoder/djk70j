@@ -9,7 +9,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const rechnung = await prisma.werbebandenRechnung.findUnique({
     where: { id: params.id },
-    include: { partner: { select: { id: true, firma: true } } },
+    include: { partner: { select: { id: true, firma: true, rechnungsversand: true } } },
   })
   if (!rechnung) return NextResponse.json({ error: 'Nicht gefunden' }, { status: 404 })
   return NextResponse.json(rechnung)
