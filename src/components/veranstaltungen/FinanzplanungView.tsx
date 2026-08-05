@@ -449,7 +449,7 @@ export default function FinanzplanungView({ event }: { event: Veranstaltung }) {
               <h3 className="font-semibold text-gray-900 mb-3">{editCostId ? 'Position bearbeiten' : 'Neue Position'}</h3>
               <div className="space-y-3">
                 <input value={costForm.name} onChange={e => setCostForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="Position (z.B. Zeltmiete)" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900" />
+                  placeholder="Position (z.B. Zeltmiete)" className="bg-gray-50 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900" />
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="text-xs text-gray-500 font-medium">Eingabe als</label>
@@ -465,12 +465,12 @@ export default function FinanzplanungView({ event }: { event: Veranstaltung }) {
                   <div>
                     <label className="text-xs text-gray-500 font-medium">{costForm.amountEntry === 'netto' ? 'Netto-Betrag (€)' : 'Brutto-Betrag (€)'}</label>
                     <input type="number" step="0.01" value={costForm.amount || ''} onChange={e => setCostForm(f => ({ ...f, amount: +e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1" />
+                      className="bg-gray-50 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1" />
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 font-medium">MwSt-Satz</label>
                     <select value={costForm.vatRate} onChange={e => setCostForm(f => ({ ...f, vatRate: +e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1">
+                      className="bg-gray-50 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1">
                       {VAT_RATES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                     </select>
                   </div>
@@ -491,34 +491,34 @@ export default function FinanzplanungView({ event }: { event: Veranstaltung }) {
                   <div>
                     <label className="text-xs text-gray-500 font-medium">Status</label>
                     <select value={costForm.status} onChange={e => setCostForm(f => ({ ...f, status: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1">
+                      className="bg-gray-50 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1">
                       {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 font-medium">Zahlungszeitpunkt</label>
                     <select value={costForm.dueDate} onChange={e => setCostForm(f => ({ ...f, dueDate: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1">
+                      className="bg-gray-50 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1">
                       {DUE_DATE_OPTIONS.map(d => <option key={d.value} value={d.value}>{d.icon} {d.label}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 font-medium">Tag</label>
                     <select value={costForm.eventDay} onChange={e => setCostForm(f => ({ ...f, eventDay: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1">
+                      className="bg-gray-50 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1">
                       {EVENT_DAY_OPTIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 font-medium">Kategorie</label>
                     <select value={costForm.costType} onChange={e => setCostForm(f => ({ ...f, costType: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1">
+                      className="bg-gray-50 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-1">
                       {COST_TYPES.map(ct => <option key={ct.value} value={ct.value}>{ct.icon} {ct.label}</option>)}
                     </select>
                   </div>
                 </div>
                 <input value={costForm.notes} onChange={e => setCostForm(f => ({ ...f, notes: e.target.value }))}
-                  placeholder="Notizen (optional)" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900" />
+                  placeholder="Notizen (optional)" className="bg-gray-50 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900" />
                 <div className="flex gap-2">
                   <button onClick={saveCost} className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700">
                     {editCostId ? 'Speichern' : '+ Hinzufügen'}
@@ -1085,11 +1085,11 @@ export default function FinanzplanungView({ event }: { event: Veranstaltung }) {
             <h3 className="font-semibold text-gray-900 mb-3">{editSponsorId ? 'Spende bearbeiten' : 'Neue Spende'}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               <input value={sponsorForm.name} onChange={e => setSponsorForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Spender-Name" className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 lg:col-span-2" />
+                placeholder="Spender-Name" className="bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 lg:col-span-2" />
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-sm">EUR</span>
                 <input type="number" step="0.01" value={sponsorForm.amount || ''} onChange={e => setSponsorForm(f => ({ ...f, amount: +e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg pl-12 pr-3 py-2 text-sm" />
+                  className="bg-gray-50 w-full border border-gray-300 rounded-lg pl-12 pr-3 py-2 text-sm" />
               </div>
               <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                 <input type="checkbox" checked={sponsorForm.received} onChange={e => setSponsorForm(f => ({ ...f, received: e.target.checked }))}
@@ -1101,7 +1101,7 @@ export default function FinanzplanungView({ event }: { event: Veranstaltung }) {
               </button>
             </div>
             <input value={sponsorForm.notes} onChange={e => setSponsorForm(f => ({ ...f, notes: e.target.value }))}
-              placeholder="Notizen (optional)" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-3" />
+              placeholder="Notizen (optional)" className="bg-gray-50 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 mt-3" />
             {editSponsorId && (
               <button onClick={() => { setEditSponsorId(null); setSponsorForm({ name: '', amount: 0, received: false, notes: '' }) }}
                 className="text-sm text-gray-500 mt-2 hover:text-gray-700">Abbrechen</button>

@@ -36,6 +36,9 @@ export function partnerDaten(body: Record<string, unknown>) {
     ort: str(body, 'ort'),
     telefon: str(body, 'telefon'),
     email: str(body, 'email'),
+    telefonRechnung: str(body, 'telefonRechnung'),
+    emailRechnung: str(body, 'emailRechnung'),
+    ustId: str(body, 'ustId'),
     istLaenge: num(body, 'istLaenge', 0) ?? 0,
     berechneteLaenge: num(body, 'berechneteLaenge', 0) ?? 0,
     preisProMeter: num(body, 'preisProMeter', 40) ?? 40,
@@ -52,6 +55,9 @@ export function partnerDaten(body: Record<string, unknown>) {
   }
 }
 
+// versendetAm/versendetVon fehlen hier bewusst: der Versand-Stempel wird
+// ausschließlich serverseitig in rechnungen/[id]/versand gesetzt und darf
+// nicht über einen normalen PUT aus dem Browser manipulierbar sein.
 export function rechnungDaten(body: Record<string, unknown>) {
   return {
     saison: str(body, 'saison') ?? '',

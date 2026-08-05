@@ -7,12 +7,12 @@ export interface PlatzAbschnitt {
   laenge: number // Meter
 }
 
-// Drei Platzabschnitte + Zusatzfläche (alle mit Befestigung)
+// Drei Platzabschnitte (alle mit Befestigung). Die früher separat geführte
+// Zusatzfläche (17,5 m) gehört zu Abschnitt 3 und ist dort eingerechnet.
 export const PLATZ_ABSCHNITTE: PlatzAbschnitt[] = [
   { nr: 1, name: 'Bis zur 1. Spielerbank (DJK)', laenge: 34 },
   { nr: 2, name: 'Zwischen den Spielerbänken', laenge: 26.88 },
-  { nr: 3, name: 'Ab der 2. Spielerbank (Heimmannschaft)', laenge: 18 },
-  { nr: 4, name: 'Zusatzfläche', laenge: 17.5 },
+  { nr: 3, name: 'Ab der 2. Spielerbank (Heimmannschaft)', laenge: 35.5 },
 ]
 
 export function abschnittName(nr: number | null | undefined): string {

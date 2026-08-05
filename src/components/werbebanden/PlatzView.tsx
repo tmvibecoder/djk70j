@@ -29,7 +29,12 @@ export function PlatzView() {
   // Physische Belegung = Ist-Länge der Bande (Fallback: abgerechnete Meter)
   const physisch = (p: PartnerDto) => p.istLaenge || p.berechneteLaenge
 
-  const ohneAbschnitt = partner.filter(p => !p.abschnitt && physisch(p) > 0)
+  // Auch Partner mit einer nicht mehr existierenden Abschnittsnummer landen hier,
+  // damit sie nach dem Entfallen eines Abschnitts nicht unsichtbar werden.
+  const gueltigeAbschnitte = new Set(PLATZ_ABSCHNITTE.map(a => a.nr))
+  const ohneAbschnitt = partner.filter(
+    p => (!p.abschnitt || !gueltigeAbschnitte.has(p.abschnitt)) && physisch(p) > 0,
+  )
 
   return (
     <div className="space-y-4">

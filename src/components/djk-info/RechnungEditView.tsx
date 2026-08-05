@@ -168,7 +168,7 @@ export function RechnungEditView({ rechnungId }: { rechnungId: string }) {
                 value={form.bemerkung ?? ''}
                 onChange={set('bemerkung')}
                 rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="bg-gray-50 w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 

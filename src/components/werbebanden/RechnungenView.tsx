@@ -3,13 +3,58 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Card, Input, Modal, Select } from '@/components/ui'
-import { RECHNUNG_STATUS_OPTIONEN, formatEuro, formatMeter, saisonFuerJahr } from '@/data/werbebanden'
+import {
+  RECHNUNG_STATUS_OPTIONEN,
+  formatEuro,
+  formatMeter,
+  rechnungsversandLabel,
+  saisonFuerJahr,
+} from '@/data/werbebanden'
 import { PartnerDto, RechnungDto, formatDatum } from './typen'
+
+type SortSpalte = 'nummer' | 'firma' | 'saison' | 'datum' | 'brutto' | 'status' | 'versandart' | 'versendet'
+
+const SPALTEN: { key: SortSpalte; label: string; rechts?: boolean; mitte?: boolean }[] = [
+  { key: 'nummer', label: 'Nummer' },
+  { key: 'firma', label: 'Firma' },
+  { key: 'saison', label: 'Saison' },
+  { key: 'datum', label: 'Datum' },
+  { key: 'brutto', label: 'Brutto', rechts: true },
+  { key: 'status', label: 'Status' },
+  { key: 'versandart', label: 'Versandart' },
+  { key: 'versendet', label: 'Versendet', mitte: true },
+]
+
+// Sortierwert je Spalte: Zahl oder String; null/leer wird ans Ende sortiert.
+function sortWert(r: RechnungDto, spalte: SortSpalte): number | string | null {
+  switch (spalte) {
+    case 'nummer': return r.jahr * 100000 + r.laufnummer
+    case 'firma': return r.firma
+    case 'saison': return r.saison
+    case 'datum': return r.datum ? Date.parse(r.datum) : null
+    case 'brutto': return r.brutto
+    case 'status': return RECHNUNG_STATUS_OPTIONEN.findIndex(o => o.value === r.status)
+    case 'versandart': return rechnungsversandLabel(r.partner?.rechnungsversand)
+    case 'versendet': return r.versendetAm ? Date.parse(r.versendetAm) : null
+  }
+}
+
+function stempelText(r: RechnungDto): string | null {
+  if (!r.versendetAm) return null
+  const wann = new Date(r.versendetAm).toLocaleString('de-DE', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
+  return `${r.versendetVon ? `von ${r.versendetVon} ` : ''}am ${wann}`
+}
 
 export function RechnungenView() {
   const [rechnungen, setRechnungen] = useState<RechnungDto[] | null>(null)
   const [saison, setSaison] = useState('alle')
   const [laufOffen, setLaufOffen] = useState(false)
+  const [sortierung, setSortierung] = useState<{ spalte: SortSpalte; richtung: 'auf' | 'ab' }>({
+    spalte: 'nummer',
+    richtung: 'ab',
+  })
 
   const lade = () => {
     fetch(`/api/werbebanden/rechnungen?saison=${encodeURIComponent(saison)}`)
@@ -43,11 +88,43 @@ export function RechnungenView() {
     lade()
   }
 
+  // Stempel (Benutzer + Zeitpunkt) setzt der Server; hier wird nur der Wunsch gemeldet.
+  const setzeVersendet = async (r: RechnungDto, versendet: boolean) => {
+    await fetch(`/api/werbebanden/rechnungen/${r.id}/versand`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ versendet }),
+    })
+    lade()
+  }
+
   const loesche = async (r: RechnungDto) => {
     if (!confirm(`Rechnung ${r.nummer} wirklich löschen?`)) return
     await fetch(`/api/werbebanden/rechnungen/${r.id}`, { method: 'DELETE' })
     lade()
   }
+
+  const sortiere = (spalte: SortSpalte) =>
+    setSortierung(s => ({
+      spalte,
+      richtung: s.spalte === spalte && s.richtung === 'auf' ? 'ab' : 'auf',
+    }))
+
+  const sortierteRechnungen = useMemo(() => {
+    if (!rechnungen) return null
+    const faktor = sortierung.richtung === 'auf' ? 1 : -1
+    return [...rechnungen].sort((a, b) => {
+      const wa = sortWert(a, sortierung.spalte)
+      const wb = sortWert(b, sortierung.spalte)
+      if (wa === null && wb === null) return 0
+      if (wa === null) return 1 // Leerwerte immer ans Ende, unabhängig von der Richtung
+      if (wb === null) return -1
+      const vergleich = typeof wa === 'string' && typeof wb === 'string'
+        ? wa.localeCompare(wb, 'de')
+        : Number(wa) - Number(wb)
+      return vergleich * faktor
+    })
+  }, [rechnungen, sortierung])
 
   const summeBrutto = (rechnungen ?? []).reduce((s, r) => s + r.brutto, 0)
 
@@ -78,20 +155,38 @@ export function RechnungenView() {
         </p>
       ) : (
         <Card className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[640px]">
+          <table className="w-full text-sm min-w-[900px]">
             <thead>
               <tr className="bg-gray-50 text-left text-xs text-gray-500 uppercase">
-                <th className="px-4 py-3 font-semibold">Nummer</th>
-                <th className="px-4 py-3 font-semibold">Firma</th>
-                <th className="px-4 py-3 font-semibold">Saison</th>
-                <th className="px-4 py-3 font-semibold">Datum</th>
-                <th className="px-4 py-3 font-semibold text-right">Brutto</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
+                {SPALTEN.map(s => (
+                  <th
+                    key={s.key}
+                    className={`px-4 py-3 font-semibold ${s.rechts ? 'text-right' : s.mitte ? 'text-center' : ''}`}
+                    aria-sort={
+                      sortierung.spalte === s.key
+                        ? sortierung.richtung === 'auf' ? 'ascending' : 'descending'
+                        : 'none'
+                    }
+                  >
+                    <button
+                      onClick={() => sortiere(s.key)}
+                      className={`inline-flex items-center gap-1 uppercase hover:text-gray-900 ${
+                        sortierung.spalte === s.key ? 'text-gray-900' : ''
+                      }`}
+                      title={`Nach ${s.label} sortieren`}
+                    >
+                      {s.label}
+                      <span className={sortierung.spalte === s.key ? '' : 'text-gray-300'}>
+                        {sortierung.spalte === s.key ? (sortierung.richtung === 'auf' ? '▲' : '▼') : '▾'}
+                      </span>
+                    </button>
+                  </th>
+                ))}
                 <th className="px-4 py-3 font-semibold text-right">Aktionen</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {rechnungen.map(r => (
+              {(sortierteRechnungen ?? []).map(r => (
                 <tr key={r.id} className="hover:bg-emerald-50/50">
                   <td className="px-4 py-3">
                     <Link href={`/werbebanden/rechnungen/${r.id}`} className="font-medium text-gray-900 hover:text-emerald-700 hover:underline whitespace-nowrap">
@@ -106,13 +201,29 @@ export function RechnungenView() {
                     <select
                       value={r.status}
                       onChange={e => setzeStatus(r, e.target.value)}
-                      className="text-xs border border-gray-200 rounded-md px-1.5 py-1 bg-white"
+                      className="text-xs border border-gray-200 rounded-md px-1.5 py-1 bg-gray-50"
                       aria-label={`Status von ${r.nummer}`}
                     >
                       {RECHNUNG_STATUS_OPTIONEN.map(o => (
                         <option key={o.value} value={o.value}>{o.label}</option>
                       ))}
                     </select>
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                    {rechnungsversandLabel(r.partner?.rechnungsversand)}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <input
+                      type="checkbox"
+                      checked={!!r.versendetAm}
+                      onChange={e => setzeVersendet(r, e.target.checked)}
+                      className="rounded border-gray-300"
+                      aria-label={`Rechnung ${r.nummer} als versendet markieren`}
+                      title={stempelText(r) ?? 'Noch nicht als versendet protokolliert'}
+                    />
+                    {r.versendetAm && (
+                      <p className="text-[10px] text-gray-400 whitespace-nowrap mt-0.5">{stempelText(r)}</p>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     <a

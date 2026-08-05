@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const rechnungen = await prisma.werbebandenRechnung.findMany({
     where: saison && saison !== 'alle' ? { saison } : undefined,
     orderBy: [{ jahr: 'desc' }, { laufnummer: 'desc' }],
-    include: { partner: { select: { id: true, firma: true } } },
+    include: { partner: { select: { id: true, firma: true, rechnungsversand: true } } },
   })
   return NextResponse.json(rechnungen)
 }

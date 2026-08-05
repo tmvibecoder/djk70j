@@ -12,13 +12,21 @@ import {
 } from '@/data/werbebanden'
 import { DateiDto, PartnerDetailDto, alsDatumsfeld, formatDatum } from './typen'
 
+// ansprechpartnerBande hat kein Eingabefeld mehr, bleibt aber im Formular-State:
+// gespeichert wird immer das komplette Objekt, ein fehlender Schlüssel würde die
+// vorhandenen Daten in der Datenbank löschen.
 const LEER = {
   firma: '', ansprechpartner: '', ansprechpartnerBande: '', ansprechpartnerRechnung: '',
   strasse: '', plz: '', ort: '', telefon: '', email: '',
+  telefonRechnung: '', emailRechnung: '', ustId: '',
   istLaenge: '', berechneteLaenge: '', preisProMeter: '40',
   vertragsbeginn: '', bandeErneuert: '', rechnungsversand: 'post',
   abschnitt: '', positionNr: '', kuendigungZum: '', status: 'aktiv', bemerkung: '',
 }
+
+// Rahmen + leichte Grautönung, um die Personen/Blöcke voneinander abzugrenzen
+const BLOCK = 'border border-gray-200 rounded-lg p-3 bg-gray-100/50'
+const BLOCK_TITEL = 'text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2'
 
 const UPLOADS: { art: string; label: string; hinweis: string }[] = [
   { art: 'foto', label: '📷 Foto der Bande', hinweis: 'Bilddatei (JPG, PNG, WebP, HEIC)' },
@@ -51,6 +59,9 @@ export function PartnerDetailView({ partnerId }: { partnerId: string }) {
       ort: p.ort ?? '',
       telefon: p.telefon ?? '',
       email: p.email ?? '',
+      telefonRechnung: p.telefonRechnung ?? '',
+      emailRechnung: p.emailRechnung ?? '',
+      ustId: p.ustId ?? '',
       istLaenge: String(p.istLaenge ?? ''),
       berechneteLaenge: String(p.berechneteLaenge ?? ''),
       preisProMeter: String(p.preisProMeter ?? ''),
@@ -113,6 +124,17 @@ export function PartnerDetailView({ partnerId }: { partnerId: string }) {
   const brutto = (parseFloat(form.berechneteLaenge.replace(',', '.')) || 0)
     * (parseFloat(form.preisProMeter.replace(',', '.')) || 0) * 1.19
 
+  // Altbestand kann noch auf einen inzwischen entfallenen Abschnitt zeigen (z.B. die
+  // frühere Zusatzfläche 4). Ohne passende Option würde das Select leer anzeigen und
+  // die Zuordnung beim nächsten Speichern still verlieren.
+  const abschnittOptionen = [
+    { value: '', label: '— kein —' },
+    ...PLATZ_ABSCHNITTE.map(a => ({ value: String(a.nr), label: `${a.nr} · ${a.name}` })),
+    ...(form.abschnitt && !PLATZ_ABSCHNITTE.some(a => String(a.nr) === form.abschnitt)
+      ? [{ value: form.abschnitt, label: `${form.abschnitt} · (entfällt — bitte neu zuordnen)` }]
+      : []),
+  ]
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
@@ -132,27 +154,49 @@ export function PartnerDetailView({ partnerId }: { partnerId: string }) {
           )}
         </CardHeader>
         <CardContent className="space-y-5">
-          {/* Stammdaten */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="sm:col-span-2">
-              <Input label="Firma *" value={form.firma} onChange={set('firma')} />
+          {/* Stammdaten: Firma/Anschrift und die beiden Ansprechpartner je in einem
+              eigenen Block; beide Personen-Blöcke haben dasselbe 3-Spalten-Raster. */}
+          <div className="space-y-3">
+            <div className={BLOCK}>
+              <p className={BLOCK_TITEL}>Firma &amp; Anschrift</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
+                  <Input label="Firma *" value={form.firma} onChange={set('firma')} />
+                </div>
+                <Input label="Umsatzsteuer-ID" value={form.ustId} onChange={set('ustId')} />
+                <div className="sm:col-span-3">
+                  <Input label="Straße" value={form.strasse} onChange={set('strasse')} />
+                </div>
+                <Input label="PLZ" value={form.plz} onChange={set('plz')} />
+                <div className="sm:col-span-2">
+                  <Input label="Ort" value={form.ort} onChange={set('ort')} />
+                </div>
+              </div>
             </div>
-            <Input label="Ansprechpartner (allgemein)" value={form.ansprechpartner} onChange={set('ansprechpartner')} />
-            <Input label="Telefon" value={form.telefon} onChange={set('telefon')} />
-            <Input label="Ansprechpartner Werbebande" value={form.ansprechpartnerBande} onChange={set('ansprechpartnerBande')} />
-            <Input label="Ansprechpartner Rechnung" value={form.ansprechpartnerRechnung} onChange={set('ansprechpartnerRechnung')} />
-            <div className="sm:col-span-2">
-              <Input label="Straße" value={form.strasse} onChange={set('strasse')} />
+
+            <div className={BLOCK}>
+              <p className={BLOCK_TITEL}>Ansprechpartner Allgemein</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Input label="Ansprechpartner Allgemein" value={form.ansprechpartner} onChange={set('ansprechpartner')} />
+                <Input label="Telefon Allgemein" value={form.telefon} onChange={set('telefon')} />
+                <Input label="E-Mail Allgemein" type="email" value={form.email} onChange={set('email')} />
+              </div>
             </div>
-            <Input label="PLZ" value={form.plz} onChange={set('plz')} />
-            <Input label="Ort" value={form.ort} onChange={set('ort')} />
-            <Input label="E-Mail" type="email" value={form.email} onChange={set('email')} />
-            <Select
-              label="Rechnungsversand"
-              value={form.rechnungsversand}
-              onChange={set('rechnungsversand')}
-              options={RECHNUNGSVERSAND_OPTIONEN}
-            />
+
+            <div className={BLOCK}>
+              <p className={BLOCK_TITEL}>Ansprechpartner Rechnung</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Input label="Ansprechpartner Rechnung" value={form.ansprechpartnerRechnung} onChange={set('ansprechpartnerRechnung')} />
+                <Input label="Telefon Rechnung" value={form.telefonRechnung} onChange={set('telefonRechnung')} />
+                <Input label="E-Mail Rechnung" type="email" value={form.emailRechnung} onChange={set('emailRechnung')} />
+                <Select
+                  label="Rechnungsversand"
+                  value={form.rechnungsversand}
+                  onChange={set('rechnungsversand')}
+                  options={RECHNUNGSVERSAND_OPTIONEN}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Bande & Abrechnung */}
@@ -168,10 +212,7 @@ export function PartnerDetailView({ partnerId }: { partnerId: string }) {
               label="Abschnitt"
               value={form.abschnitt}
               onChange={set('abschnitt')}
-              options={[
-                { value: '', label: '— kein —' },
-                ...PLATZ_ABSCHNITTE.map(a => ({ value: String(a.nr), label: `${a.nr} · ${a.name}` })),
-              ]}
+              options={abschnittOptionen}
             />
             <Input label="Position im Abschnitt" inputMode="numeric" value={form.positionNr} onChange={set('positionNr')} />
             <Input label="Vertragsbeginn" type="date" value={form.vertragsbeginn} onChange={set('vertragsbeginn')} />
@@ -188,7 +229,7 @@ export function PartnerDetailView({ partnerId }: { partnerId: string }) {
                 value={form.bemerkung}
                 onChange={set('bemerkung')}
                 rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="bg-gray-50 w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
