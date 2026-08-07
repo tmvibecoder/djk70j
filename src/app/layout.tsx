@@ -46,6 +46,7 @@ export default async function RootLayout({
     werbebanden: darf(session, "werbebanden", "lesen"),
     schluessel: darf(session, "schluessel", "lesen"),
     "djk-info": darf(session, "djk-info", "lesen"),
+    dauerkarten: darf(session, "dauerkarten", "lesen"),
     istAdmin: session?.istAdmin ?? false,
   };
 

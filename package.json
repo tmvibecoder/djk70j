@@ -12,6 +12,7 @@
     "db:seed:werbebanden": "npx tsx prisma/seed-werbebanden.ts",
     "db:seed:schluessel": "npx tsx prisma/seed-schluessel.ts",
     "db:seed:djk-info": "npx tsx prisma/seed-djk-info.ts",
+    "db:seed:dauerkarten": "npx tsx prisma/seed-dauerkarten.ts",
     "db:reset": "npx prisma db push --force-reset && npm run db:seed"
   },
   "dependencies": {

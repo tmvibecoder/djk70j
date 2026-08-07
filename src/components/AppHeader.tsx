@@ -27,7 +27,8 @@ export function AppHeader() {
     pathname === '/login' ||
     pathname.startsWith('/werbebanden') ||
     pathname.startsWith('/schluessel') ||
-    pathname.startsWith('/djk-info')
+    pathname.startsWith('/djk-info') ||
+    pathname.startsWith('/dauerkarten')
   )
     return null
 

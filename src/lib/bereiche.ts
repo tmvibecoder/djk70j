@@ -2,13 +2,14 @@
 // next/headers, kein Prisma) — daher auch aus Client-Components importierbar.
 // src/lib/session.ts re-exportiert diese Konstanten für Server-Code.
 
-export type Bereich = 'veranstaltungen' | 'werbebanden' | 'schluessel' | 'djk-info'
-export const BEREICHE: Bereich[] = ['veranstaltungen', 'werbebanden', 'schluessel', 'djk-info']
+export type Bereich = 'veranstaltungen' | 'werbebanden' | 'schluessel' | 'djk-info' | 'dauerkarten'
+export const BEREICHE: Bereich[] = ['veranstaltungen', 'werbebanden', 'schluessel', 'djk-info', 'dauerkarten']
 export const BEREICH_LABELS: Record<Bereich, string> = {
   veranstaltungen: 'Veranstaltungen',
   werbebanden: 'Werbebanner',
   schluessel: 'Schlüssel',
   'djk-info': 'Info-Broschüre',
+  dauerkarten: 'Dauerkarten',
 }
 
 export type BereichsRolle = 'lesen' | 'bearbeiten' | 'verwalten'

@@ -54,6 +54,7 @@ const BEREICH_KACHELN = [
   { bereich: 'werbebanden' as const, href: '/werbebanden', icon: '🏟️', titel: 'Werbebanner', text: 'Bandenwerbung: Partner, Rechnungen, Platzübersicht' },
   { bereich: 'schluessel' as const, href: '/schluessel', icon: '🔑', titel: 'Schlüssel', text: 'Bestand, Ausgabe/Rückgabe, Schließplan, Belege' },
   { bereich: 'djk-info' as const, href: '/djk-info', icon: '📰', titel: 'Info-Broschüre', text: 'Anzeigenkunden, Rechnungen, Verteilung' },
+  { bereich: 'dauerkarten' as const, href: '/dauerkarten', icon: '🎫', titel: 'Dauerkarten', text: 'Karten ausgeben, Zahlungen, Kartendruck, Abrechnung' },
 ]
 
 // Übersicht: Kacheln je Veranstaltung + dauerhafte Bereiche, jeweils nur
