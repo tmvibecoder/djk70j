@@ -20,6 +20,7 @@ interface Sichtbarkeit {
   werbebanden: boolean
   schluessel: boolean
   'djk-info': boolean
+  dauerkarten: boolean
   istAdmin: boolean
 }
 
@@ -27,6 +28,7 @@ const DAUERHAFTE_BEREICHE = [
   { key: 'werbebanden' as const, href: '/werbebanden', icon: '🏟️', label: 'Werbebanner' },
   { key: 'schluessel' as const, href: '/schluessel', icon: '🔑', label: 'Schlüssel' },
   { key: 'djk-info' as const, href: '/djk-info', icon: '📰', label: 'DJK Info' },
+  { key: 'dauerkarten' as const, href: '/dauerkarten', icon: '🎫', label: 'Dauerkarten' },
 ]
 
 export function Navigation({ sichtbarkeit }: { sichtbarkeit: Sichtbarkeit | null }) {
@@ -229,7 +231,8 @@ export function Navigation({ sichtbarkeit }: { sichtbarkeit: Sichtbarkeit | null
     pathname === '/login' ||
     pathname.startsWith('/werbebanden') ||
     pathname.startsWith('/schluessel') ||
-    pathname.startsWith('/djk-info')
+    pathname.startsWith('/djk-info') ||
+    pathname.startsWith('/dauerkarten')
   )
     return null
 

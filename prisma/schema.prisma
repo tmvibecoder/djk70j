@@ -766,3 +766,112 @@ model InfoEinstellung {
   fusszeileSpalte3         String   @default("")
   updatedAt                DateTime @updatedAt
 }
+
+// ─── Dauerkarten (dauerhafter Bereich /dauerkarten, unabhängig von Veranstaltungen) ───
+
+// Saison ("2026/27") — Preise und Kartenmuster hängen an der Saison, damit
+// Vorjahre unverändert nachschlagbar bleiben. Genau eine Saison ist aktiv
+// (die API setzt beim Aktivieren alle anderen inaktiv).
+model DkSaison {
+  id              String   @id @default(cuid())
+  bezeichnung     String   @unique // z.B. "2026/27"
+  aktiv           Boolean  @default(false)
+  preisNormal     Float    @default(40)
+  preisErmaessigt Float    @default(35) // Rentner, Frauen, Schwerbehinderte …
+  musterPfad      String? // Kartenmuster-JPG, relativ zu uploads/dauerkarten/
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  karten       DkKarte[]
+  einzahlungen DkEinzahlung[]
+}
+
+// Dauerkarten-Inhaber — saisonübergreifende Person. Namen werden normal
+// geschrieben gespeichert ("Anton Holbinger"); NUR der Seriendruck-Export
+// schreibt sie in GROSSBUCHSTABEN (Aufdruck auf der Plastikkarte).
+model DkInhaber {
+  id             String   @id @default(cuid())
+  vorname        String
+  nachname       String
+  anrede         String   @default("") // "herr" | "frau" | ""
+  rentner        Boolean  @default(false) // → Preisvorschlag ermäßigt
+  behinderung    Boolean  @default(false) // → Preisvorschlag ermäßigt
+  info           String   @default("") // z.B. "Freundin von … (Spielerfrau)"
+  keineKarteMehr Boolean  @default(false) // nächste Saison keine Karte mehr anlegen
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  karten DkKarte[]
+
+  @@index([nachname])
+}
+
+// Eine Dauerkarte (Inhaber × Saison). lfdNr ist je Saison eindeutig und
+// wiederverwendbar (ausgeschiedene Inhaber geben ihre Nummer frei);
+// kartennummer ist der Aufdruck — meist = lfdNr, bei Wunschnummern
+// (0666–2507) abweichend und BEWUSST NICHT eindeutig (1860 existiert mehrfach).
+model DkKarte {
+  id           String    @id @default(cuid())
+  saisonId     String
+  saison       DkSaison  @relation(fields: [saisonId], references: [id], onDelete: Cascade)
+  inhaberId    String
+  inhaber      DkInhaber @relation(fields: [inhaberId], references: [id], onDelete: Restrict)
+  lfdNr        Int
+  kartennummer String    @default("") // Aufdruck, z.B. "0057" oder Wunschnummer "1860"
+  kategorie    String    @default("normal") // "normal" | "ermaessigt" | "druck" (Nur-Druck ab 200: Kinder, Ehrengäste)
+  preis        Float     @default(0) // editierbar (Sonderpreis während der Saison)
+  abweichung   Float     @default(0) // ± zum Preis: Aufrundung "Spende" bzw. Abzug
+  verteiler    String    @default("") // wer gibt aus: "Raacke" | "Settles" | "Kugler" (Einstellungen)
+  bemerkung    String    @default("")
+
+  // Zahlung — Überweisung/PayPal laufen über das Privatkonto des Kassiers
+  // und zählen in der Abrechnung wie Bargeld; nur POS geht direkt aufs
+  // Vereinskonto. zahlart "" = noch offen.
+  zahlart             String    @default("") // "" | "bar" | "pos" | "ueberweisung" | "paypal" | "geschenk"
+  bezahlt             Boolean   @default(false) // geschenk gilt als erledigt
+  bezahltAm           DateTime?
+  transaktionsNr      String    @default("") // POS-Beleg
+  zahlungSpaeterUeber String    @default("") // "" | "bar" | "ueberweisung" | "paypal" — steht auf der Quittung
+
+  // Ausgabe + Quittung (Muster SchluesselBeleg: payloadJson wird beim
+  // Signieren eingefroren, hash = SHA256(payload + Unterschrift + Zeit))
+  status           String    @default("angelegt") // "angelegt" | "ausgegeben"
+  ausgabeDatum     DateTime?
+  ohneSignatur     Boolean   @default(false) // Papier-Ausgabe über die Verteilerliste
+  payloadJson      String    @default("")
+  unterschriftPfad String? // relativ zu uploads/dauerkarten/
+  pdfPfad          String?
+  hash             String? // SHA-256 hex
+  signiertAm       DateTime?
+
+  gedruckt  Boolean  @default(false) // Karte physisch gedruckt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([saisonId, lfdNr])
+  @@unique([saisonId, inhaberId])
+  @@index([saisonId, status])
+}
+
+// Bareinzahlung aus dem Bargeldtopf aufs Vereinskonto (mehrfach je Saison)
+model DkEinzahlung {
+  id        String   @id @default(cuid())
+  saisonId  String
+  saison    DkSaison @relation(fields: [saisonId], references: [id], onDelete: Cascade)
+  datum     DateTime @default(now())
+  betrag    Float
+  notiz     String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([saisonId])
+}
+
+// Vorgaben Dauerkarten (Singleton, id "dauerkarten")
+model DkEinstellung {
+  id               String   @id @default("dauerkarten")
+  verteiler        String   @default("Raacke, Settles, Kugler") // kommagetrennt: Dropdown + je ein Verteilerlisten-PDF
+  druckerModell    String   @default("Hiti CS200e")
+  druckerArtikel   String   @default("Kartendrucker Hiti CS200e — Art. C0837\nFarbband Bunt CS200e/CS220e — Art. R0A09\nPlastikkarten Weiß High Quality (300 St.) — Art. KS10001-300")
+  lieferantKontakt String   @default("Kartenstudio.com · Alexander Binder\nMünchener Str. 8, 85643 Steinhöring\nTel. 08094-6689985 · info@kartenstudio.com\nhttps://www.kartenstudio.com · Kundennummer 11860")
+  updatedAt        DateTime @updatedAt
+}

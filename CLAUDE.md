@@ -255,6 +255,62 @@ upsert; 32 Kunden, 83 Schaltungen 2025 und 30 historische Rechnungen aus
 der Abrechnungs-Excel sowie Gebiete/Straßen/Verteilerliste aus den
 Word-Dokumenten nur beim allerersten Lauf.
 
+## Dauerkarten-Bereich (`/dauerkarten`, dauerhaft)
+
+Verwaltung der **Saison-Dauerkarten** (~100 Karten/Saison, Kassier Marco
+Raacke) — ersetzt die Excel „Liste_Dauerkarten". Aufbau nach dem
+Schlüssel-Muster: `DauerkartenShell` (Tabs: Karten | Kartendruck |
+Abrechnung | ⚙️ Einstellungen), Client-Views in
+`src/components/dauerkarten/`, Sidebar/AppHeader blenden sich auf
+`/dauerkarten/**` aus. Auth über das zentrale Rollensystem (Bereich
+`dauerkarten`): lesen = ansehen/PDFs, bearbeiten = Karten/Inhaber/Zahlung/
+Ausgabe, verwalten = zusätzlich Saisons, Preise, Einstellungen,
+Einzahlungen und Ausgabe-Rücknahme.
+
+**Modelle (Präfix `Dk`):** `DkSaison` (Preise Normal/Ermäßigt je Saison,
+aktiv-Flag — genau eine aktive, Kartenmuster-JPG), `DkInhaber`
+(saisonübergreifend; Anrede/Rentner/Behinderung → Preisvorschlag ermäßigt,
+Infofeld, Haken `keineKarteMehr`), `DkKarte` (Inhaber × Saison; **`lfdNr`
+eindeutig je Saison, `kartennummer` = Aufdruck und BEWUSST NICHT eindeutig**
+— Wunschnummern wie 1860 existieren mehrfach; Kategorie
+normal/ermaessigt/**druck** = Nur-Druck-Rubrik ab Nr. 200 ohne
+Zahlung/Quittung), `DkEinzahlung` (Bareinzahlungen aufs Vereinskonto),
+`DkEinstellung` (Singleton „dauerkarten": Verteiler kommagetrennt,
+Drucker Hiti CS200e + Artikelnummern, Kartenstudio-Kontakt).
+
+**Zahlungslogik (Vorgabe Kassier):** Zahlarten bar/pos/ueberweisung/
+paypal/geschenk. Überweisung + PayPal laufen über das Privatkonto des
+Kassiers und zählen in der Abrechnung **wie Bargeld** (Bargeldtopf); nur
+POS (mit Transaktionsnummer) geht direkt aufs Vereinskonto. Unbezahlt
+ausgegebene Karten tragen `zahlungSpaeterUeber` — der Satz „Zahlung erfolgt
+später über …" steht wörtlich auf der Quittung. Preis je Karte editierbar
+(+ `abweichung` für Spenden/Abzüge; Zahlbetrag = preis + abweichung).
+Abrechnungs-Zahlen kommen aus **einer** Rechenfunktion
+(`lib/dauerkarten-abrechnung.ts`) für JSON-Route UND PDF.
+
+**Ausgabe** (`POST /api/dauerkarten/karten/[id]/ausgabe`): Finger-Signatur
+nach dem Schlüssel-Beleg-Muster (payloadJson eingefroren, `hash =
+SHA256(payload + SHA256(png) + zeit)`, Quittungs-PDF) ODER
+`ohneSignatur: true` für die Papier-Ausgabe über die Verteilerliste.
+Rücknahme (DELETE, nur verwalten) löscht Signatur + PDF.
+
+**PDFs/Exporte** (`lib/dauerkarten-pdf.ts`): Quittung, Ausgabeliste je
+Verteiler (Unterschriftenfeld für Offline-Ausgabe), Platzkassierer-Liste
+(nur ausgegebene, nach Nachname), Abrechnung; CSV-Export
+`/api/dauerkarten/export/seriendruck` für den Karten-Seriendruck —
+**Namen dort in GROSSBUCHSTABEN** (`exportName()`), in der App normal.
+Alle Datei-Routen ohne Dateiendung in der URL (Middleware-Punkt-Matcher).
+
+**Saisonwechsel:** neue Saison unter ⚙️ Einstellungen anlegen —
+`uebernehmenVon` kopiert Nummern/Kategorie/Verteiler aller Inhaber ohne
+„keine Karte mehr"-Haken; Zahlungen/Ausgaben starten leer, Preise aus der
+neuen Saison. Uploads in `uploads/dauerkarten/` (gitignored).
+
+**Echtdaten** (116 Karten der Excel 2026/27) kommen NICHT ins öffentliche
+Repo — Import einmalig über ein privates Skript (lokal unter
+`~/Claude/Projects/djk70j-dauerkarten-echtdaten/`, Muster
+Schlüssel-Echtdaten).
+
 ## Datenmodell (`prisma/schema.prisma`)
 
 SQLite. **Event-Scoping:** `CostItem`, `Sponsor`, `Bereich`, `Person`, `Task`
@@ -315,7 +371,7 @@ tragen `eventId String @default("jubilaeum-2026")` (+ Index). `Beschluss` /
   `session.ts` re-exportiert sie, darf aber NIE in Client-Code importiert
   werden, sonst bricht der Build an next/headers).
 - **Rollenmodell:** je Bereich (`veranstaltungen` | `werbebanden` |
-  `schluessel` | `djk-info`) eine Rolle `lesen` < `bearbeiten` < `verwalten`
+  `schluessel` | `djk-info` | `dauerkarten`) eine Rolle `lesen` < `bearbeiten` < `verwalten`
   (Rang-Vergleich in `darf()`). Kein Eintrag = kein Zugriff, Kachel/Sidebar
   unsichtbar. `User.istAdmin` = Systemverwalter (alles + `/admin/benutzer`).
   Veranstaltungen: `bearbeiten` = Festplanung, `verwalten` = zusätzlich
@@ -378,6 +434,10 @@ npm run dev                      # http://localhost:3000
 - **`seed-djk-info.ts`** (`npm run db:seed:djk-info`) — DJK-Info-Startdaten
   (Einstellungen, Preise, Ausgaben, Kunden + Schaltungen + Rechnungen 2025,
   Verteilgebiete/Straßen/Verteiler); idempotent. **Läuft beim Auto-Deploy.**
+- **`seed-dauerkarten.ts`** (`npm run db:seed:dauerkarten`) — Dauerkarten-
+  Grundgerüst (Einstellungen per upsert, Saison 2026/27 nur beim allerersten
+  Lauf — bewusst OHNE Echtdaten, Repo ist öffentlich); idempotent.
+  **Läuft beim Auto-Deploy.**
 - **`seed-anfangsbestand-2026-07-07.ts`** — Inventur-Anfangsbestand Fest 2026
   (Warenwirtschaft-Daten; UI entfernt, Skript bleibt marker-geschützt im Deploy).
 - `db:reset` = `prisma db push --force-reset && db:seed` (die alten

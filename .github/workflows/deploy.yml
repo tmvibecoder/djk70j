@@ -36,6 +36,8 @@ jobs:
             npx tsx prisma/seed-schluessel.ts
             # DJK-Info-Startdaten (idempotent: Kunden/Verteilung nur beim ersten Mal)
             npx tsx prisma/seed-djk-info.ts
+            # Dauerkarten-Grundgerüst (idempotent: Saison nur beim ersten Mal)
+            npx tsx prisma/seed-dauerkarten.ts
             npm run build
             pm2 restart djk-ottenhofen-event || pm2 restart all
             pm2 save
